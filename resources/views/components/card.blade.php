@@ -11,7 +11,7 @@
     </time>
     <picture class='skeleton col-span-full @md:col-span-1 shadow'>
         @if(!empty($image))
-        <img src="{{url('storage/' . $image)}}" name="image" class='h-48 w-full @md:w-48 @md:h-full' style='object-fit: cover'>
+        <img src="{{$image}}" name="image" class='h-48 w-full @md:w-48 @md:h-full' style='object-fit: cover'>
             @endif
     </picture>
     <div class='col-span-full @md:col-span-1 shadow flex flex-col'>
