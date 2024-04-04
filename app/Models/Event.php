@@ -28,4 +28,14 @@ class Event extends Model
     {
         return $this->belongsToMany(Band::class);
     }
+
+    protected function image()
+    {
+        return Attribute::make(
+            get: fn($value) => $value ? Storage::disk("s3")->url($value) : null,
+            set: fn($value) => $value instanceof \Illuminate\Http\UploadedFile
+                ? $value->store("events")
+                : $value
+        );
+    }
 }
