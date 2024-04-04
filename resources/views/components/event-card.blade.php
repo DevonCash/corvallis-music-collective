@@ -1,4 +1,4 @@
-<x-card image="https://picsum.photos/500">
+<x-card image={{$event->image}}>
     <x-slot:date>
         {{$event->start_at->format('F j')}}
     </x-slot:date>
