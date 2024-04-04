@@ -32,7 +32,7 @@ class Event extends Model
     protected function image(): Attribute
     {
         return Attribute::make(
-            get: function (string $value) {
+            get: function ($value) {
                 if (empty($value)) {
                     return "https://via.placeholder.com/150";
                 }
