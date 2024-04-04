@@ -22,7 +22,10 @@
         <div class='cost'>{{$event->cost}}</div>
     @endif
     <div class='card-actions gap-0 justify-end  items-end' >
-        <a class='btn grow @md:flex-initial btn-primary'>Get Tickets</a>
+        <a class='btn grow @md:flex-initial btn-primary' href="{{$event->url}}">Get Tickets</a>
     </div>
+    <x-slot:admin>
+        <a class='join-item btn btn-outline btn-xs border-t-0' href='/admin/events/{{$event->id}}/edit'>Edit</a>
+    </x-slot:admin>
 
 </x-card>
