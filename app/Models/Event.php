@@ -41,7 +41,7 @@ class Event extends Model
                 $disk = Storage::disk("s3");
                 return $disk->url($value);
             },
-            set: fn(string $value) => $value
+            set: fn($value) => $value
         );
     }
 }
