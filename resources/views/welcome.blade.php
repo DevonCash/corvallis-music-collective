@@ -39,7 +39,7 @@
         <section  >
             <header class=''>
                 <h2 id='events'> Events</h2>
-                <a href='/events'>More</a>
+                <!-- <a href='/events'>More</a> -->
             </header>
             <ul class='xl:grid grid-cols-3 gap-4'>
                     @foreach( $events as $event)
