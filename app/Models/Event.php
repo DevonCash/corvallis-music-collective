@@ -28,13 +28,4 @@ class Event extends Model
     {
         return $this->belongsToMany(Band::class);
     }
-
-    protected function image()
-    {
-        //** @var \Illuminate\Filesystem\FilesystemAdapter $disk */
-        $disk = Storage::disk("s3");
-        return Attribute::make(
-            get: fn($value) => $value ? $disk->url($value) : null
-        );
-    }
 }
