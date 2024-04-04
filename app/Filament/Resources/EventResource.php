@@ -33,7 +33,9 @@ class EventResource extends Resource
             Forms\Components\TextInput::make("series_id")->numeric(),
             Forms\Components\TextInput::make("location")->maxLength(255),
             Forms\Components\TextInput::make("url")->maxLength(255),
-            Forms\Components\FileUpload::make("image")->image(),
+            Forms\Components\FileUpload::make("image")
+                ->directory("images")
+                ->image(),
             Forms\Components\DateTimePicker::make("published_at"),
             Forms\Components\TextInput::make("links"),
         ]);

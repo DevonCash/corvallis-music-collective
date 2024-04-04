@@ -10,7 +10,9 @@
          @endif
     </time>
     <picture class='skeleton col-span-full @md:col-span-1 shadow'>
-        <img src="{{$image}}" name="image" class='h-48 w-full @md:w-48 @md:h-full' style='object-fit: cover'>
+        @if(!empty($image))
+        <img src="{{url('storage/' . $image)}}" name="image" class='h-48 w-full @md:w-48 @md:h-full' style='object-fit: cover'>
+            @endif
     </picture>
     <div class='col-span-full @md:col-span-1 shadow flex flex-col'>
         <div class='card-body overflow-hidden'>
@@ -18,14 +20,14 @@
         </div>
     </div>
 </div>
-@if(auth()->check())
-<!--TODO: check if user is admin and logged in --!>
-<div class='text-xs join absolute'>
-    <div class='join-item bg-neutral text-gray-100 display lowercase flex items-center px-2'>
-        Admin
+    @if(auth()->check())
+    <!--TODO: check if user is admin and logged in --!>
+    <div class='text-xs join absolute'>
+        <div class='join-item bg-neutral text-gray-100 display lowercase flex items-center px-2'>
+            Admin
+        </div>
+        @if(!empty($admin))
+            {{$admin}}
+        @endif
     </div>
-    @if(!empty($admin))
-        {{$admin}}
     @endif
-</div>
-@endif
