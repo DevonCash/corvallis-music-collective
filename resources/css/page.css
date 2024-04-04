@@ -44,6 +44,6 @@ nav > * {
     scroll-margin-top: 5em;
 }
 
-ul li:only-child {
-    @apply grid-width-full;
+.page ul li:only-child {
+    @apply col-span-full;
 }
