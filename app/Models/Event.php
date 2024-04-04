@@ -28,20 +28,4 @@ class Event extends Model
     {
         return $this->belongsToMany(Band::class);
     }
-
-    protected function image(): Attribute
-    {
-        return Attribute::make(
-            get: function ($value) {
-                if (empty($value)) {
-                    return "https://via.placeholder.com/150";
-                }
-
-                /** @var \Illuminate\Filesystem\FilesystemAdapter */
-                $disk = Storage::disk("s3");
-                return $disk->url($value);
-            },
-            set: fn($value) => $value
-        );
-    }
 }
