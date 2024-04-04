@@ -12,8 +12,10 @@ use App\Mail\MagicLoginLink;
 use Spatie\Permission\Traits\HasRoles;
 use App\Models\LoginToken;
 use Illuminate\Database\Eloquent\Casts\Attribute;
+use Filament\Panel;
+use Filament\Models\Contracts\FilamentUser;
 
-class User extends Authenticatable
+class User extends Authenticatable implements FilamentUser
 {
     use HasFactory, Notifiable, HasRoles;
 
@@ -67,5 +69,10 @@ class User extends Authenticatable
         Mail::to($this->email)->sendNow(
             new MagicLoginLink($plaintext, $token->expires_at)
         );
+    }
+
+    public function canAccessPanel(Panel $panel): bool
+    {
+        return $this->can("view admin panel");
     }
 }
