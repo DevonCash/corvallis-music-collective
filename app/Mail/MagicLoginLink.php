@@ -2,6 +2,7 @@
 
 namespace App\Mail;
 
+use Illuminate\Mail\Mailables\Address;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Mail\Mailable;
@@ -32,8 +33,6 @@ class MagicLoginLink extends Mailable
             "token" => $this->plaintextToken,
         ]);
 
-        logger($url);
-
         return $this->subject(
             config("app.name") . "Login Verification"
         )->markdown("emails.magic-login-link", [
@@ -46,7 +45,13 @@ class MagicLoginLink extends Mailable
      */
     public function envelope(): Envelope
     {
-        return new Envelope(subject: "Magic Login Link");
+        return new Envelope(
+            from: new Address(
+                "auth@corvallismusiccollective.org",
+                "Corvallis Music Collective"
+            ),
+            subject: "Magic Login Link"
+        );
     }
 
     /**
