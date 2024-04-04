@@ -1,0 +1,41 @@
+.page section:not(.hero) {
+    @apply px-3 py-8 sm:px-4 sm:py-8;
+}
+
+.page section > header h2 {
+    @apply display text-5xl text-primary sm:text-5xl md:text-7xl;
+
+    color: white;
+    -webkit-text-stroke: 1px black;
+    text-shadow:
+        -0.02em 0.03em 0px oklch(var(--p)),
+        -0.03em 0.06em 0px oklch(var(--s));
+}
+
+.page section > header {
+    @apply flex items-baseline justify-between pb-4 text-xl;
+}
+
+.page section:not(:first-of-type) {
+    @apply border-b-2 border-black;
+}
+
+.page section > header a {
+    @apply link;
+}
+
+header .brand {
+    transition:
+        opacity 0.25s,
+        transform 0.25s;
+    transform: scale(1);
+}
+header:not(.stuck) .brand {
+    opacity: 0;
+    transform: scale(0.5);
+}
+
+nav > * {
+    flex: 1 1 auto;
+    flex-wrap: nowrap;
+}

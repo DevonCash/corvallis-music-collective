@@ -1,0 +1,146 @@
+@import url("./card.css");
+@import url("./page.css");
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+    --primary: var(--fallback-p, oklch(var(--p) / var(--tw-text-opacity)));
+}
+
+@font-face {
+    font-family: "Bright Retro";
+    font-weight: 400;
+    font-style: normal;
+    src: url("/resources/fonts/Bright_OTF.woff2") format("woff2");
+}
+
+/*
+html {
+    background-image: url('../noise.svg');
+} */
+
+body[data-theme] {
+    position: relative;
+    background-color: var(--fallback-b1, oklch(var(--b1)/.5));
+}
+
+body::after {
+    content: '';
+    display: block;
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    background-image: url("https://assets-global.website-files.com/62067bff9543ef5c2a4f8d72/623a1aa7811464888b2286fa_622bb49733075134c82a1324_grain-static.png");
+    height: 100%;
+    width: 100%;
+    z-index: 999;
+    opacity: .03;
+    pointer-events: none;
+    /* mix-blend-mode: soft-light; */
+}
+
+#noise {
+    display: none;
+}
+
+
+.navbar a {
+    @apply link;
+}
+
+.display {
+    font-family: "Bright Retro", display;
+}
+
+.btn:not(.btn-circle) {
+    @apply display;
+    color: white;
+    font-size: x-large;
+    letter-spacing: 0.05em;
+
+    /* Needs to be text-shadow for outline stroke*/
+    text-shadow:
+        -1px -1px 0 black,
+        -1px 1px 0 black,
+        1px 1px 0 black,
+        1px -1px 0 black;
+}
+
+.btn:not(.btn-ghost) {
+    border: 2px solid black;
+}
+
+.event-label {
+    @apply text-primary;
+    width: 1.5em;
+    display: inline-block;
+    text-align: center;
+    margin-right: -0.5em;
+}
+
+.cost::before {
+    @apply event-label;
+    content: "$";
+}
+
+.at::before {
+    @apply event-label;
+    content: "@";
+}
+
+.at {
+    @apply flex flex-nowrap gap-2;
+}
+
+.at>*:not(:last-child)::after {
+    content: ", ";
+}
+
+h1 {
+    @apply display;
+    color: white;
+    -webkit-text-stroke: 1px black;
+    text-shadow:
+        -0.02em 0.04em 1px oklch(var(--p)),
+        -0.04em 0.08em 0 oklch(var(--s)),
+        -0.06em 0.12em 0 oklch(var(--a));
+}
+
+
+
+/* /*
+h1 :first-letter {
+    border: 0.05em solid transparent;
+}
+
+h1 :nth-child(odd):first-letter {
+    border-color: currentColor;
+    min-width: 2em;
+}
+*/
+
+.fi-field-wrp {
+    @apply form-control;
+}
+
+.fi-input-wrp>div {
+    flex: 1 1 auto;
+}
+
+.fi-input-wrp input {
+    @apply input input-ghost w-full;
+}
+
+.fi-input-wrp textarea {
+    @apply textarea textarea-ghost w-full;
+}
+
+.fi-fo-field-wrp-label {
+    @apply label display;
+}
+
+.text-shadow {
+    text-shadow: -0.03em 0.05em 0 oklch(var(--p)/var(--tw-text-opacity)));
+}

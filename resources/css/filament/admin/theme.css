@@ -1,0 +1,63 @@
+@import "/vendor/filament/filament/resources/css/theme.css";
+@import url(https://fonts.bunny.net/css?family=chango:400|kodchasan:400|major-mono-display:400);
+
+@config 'tailwind.config.js';
+
+:root {
+    --sidebar-width: 15rem !important;
+}
+
+.display {
+    font-family: "Major Mono Display", monospace;
+}
+
+.rounded,
+.rounded-sm,
+.rounded-md,
+.rounded-xl,
+.filepond--root,
+.rounded-lg {
+    border-radius: 0;
+}
+
+.fi-btn-label,
+.fi-breadcrumbs-item-label {
+    @apply display lowercase;
+}
+
+.fi-header-heading {
+    @apply display lowercase;
+}
+
+.fi-sidebar-item.fi-active .fi-sidebar-item-label {
+    @apply uppercase;
+}
+
+.fi-sidebar-item-label {
+    @apply display text-xl lowercase;
+}
+
+.fi-sidebar-item-icon {
+    display: none;
+}
+
+.fi-main-ctn {
+    @apply bg-gray-100;
+}
+
+.dark .fi-main-ctn {
+    @apply bg-white/5;
+}
+
+.fi-sidebar-nav {
+    padding-right: 0;
+}
+
+.fi-header {
+    @apply pl-14 lg:pl-0;
+    position: relative;
+}
+
+.fi-sidebar-header {
+    @apply h-20;
+}

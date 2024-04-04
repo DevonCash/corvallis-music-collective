@@ -1,0 +1,36 @@
+.card.model-card {
+    @apply card-compact z-0 bg-base-100  grid h-full overflow-hidden  border-2 border-black;
+}
+
+.card.model-card > :nth-child(2n) {
+    border-left: 1px solid black;
+}
+
+.card.model-card > :nth-child(n + 3) {
+    border-top: 1px solid black;
+}
+
+.card.model-card .card-body,
+.card.model-card .card-actions {
+    @apply bg-white;
+}
+
+.card.model-card header {
+    @apply display flex flex-nowrap items-center bg-base-100 lowercase;
+}
+
+.card.model-card time .day {
+    @apply mr-4 inline-block whitespace-nowrap bg-primary p-4 text-primary-content;
+}
+
+.card.model-card .card-title {
+    @apply display text-3xl;
+}
+
+.card.model-card .card-actions {
+    @apply gap-0 justify-end items-end;
+}
+
+.card.model-card .card-actions .btn {
+    @apply grow @md:flex-initial;
+}
