@@ -4,6 +4,8 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Casts\Attribute;
+use Illuminate\Support\Facades\Storage;
 
 class Event extends Model
 {
@@ -25,5 +27,21 @@ class Event extends Model
     public function bands()
     {
         return $this->belongsToMany(Band::class);
+    }
+
+    protected function image(): Attribute
+    {
+        return Attribute::make(
+            get: function (string $value) {
+                if (empty($value)) {
+                    return "https://via.placeholder.com/150";
+                }
+
+                /** @var \Illuminate\Filesystem\FilesystemAdapter */
+                $disk = Storage::disk("s3");
+                return $disk->url($value);
+            },
+            set: fn(string $value) => $value
+        );
     }
 }
