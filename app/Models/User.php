@@ -64,7 +64,7 @@ class User extends Authenticatable
             "expires_at" => now()->addMinutes(15),
         ]);
 
-        Mail::to($this->email)->queue(
+        Mail::to($this->email)->sendNow(
             new MagicLoginLink($plaintext, $token->expires_at)
         );
     }
