@@ -2,6 +2,10 @@
     @apply px-3 py-8 sm:px-4 sm:py-8;
 }
 
+.page section:not(:first-of-type) {
+    @apply border-t-2 border-black;
+}
+
 .page section > header h2 {
     @apply display text-5xl text-primary sm:text-5xl md:text-7xl;
 
@@ -14,10 +18,6 @@
 
 .page section > header {
     @apply flex items-baseline justify-between pb-4 text-xl;
-}
-
-.page section:not(:first-of-type) {
-    @apply border-b-2 border-black;
 }
 
 .page section > header a {

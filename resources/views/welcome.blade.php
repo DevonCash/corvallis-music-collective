@@ -15,18 +15,19 @@
         <header class='border-t-2 border-black sticky -top-1 z-50 text-3xl bg-base-100'>
             <nav class='grid grid-cols-3 grow '>
                 <a class='brand' href='/' class='grow'>
-                    <div class='flex text-5xl  items-center justify-start display text-white' style='-webkit-text-stroke: 1px black;'>
+                    <div class='flex text-5xl  items-end justify-start display text-white' style='-webkit-text-stroke: 1px black;'>
                         <div class='w-12 p-2' >
                             <img src='images/favicon.svg'>
                         </div>
-                        <span>CMC</span>
+                        <span class='hidden sm:inline-block'>CMC</span>
                     </div>
                 </a>
-                <ul class=' grow flex items-center justify-center'>
+                <ul class=' grow flex items-end  justify-center'>
                     <li>
                         <a class='btn btn-ghost' href='#events'>Events</a>
+                    </li>
+                    <li>
                         <a class='btn btn-ghost' href='#about'>About</a>
-                        <!-- <a class='btn btn-ghost'>Contact</a> -->
                     </li>
                 </ul>
                 <ul class='grow justify-end flex items-center'>
@@ -67,7 +68,7 @@
             <header class='flex justify-between items-baseline'>
                 <h2 id='about' class='text-black text-3xl sm:text-5xl md:text-7xl display'>About</h2>
             </header>
-            <div class='flex  flex-wrap md:flex-nowrap items-start gap-10 px-8 '>
+            <div class='flex  flex-wrap md:flex-nowrap items-start gap-10 sm:px-8 '>
                 <div class="prose-lg min-w-96">
                     <p>
                         Corvallis Music Collective is a member-driven non-profit with a mission to make playing and

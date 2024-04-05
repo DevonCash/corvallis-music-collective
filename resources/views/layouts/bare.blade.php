@@ -5,6 +5,8 @@
   <meta charset="UTF-8">
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="preconnect" href="https://fonts.bunny.net">
+  <link href="https://fonts.bunny.net/css?family=inter-tight:300" rel="stylesheet" />
   @vite(['resources/js/app.js','resources/css/app.css'])
   <title>{{ $title }}</title>
 </head>

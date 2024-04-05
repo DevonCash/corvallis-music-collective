@@ -2,7 +2,11 @@
 export default {
   content: ["./resources/**/*.blade.php", "./resources/**/*.js"],
   theme: {
-    extend: {},
+    extend: {
+      fontFamily: {
+        sans: ["Inter Tight", "sans-serif"],
+      },
+    },
   },
   daisyui: {
     themes: [
