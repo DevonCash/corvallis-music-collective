@@ -3,15 +3,15 @@
 namespace App\Filament\Resources;
 
 use App\Filament\Resources\EventResource\Pages;
-use App\Filament\Resources\EventResource\RelationManagers;
 use App\Models\Event;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
-use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\SoftDeletingScope;
+use Filament\Forms\Components;
+use Awcodes\TableRepeater\Components\TableRepeater;
+use Awcodes\TableRepeater\Header;
 
 class EventResource extends Resource
 {
@@ -22,19 +22,52 @@ class EventResource extends Resource
     public static function form(Form $form): Form
     {
         return $form->schema([
-            Forms\Components\TextInput::make("name")
-                ->required()
-                ->maxLength(255),
-            Forms\Components\Textarea::make("description")
-                ->required()
+            Components\Split::make([
+                Components\Section::make([])->schema([
+                    Components\TextInput::make("name")
+                        ->required()
+                        ->maxLength(255),
+                    Components\RichEditor::make("description"),
+                    TableRepeater::make("links")
+                        ->headers([
+                            Header::make("Label"),
+                            Header::make("URL")->width("66%"),
+                        ])
+                        ->schema([
+                            Components\TextInput::make("label"),
+                            Components\TextInput::make("url"),
+                        ])
+                        ->addActionLabel("Add Link")
+                        ->streamlined(),
+                    TableRepeater::make("price")
+                        ->headers([
+                            Header::make("Label"),
+                            Header::make("Price"),
+                        ])
+                        ->schema([
+                            Components\TextInput::make("label"),
+                            Components\TextInput::make("price"),
+                        ])
+                        ->addActionLabel("Add Price")
+                        ->streamlined(),
+                ]),
+                Components\Grid::make()
+                    ->columns(1)
+                    ->extraAttributes(["class" => "fixed-size"])
+                    ->schema([
+                        Components\Section::make()->schema([
+                            Components\DateTimePicker::make("door_time"),
+                            Components\DateTimePicker::make(
+                                "start_time"
+                            )->required(),
+                            Components\DateTimePicker::make("end_time"),
+                        ]),
+                        Components\TagsInput::make("tags")->grow(false),
+                    ])
+                    ->grow(false),
+            ])
+                ->from("md")
                 ->columnSpanFull(),
-            Forms\Components\TextInput::make("links")->required(),
-            Forms\Components\DateTimePicker::make("door_time"),
-            Forms\Components\DateTimePicker::make("start_time")->required(),
-            Forms\Components\DateTimePicker::make("end_time"),
-            Forms\Components\TextInput::make("price"),
-            Forms\Components\TextInput::make("venue_id")->numeric(),
-            Forms\Components\DateTimePicker::make("published_at"),
         ]);
     }
 

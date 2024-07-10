@@ -26,50 +26,21 @@ class UserResource extends Resource
     public static function form(Form $form): Form
     {
         return $form->schema([
-            Components\Section::make("Profile")
-                ->headerActions([
-                    Components\Actions\Action::make("publish")
-                        ->label(
-                            fn($record) => $record->published_at
-                                ? "Unpublish"
-                                : "Publish"
-                        )
-                        ->icon(
-                            fn($record) => $record->published_at
-                                ? "heroicon-o-eye-off"
-                                : "heroicon-o-eye"
-                        ),
-                ])
-                ->schema([
-                    Forms\Components\TextInput::make("name")
-                        ->required()
-                        ->maxLength(255),
-                    Forms\Components\TextInput::make("email")
-                        ->email()
-                        ->required()
-                        ->suffixIcon(function ($record) {
-                            return $record->email_verified_at
-                                ? "heroicon-o-check-circle"
-                                : "heroicon-o-x-circle";
-                        })
-                        ->suffixIconColor(function ($record) {
-                            return $record->email_verified_at
-                                ? "success"
-                                : null;
-                        })
-                        ->maxLength(255),
-                    Forms\Components\RichEditor::make("bio"),
-                    TableRepeater::make("links")
-                        ->headers([
-                            Header::make("Label"),
-                            Header::make("URL")->width("75%"),
-                        ])
-                        ->schema([
-                            Components\TextInput::make("label"),
-                            Components\TextInput::make("url"),
-                        ])
-                        ->streamlined(),
-                ]),
+            Forms\Components\TextInput::make("name")
+                ->required()
+                ->maxLength(255),
+            Forms\Components\TextInput::make("email")
+                ->email()
+                ->required()
+                ->suffixIcon(function ($record) {
+                    return $record->email_verified_at
+                        ? "heroicon-o-check-circle"
+                        : "heroicon-o-x-circle";
+                })
+                ->suffixIconColor(function ($record) {
+                    return $record->email_verified_at ? "success" : null;
+                })
+                ->maxLength(255),
         ]);
     }
 

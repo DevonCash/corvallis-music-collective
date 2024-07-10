@@ -2,3 +2,7 @@
 @import "/vendor/awcodes/filament-table-repeater/resources/css/plugin.css";
 
 @config 'tailwind.config.js';
+
+.fixed-size > .grid-cols-\[--cols-default\] {
+    grid-template-columns: 20rem;
+}

@@ -34,6 +34,8 @@ class PostResource extends Resource
                 ]),
                 Components\Grid::make()
                     ->columns(1)
+                    ->extraAttributes(["class" => "fixed-size"])
+
                     ->schema([
                         Components\TagsInput::make("tags"),
                         TableRepeater::make("authors")

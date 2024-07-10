@@ -59,6 +59,8 @@ class BandResource extends Resource
                     ])
                     ->columnSpanFull(),
                 Components\Grid::make()
+                    ->extraAttributes(["class" => "fixed-size"])
+
                     ->columns(1)
                     ->schema([Components\TagsInput::make("tags")])
                     ->grow(false),
