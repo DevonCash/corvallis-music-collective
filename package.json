@@ -1,0 +1,32 @@
+{
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build"
+  },
+  "devDependencies": {
+    "axios": "^1.6.4",
+    "laravel-vite-plugin": "^1.0",
+    "sass": "^1.77.6",
+    "vite": "^5.0"
+  },
+  "dependencies": {
+    "@iconify/svelte": "^4.0.2",
+    "@inertiajs/svelte": "^1.2.0",
+    "@jhubbardsf/svelte-sortablejs": "^1.1.0",
+    "@picocss/pico": "picocss/pico",
+    "@sveltejs/vite-plugin-svelte": "^3.1.1",
+    "@tailwindcss/forms": "^0.5.7",
+    "@tailwindcss/typography": "^0.5.13",
+    "autoprefixer": "^10.4.19",
+    "bits-ui": "^0.21.12",
+    "bulma": "^1.0.1",
+    "felte": "^1.2.14",
+    "lodash": "^4.17.21",
+    "postcss": "^8.4.39",
+    "postcss-nesting": "^12.1.5",
+    "svelte-headlessui": "^0.0.42",
+    "tailwindcss": "^3.4.4"
+  }
+}

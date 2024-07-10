@@ -1,0 +1,78 @@
+@use "@picocss/pico/scss/pico" with (
+    $semantic-root-element: "#app",
+    $theme-color: "amber",
+    $enable-semantic-container: true,
+    $enable-classes: true
+);
+@import url(https://fonts.bunny.net/css?family=lexend:200,700);
+
+@media only screen and (prefers-color-scheme: dark) {
+    :root:not([data-theme]) {
+        --pico-background-color: #1c1a1a;
+    }
+}
+
+@media only screen and (prefers-color-scheme: light) {
+    h1,
+    h2,
+    h3 {
+        color: var(--cmc-blue);
+    }
+    :global(:not([data-theme]) #app > header:first-of-type) {
+        background: #ffe2cd;
+    }
+}
+:root {
+    --pico-font-family: "Lexend", sans-serif;
+    --pico-font-size: 1rem;
+    --pico-spacing: 1rem;
+    --pico-block-spacing-vertical: 1.5rem;
+    --pico-block-spacing-horizontal: 1rem;
+    --pico-border-radius: 0.5rem;
+
+    --cmc-blue: #00859b;
+    --cmc-yellow: #ffb500;
+    --cmc-red: #f84d13;
+}
+html {
+    font-size: 18px;
+}
+
+.inset {
+    --v: var(--pico-block-spacing-vertical);
+    --h: var(--pico-block-spacing-horizontal);
+    width: calc(100% + var(--h) * 2);
+    margin: calc(var(--v) * -1) calc(var(--h) * -1);
+}
+
+footer .inset,
+header .inset {
+    --v: calc(var(--pico-block-spacing-vertical) * 0.66);
+}
+
+[role="button"] {
+    margin-bottom: var(--pico-spacing);
+}
+
+search button {
+    --pico-border-radius: 5rem;
+}
+
+.tags {
+    display: flex;
+    gap: var(--pico-spacing);
+    flex-wrap: wrap;
+}
+
+menu {
+    list-style: none;
+    display: flex;
+    justify-content: flex-end;
+    padding: 0;
+}
+
+.iconify {
+    position: relative;
+    font-size: 1.2em;
+    top: -2px;
+}
