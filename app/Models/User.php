@@ -61,4 +61,9 @@ class User extends Authenticatable
     {
         return $this->belongsToMany(Post::class);
     }
+
+    public function canAccessFilament()
+    {
+        return true;
+    }
 }
