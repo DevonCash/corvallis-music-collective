@@ -44,6 +44,11 @@ class User extends Authenticatable implements FilamentUser
         ];
     }
 
+    function getUserName()
+    {
+        return $this->name ?? explode("@", $this->email)[0];
+    }
+
     /**
      * Get the bands.
      *
