@@ -12,6 +12,7 @@ use Filament\Tables\Table;
 use Filament\Forms\Components;
 use Awcodes\TableRepeater\Components\TableRepeater;
 use Awcodes\TableRepeater\Header;
+use Filament\Forms\Components\SpatieMediaLibraryFileUpload;
 
 class EventResource extends Resource
 {
@@ -55,6 +56,10 @@ class EventResource extends Resource
                     ->columns(1)
                     ->extraAttributes(["class" => "fixed-size"])
                     ->schema([
+                        SpatieMediaLibraryFileUpload::make("poster")
+                            ->collection("posters")
+                            ->responsiveImages()
+                            ->disk("s3"),
                         Components\Section::make()->schema([
                             Components\DateTimePicker::make("door_time"),
                             Components\DateTimePicker::make(

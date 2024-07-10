@@ -3,25 +3,24 @@
 namespace App\Models;
 
 use App\Traits\Publishable;
-use Filament\Models\Contracts\FilamentUser;
-use Filament\Panel;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
+use Filament\Models\Contracts\FilamentUser;
 
 class User extends Authenticatable implements FilamentUser
 {
     use HasFactory;
-    use Publishable;
     use Notifiable;
+    use Publishable;
 
     /**
      * The attributes that are mass assignable.
      *
      * @var array<int, string>
      */
-    protected $fillable = ["name", "email", "password"];
+    protected $fillable = ["email", "password", "name"];
 
     /**
      * The attributes that should be hidden for serialization.
@@ -44,9 +43,13 @@ class User extends Authenticatable implements FilamentUser
         ];
     }
 
-    function getUserName()
+    public function canAccessPanel(\Filament\Panel $panel): bool
     {
-        return $this->name ?? explode("@", $this->email)[0];
+        if ($panel->getId() == "admin") {
+            return $this->hasVerifiedEmail() &&
+                str_ends_with($this->email, "@corvmc.org");
+        }
+        return false;
     }
 
     /**
@@ -69,16 +72,13 @@ class User extends Authenticatable implements FilamentUser
         return $this->belongsToMany(Post::class);
     }
 
-    public function canAccessFilament()
+    /**
+     * Get the memberships.
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\HasOne
+     */
+    public function memberships()
     {
-        return true;
-    }
-
-    public function canAccessPanel(Panel $panel): bool
-    {
-        if ($panel->getId() == "admin") {
-            return $this->hasVerifiedEmail() &&
-                str_ends_with($this->email, "@corvmc.org");
-        }
+        return $this->hasOne(Membership::class, "user_id");
     }
 }

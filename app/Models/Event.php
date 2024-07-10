@@ -4,11 +4,14 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Spatie\MediaLibrary\HasMedia;
 use App\Traits\Publishable;
+use Spatie\MediaLibrary\InteractsWithMedia;
 
-class Event extends Model
+class Event extends Model implements HasMedia
 {
     use HasFactory;
+    use InteractsWithMedia;
     use Publishable;
 
     protected $guarded = [];
@@ -19,6 +22,7 @@ class Event extends Model
         "door_time" => "datetime",
         "links" => "array",
         "price" => "array",
+        "tags" => "array",
     ];
 
     protected $appends = ["poster"];
@@ -45,6 +49,6 @@ class Event extends Model
 
     public function getPosterAttribute()
     {
-        return "https://picsum.photos/300/400";
+        return $this->getFirstMediaUrl("posters");
     }
 }

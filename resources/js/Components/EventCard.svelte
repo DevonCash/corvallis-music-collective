@@ -1,4 +1,5 @@
 <script>
+    import Icon from "@iconify/svelte";
     import { inertia } from "@inertiajs/svelte";
     export let event;
 
@@ -8,6 +9,7 @@
     }
 </script>
 
+{@debug event}
 <article>
     <figure class:loading={loadingImage} style="--img: url({event.poster})">
         <img
@@ -20,12 +22,13 @@
         <hgroup>
             <h4>{event.name}</h4>
             <time datetime={event.startTime}>
-                <span
-                    >{new Date(event.start_time).toLocaleDateString(undefined, {
+                <Icon icon="mdi:calendar" />
+                <strong>
+                    {new Date(event.start_time).toLocaleDateString(undefined, {
                         month: "long",
                         day: "numeric",
-                    })}</span
-                >
+                    })}
+                </strong>
                 <span style="text-align: right;"
                     >{new Date(event.start_time).toLocaleTimeString(undefined, {
                         hour: "numeric",
@@ -98,7 +101,7 @@
     footer::before {
         content: "";
         position: absolute;
-        bottom: 100%;
+        top: -1px;
         left: 0;
         background: linear-gradient(
             to bottom,
@@ -118,23 +121,13 @@
         overflow: hidden;
         text-overflow: ellipsis;
     }
-
-    menu {
-        margin: 0;
-    }
-
-    menu li {
-        flex: auto;
-    }
-
-    menu button,
-    menu [role="button"] {
-        width: 100%;
-        margin-bottom: 0;
+    nav li {
+        padding: 0;
     }
 
     footer time {
         display: flex;
-        justify-content: space-between;
+        align-items: center;
+        gap: 0.5rem;
     }
 </style>
