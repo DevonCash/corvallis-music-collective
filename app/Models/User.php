@@ -3,12 +3,14 @@
 namespace App\Models;
 
 use App\Traits\Publishable;
+use Filament\Models\Contracts\FilamentUser;
+use Filament\Panel;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 
-class User extends Authenticatable
+class User extends Authenticatable implements FilamentUser
 {
     use HasFactory;
     use Publishable;
@@ -65,5 +67,13 @@ class User extends Authenticatable
     public function canAccessFilament()
     {
         return true;
+    }
+
+    public function canAccessPanel(Panel $panel): bool
+    {
+        if ($panel->getId() == "admin") {
+            return $this->hasVerifiedEmail() &&
+                str_ends_with($this->email, "@corvmc.org");
+        }
     }
 }
