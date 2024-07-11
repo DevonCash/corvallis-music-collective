@@ -7,17 +7,32 @@
 </script>
 
 <main>
-    <section class="grid" style="align-items: center;">
-        <h2 class="mission">
-            Building and connecting music communities around Corvallis
-        </h2>
-        <p>
-            The Corvallis Music Collective is a community-driven organization
-            that supports local music and musicians. We believe that music is a
-            vital part of a healthy community, and we work to create
-            opportunities for musicians and music appreciators of all ages and
-            skills.
-        </p>
+    <section>
+        <section class="grid" style="align-items: center;">
+            <h2 class="mission">
+                Building and connecting music communities around Corvallis
+            </h2>
+            <p>
+                The Corvallis Music Collective is a community-driven
+                organization that supports local music and musicians. We believe
+                that music is a vital part of a healthy community, and we work
+                to create opportunities for musicians and music appreciators of
+                all ages and skills.
+            </p>
+        </section>
+
+        <div class="grid">
+            <article style="text-align: center; padding: 2rem; margin: auto;">
+                <h3>Want to help us out?</h3>
+                <p>
+                    Corvallis Music Collective is a community-driven
+                    organization, and we need your help!
+                </p>
+                <a role="button" href="/contribute"
+                    >Learn how you can get involved!</a
+                >
+            </article>
+        </div>
     </section>
     <section class="events">
         <header class="grid">
@@ -55,7 +70,7 @@
     </section>
     <section class="news">
         <header>
-            <h2>News</h2>
+            <h2>Recent Articles</h2>
         </header>
         <div class="grid">
             {#each posts as post}

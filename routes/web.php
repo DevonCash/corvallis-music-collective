@@ -24,6 +24,8 @@ Route::get("/", function () {
     ]);
 });
 
+Route::get("donate", fn() => redirect("contribute/donate"));
+
 Route::get("contribute/donate", function () {
     return inertia("Public/Donate");
 });
