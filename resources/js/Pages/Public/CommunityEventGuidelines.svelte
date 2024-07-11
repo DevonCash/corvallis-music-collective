@@ -19,31 +19,27 @@
             that we can continue to provide this service to the community.
         </p>
 
-        <section>
-            <h3>Community Event Guidelines</h3>
-            <ul>
-                <li>
-                    Events must be music-related and take place in the Corvallis
-                    area.
-                </li>
-                <li>
-                    Events with a cover charge must feature at least one band or
-                    artist from the Corvallis area.
-                </li>
-                <li>
-                    Tickets must available to purchase by the public and the
-                    event should not require a membership or subscription to
-                    attend.
-                </li>
-                <li>
-                    Events must comply with local laws and regulations,
-                    including those related to public health and safety.
-                </li>
-                <li>
-                    Events must be respectful and inclusive of all community
-                    members, regardless of cultural background or identity.
-                </li>
-            </ul>
-        </section>
+        <ul>
+            <li>
+                Events must be music-related and take place in the Corvallis
+                area.
+            </li>
+            <li>
+                Events with a cover charge must feature at least one band or
+                artist from the Corvallis area.
+            </li>
+            <li>
+                Tickets must available to purchase by the public and the event
+                should not require a membership or subscription to attend.
+            </li>
+            <li>
+                Events must comply with local laws and regulations, including
+                those related to public health and safety.
+            </li>
+            <li>
+                Events must be respectful and inclusive of all community
+                members, regardless of cultural background or identity.
+            </li>
+        </ul>
     </article>
 </main>

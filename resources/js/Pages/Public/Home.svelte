@@ -71,6 +71,7 @@
     <section class="news">
         <header>
             <h2>Recent Articles</h2>
+            <a href="/posts" use:inertia>View All</a>
         </header>
         <div class="grid">
             {#each posts as post}
