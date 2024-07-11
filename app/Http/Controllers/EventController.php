@@ -20,7 +20,6 @@ class EventController
             ->with("venue:id,name,link")
             ->where("start_time", ">=", $month)
             ->where("start_time", "<", $nextMonth)
-            ->whereJsonContains("tags", "CMC Event")
             ->orderBy("start_time");
 
         if ($tag) {

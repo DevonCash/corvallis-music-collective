@@ -51,7 +51,7 @@
     <header>
         <hgroup>
             <h1>
-                {tag ? pluralize(tag) : "Events"}
+                <span style="color:var(--cmc-red)">{tag ?? ""}</span> Events
                 <time datetime={thisMonth.toISOString()}
                     >{format(thisMonth)}</time
                 >

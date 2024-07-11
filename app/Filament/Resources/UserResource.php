@@ -8,20 +8,17 @@ use App\Models\User;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
+use Filament\Support\Enums\IconPosition;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
-use Filament\Forms\Components;
-use Awcodes\TableRepeater\Components\TableRepeater;
-use Awcodes\TableRepeater\Header;
-use Filament\Support\Enums\IconPosition;
 
 class UserResource extends Resource
 {
     protected static ?string $model = User::class;
 
-    protected static ?string $navigationIcon = "heroicon-o-user";
+    protected static ?string $navigationIcon = "heroicon-o-rectangle-stack";
 
     public static function form(Form $form): Form
     {
@@ -32,14 +29,6 @@ class UserResource extends Resource
             Forms\Components\TextInput::make("email")
                 ->email()
                 ->required()
-                ->suffixIcon(function ($record) {
-                    return $record->email_verified_at
-                        ? "heroicon-o-check-circle"
-                        : "heroicon-o-x-circle";
-                })
-                ->suffixIconColor(function ($record) {
-                    return $record->email_verified_at ? "success" : null;
-                })
                 ->maxLength(255),
         ]);
     }
@@ -49,15 +38,20 @@ class UserResource extends Resource
         return $table
             ->columns([
                 Tables\Columns\TextColumn::make("name")->searchable(),
+
                 Tables\Columns\TextColumn::make("email")
-                    ->icon(function ($record) {
-                        return $record->email_verified_at
-                            ? "heroicon-o-check-circle"
-                            : null;
-                    })
-                    ->iconColor("success")
-                    ->iconPosition(IconPosition::After)
-                    ->searchable(),
+                    ->searchable()
+                    ->icon(
+                        fn($record) => $record->email_verified_at
+                            ? "heroicon-s-check-circle"
+                            : "heroicon-s-x-circle"
+                    )
+                    ->iconColor(
+                        fn($record) => $record->email_verified_at
+                            ? "success"
+                            : "gray"
+                    )
+                    ->iconPosition(IconPosition::After),
                 Tables\Columns\TextColumn::make("created_at")
                     ->dateTime()
                     ->sortable()
@@ -70,7 +64,28 @@ class UserResource extends Resource
             ->filters([
                 //
             ])
-            ->actions([Tables\Actions\EditAction::make()])
+            ->actions([
+                Tables\Actions\Action::make("reset-password")
+                    ->icon("heroicon-o-lock-closed")
+                    ->color("gray")
+                    ->requiresConfirmation()
+                    ->label("Reset Password")
+                    ->action(function (User $record) {
+                        $token = app("auth.password.broker")->createToken(
+                            $record
+                        );
+                        $notification = new \Filament\Notifications\Auth\ResetPassword(
+                            $token
+                        );
+                        $notification->url = \Filament\Facades\Filament::getResetPasswordUrl(
+                            $token,
+                            $record
+                        );
+                        $record->notify($notification);
+                    }),
+                Tables\Actions\EditAction::make(),
+                Tables\Actions\DeleteAction::make(),
+            ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
                     Tables\Actions\DeleteBulkAction::make(),
@@ -78,19 +93,10 @@ class UserResource extends Resource
             ]);
     }
 
-    public static function getRelations(): array
-    {
-        return [
-                //
-            ];
-    }
-
     public static function getPages(): array
     {
         return [
-            "index" => Pages\ListUsers::route("/"),
-            "create" => Pages\CreateUser::route("/create"),
-            "edit" => Pages\EditUser::route("/{record}/edit"),
+            "index" => Pages\ManageUsers::route("/"),
         ];
     }
 }

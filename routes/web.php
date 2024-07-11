@@ -9,6 +9,7 @@ use App\Models\Post;
 Route::get("/", function () {
     $upcomingEvents = Event::published()
         ->where("start_time", ">=", now())
+        ->whereJsonContains("tags", "CMC")
         ->orderBy("start_time", "asc")
         ->limit(3)
         ->get();

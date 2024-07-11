@@ -5,8 +5,8 @@
 <main>
     <nav aria-label="breadcrumb">
         <ul>
-            <li><a href="/">Home</a></li>
-            <li><a href="/Events">Events</a></li>
+            <li><a use:inertia href="/">Home</a></li>
+            <li><a use:inertia href="/Events">Events</a></li>
             <li>Community Event Guidelines</li>
         </ul>
     </nav>
@@ -31,6 +31,10 @@
             <li>
                 Tickets must available to purchase by the public and the event
                 should not require a membership or subscription to attend.
+            </li>
+            <li>
+                Events cannot be held at private residences or other non-public
+                venues.
             </li>
             <li>
                 Events must comply with local laws and regulations, including

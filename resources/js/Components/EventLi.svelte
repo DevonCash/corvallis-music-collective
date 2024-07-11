@@ -35,9 +35,9 @@
                 {/each}
             </div>
         </hgroup>
-        <div class="desc">
+        <section class="desc">
             {@html event.description}
-        </div>
+        </section>
         <div class="time">
             <Icon icon="mdi:calendar" />
             <time datetime={event.start_time}>
@@ -93,8 +93,10 @@
 <style>
     figure {
         flex: 0 0 auto;
+        display: flex;
     }
     img {
+        flex: auto;
         height: 100%;
     }
 
@@ -106,6 +108,7 @@
         gap: 1rem;
         margin-bottom: 1rem;
         padding: 0.5rem 0;
+        align-items: center;
     }
 
     .content {

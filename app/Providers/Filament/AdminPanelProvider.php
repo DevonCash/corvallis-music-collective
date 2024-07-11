@@ -27,6 +27,7 @@ class AdminPanelProvider extends PanelProvider
             ->id("admin")
             ->path("admin")
             ->login()
+            ->passwordReset()
             ->unsavedChangesAlerts()
             ->colors([
                 "primary" => Color::Amber,
@@ -59,6 +60,9 @@ class AdminPanelProvider extends PanelProvider
                 DisableBladeIconComponents::class,
                 DispatchServingFilamentEvent::class,
             ])
+            ->plugin(
+                \TomatoPHP\FilamentMediaManager\FilamentMediaManagerPlugin::make()
+            )
             ->authMiddleware([Authenticate::class])
             ->viteTheme("resources/css/filament/admin/theme.css");
     }

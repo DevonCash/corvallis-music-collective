@@ -25,6 +25,16 @@
     --cmc-blue: #00859b;
     --cmc-yellow: #ffb500;
     --cmc-red: #f84d13;
+
+    --cmc-stripe: linear-gradient(
+        to bottom,
+        var(--cmc-blue) 0%,
+        var(--cmc-blue) 33%,
+        var(--cmc-yellow) 33%,
+        var(--cmc-yellow) 66%,
+        var(--cmc-red) 66%,
+        var(--cmc-red) 100%
+    );
 }
 html {
     font-size: 18px;

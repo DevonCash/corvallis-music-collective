@@ -133,7 +133,15 @@ class EventResource extends Resource
             ->filters([
                 //
             ])
-            ->actions([Tables\Actions\EditAction::make()])
+            ->actions([
+                Tables\Actions\EditAction::make(),
+                Tables\Actions\Action::make("duplicate")
+                    ->label("Duplicate")
+                    ->icon("heroicon-o-document-duplicate")
+                    ->url(
+                        fn($record) => "/admin/events/create?from=$record->id"
+                    ),
+            ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
                     Tables\Actions\DeleteBulkAction::make(),

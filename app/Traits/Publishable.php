@@ -7,11 +7,13 @@ trait Publishable
     function publish()
     {
         $this->published_at = now();
+        $this->save();
     }
 
     function unpublish()
     {
         $this->published_at = null;
+        $this->save();
     }
 
     function isPublished()

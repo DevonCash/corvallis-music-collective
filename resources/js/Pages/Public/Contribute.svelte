@@ -54,6 +54,11 @@
                     >events page</a
                 > to see what's happening in the community.
             </p>
+            <p>
+                If you're playing or attending a local show, please consider
+                <a use:inertia href="/events/submit">submitting it</a> to the community
+                calendar!
+            </p>
         </section>
         <section>
             <h2><a href="/contribute/volunteer" use:inertia>Volunteer</a></h2>

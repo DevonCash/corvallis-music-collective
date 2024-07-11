@@ -65,8 +65,8 @@
                             {@const first = byDay[day.day][0]}
                             <a
                                 class="day"
-                                class:secondary={today.compare(day) === 0}
-                                class:outline={today.compare(day) > 0}
+                                class:outline={today.compare(day) === 0}
+                                class:secondary={today.compare(day) > 0}
                                 role="button"
                                 href="#{first.id}"
                             >

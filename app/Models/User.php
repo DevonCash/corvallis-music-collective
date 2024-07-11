@@ -4,10 +4,10 @@ namespace App\Models;
 
 use App\Traits\Publishable;
 use Illuminate\Notifications\Notifiable;
+use Filament\Models\Contracts\FilamentUser;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
-use Filament\Models\Contracts\FilamentUser;
 
 class User extends Authenticatable implements FilamentUser
 {
@@ -20,14 +20,14 @@ class User extends Authenticatable implements FilamentUser
      *
      * @var array<int, string>
      */
-    protected $fillable = ["email", "password", "name"];
+    protected $fillable = ['email', 'password', 'name'];
 
     /**
      * The attributes that should be hidden for serialization.
      *
      * @var array<int, string>
      */
-    protected $hidden = ["password", "remember_token"];
+    protected $hidden = ['password', 'remember_token'];
 
     /**
      * Get the attributes that should be cast.
@@ -37,19 +37,9 @@ class User extends Authenticatable implements FilamentUser
     protected function casts(): array
     {
         return [
-            "email_verified_at" => "datetime",
-            "password" => "hashed",
-            "links" => "array",
+            'email_verified_at' => 'datetime',
+            'password' => 'hashed',
         ];
-    }
-
-    public function canAccessPanel(\Filament\Panel $panel): bool
-    {
-        if ($panel->getId() == "admin") {
-            return $this->hasVerifiedEmail() &&
-                str_ends_with($this->email, "@corvmc.org");
-        }
-        return false;
     }
 
     /**
@@ -59,7 +49,7 @@ class User extends Authenticatable implements FilamentUser
      */
     public function bands()
     {
-        return $this->belongsToMany(Band::class, "user_bands");
+        return $this->belongsToMany(Band::class, 'user_bands');
     }
 
     /**
@@ -79,6 +69,15 @@ class User extends Authenticatable implements FilamentUser
      */
     public function memberships()
     {
-        return $this->hasOne(Membership::class, "user_id");
+        return $this->hasOne(Membership::class, 'user_id');
+    }
+
+    public function canAccessPanel(\Filament\Panel $panel): bool
+    {
+        if ($panel->getId() == 'admin') {
+            return $this->hasVerifiedEmail() &&
+                str_ends_with($this->email, '@corvmc.org');
+        }
+        return false;
     }
 }
