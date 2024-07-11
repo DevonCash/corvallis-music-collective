@@ -64,6 +64,7 @@ class UserResource extends Resource
             ->filters([
                 //
             ])
+
             ->actions([
                 Tables\Actions\Action::make("reset-password")
                     ->icon("heroicon-o-lock-closed")
