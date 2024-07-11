@@ -42,17 +42,20 @@
         <ul>
             <li><a use:inertia href="/">Home</a></li>
         </ul>
-        <ul>
-            <li><a use:inertia href="/posts">News</a></li>
-        </ul>
+
         <ul>
             <li><a use:inertia href="/events">Events</a></li>
             <li>
                 <a use:inertia href="/events/submit">Submit Event</a>
             </li>
             <li>
-                <a use:inertia href="/events/community-events">Events</a>
+                <a use:inertia href="/events/community-events"
+                    >Submission Guidelines</a
+                >
             </li>
+        </ul>
+        <ul>
+            <li><a use:inertia href="/posts">Articles</a></li>
         </ul>
         <ul>
             <li><a use:inertia href="/contribute">Contribute</a></li>
@@ -162,7 +165,7 @@
     footer {
         display: flex;
         justify-content: space-between;
-        align-items: center;
+        align-items: flex-start;
     }
     footer img {
         position: relative;
@@ -176,12 +179,17 @@
         opacity: 0.5;
         margin: 0;
     }
+
+    footer nav {
+        display: grid;
+        grid-template-columns: repeat(5, 1fr);
+        margin: 0 2rem;
+    }
     footer nav ul {
         flex-direction: column;
         align-items: flex-start;
     }
     footer nav :global(li) {
         padding: 0.5rem 1rem;
-        white-space: nowrap;
     }
 </style>
