@@ -10,48 +10,30 @@
 </script>
 
 {@debug event}
-<article>
-    <figure class:loading={loadingImage} style="--img: url({event.poster})">
-        <img
-            on:loadeddata={() => (loadingImage = false)}
-            src={event.poster}
-            alt="Poster for {event.name}"
-        />
-    </figure>
-    <footer>
-        <hgroup>
+<a href="/events/{event.id}" aria-label={event.name}>
+    <article>
+        <figure class:loading={loadingImage} style="--img: url({event.poster})">
+            <img
+                on:loadeddata={() => (loadingImage = false)}
+                src={event.poster}
+                alt="Poster for {event.name}"
+            />
+            <figcaption style="display: none;">
+                Poster for {event.name}
+            </figcaption>
+        </figure>
+        <footer>
             <h4>{event.name}</h4>
-            <time datetime={event.startTime}>
-                <Icon icon="mdi:calendar" />
-                <strong>
-                    {new Date(event.start_time).toLocaleDateString(undefined, {
-                        month: "long",
-                        day: "numeric",
-                    })}
-                </strong>
-                <span style="text-align: right;"
-                    >{new Date(event.start_time).toLocaleTimeString(undefined, {
-                        hour: "numeric",
-                        minute: "numeric",
-                        ampm: "short",
-                    })}</span
-                >
-            </time>
-        </hgroup>
-
-        <nav style="justify-content: center">
-            <ul>
-                <li>
-                    <a href="/events/{event.id}" class="outline" use:inertia
-                        >View Details</a
-                    >
-                </li>
-            </ul>
-        </nav>
-    </footer>
-</article>
+        </footer>
+    </article>
+</a>
 
 <style>
+    a:has(article) {
+        text-decoration: none;
+        color: inherit;
+    }
+
     img {
         height: 100%;
         margin: auto;
@@ -87,6 +69,7 @@
         padding: 0;
         display: flex;
         flex-direction: column;
+        margin: 0;
     }
     article:hover {
         transform: scale(1.05);
@@ -94,6 +77,7 @@
     }
 
     footer {
+        text-align: center;
         position: relative;
         margin: 0;
     }
@@ -117,17 +101,10 @@
     }
 
     h4 {
+        color: var(--cmc-blue);
+        margin: 0;
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
-    }
-    nav li {
-        padding: 0;
-    }
-
-    footer time {
-        display: flex;
-        align-items: center;
-        gap: 0.5rem;
     }
 </style>

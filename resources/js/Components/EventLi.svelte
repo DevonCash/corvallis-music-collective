@@ -22,9 +22,22 @@
 <li class="event">
     <figure>
         <img src={event.poster} alt="Poster for {event.name}" />
+        <figcaption style="display: none;">Poster for {event.name}</figcaption>
     </figure>
     <div class="content">
-        <h2 id={event.id}>{event.name}</h2>
+        <hgroup>
+            <a use:inertia href="/events/{event.id}"
+                ><h2 id={event.id}>{event.name}</h2></a
+            >
+            <div class="tags">
+                {#each event.tags as tag}
+                    <a use:inertia href="/events?tag={tag}">{tag}</a>
+                {/each}
+            </div>
+        </hgroup>
+        <div class="desc">
+            {@html event.description}
+        </div>
         <div class="time">
             <Icon icon="mdi:calendar" />
             <time datetime={event.start_time}>
@@ -37,42 +50,70 @@
                 </time>
             {/if}
         </div>
-        <div class="venue">
-            <Icon icon="mdi:map-marker" />
-            <span>{event.venue.name}</span>
-        </div>
-        <div class="bands">
-            <Icon icon="mdi:account-music" />
-            <ul>
-                {#each event.bands as band}
-                    <li>
-                        <a use:inertia href="/bands/{band.id}">{band.name}</a>
-                    </li>
-                {/each}
-            </ul>
-        </div>
-        <nav>
-            <ul>
-                <li><a href="/events/{event.id}">Full Details</a></li>
-                <li><a href="#">Get Tickets</a></li>
-            </ul>
-        </nav>
+        {#if event.venue}
+            <div class="venue">
+                <Icon icon="mdi:map-marker" />
+                {#if event.venue.link}
+                    <a target="_blank" href={event.venue.link}
+                        >{event.venue?.name}
+                        <Icon icon="mdi:external-link" /></a
+                    >
+                {:else}
+                    {event.venue?.name}
+                {/if}
+            </div>
+        {/if}
+        {#if event.bands.length > 0}
+            <div class="bands">
+                <Icon icon="mdi:account-music" />
+                <ul>
+                    {#each event.bands as band}
+                        <li>
+                            <a use:inertia href="/bands/{band.id}"
+                                >{band.name}</a
+                            >
+                        </li>
+                    {/each}
+                </ul>
+            </div>
+        {/if}
+
+        {#if event.links?.length > 0}
+            <nav>
+                <ul>
+                    {#each event.links as link}
+                        <li><a href={link.url}>{link.name}</a></li>
+                    {/each}
+                </ul>
+            </nav>
+        {/if}
     </div>
 </li>
 
 <style>
+    figure {
+        flex: 0 0 auto;
+    }
+    img {
+        height: 100%;
+    }
+
+    .desc {
+        flex: 1 1 auto;
+    }
     li.event {
         display: flex;
         gap: 1rem;
         margin-bottom: 1rem;
-        align-items: center;
         padding: 0.5rem 0;
     }
 
     .content {
-        flex: auto;
         padding: 1rem 0;
-        border-bottom: 1px solid currentColor;
+        border-bottom: 4px solid var(--cmc-yellow);
+
+        display: flex;
+        flex-direction: column;
     }
 
     figure {
@@ -94,6 +135,10 @@
     }
     .bands li:not(:last-child) a::after {
         content: ",";
+    }
+
+    hgroup a h2 {
+        margin-bottom: 0;
     }
 
     @media (max-width: 768px) {

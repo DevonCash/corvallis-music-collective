@@ -4,16 +4,16 @@ namespace App\Filament\Resources\VenueResource\Pages;
 
 use App\Filament\Resources\VenueResource;
 use Filament\Actions;
-use Filament\Resources\Pages\EditRecord;
+use Filament\Resources\Pages\ManageRecords;
 
-class EditVenue extends EditRecord
+class ManageVenues extends ManageRecords
 {
     protected static string $resource = VenueResource::class;
 
     protected function getHeaderActions(): array
     {
         return [
-            Actions\DeleteAction::make(),
+            Actions\CreateAction::make(),
         ];
     }
 }

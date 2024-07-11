@@ -10,6 +10,18 @@ class EditEvent extends EditRecord
 {
     protected static string $resource = EventResource::class;
 
+    protected function getFormActions(): array
+    {
+        return [
+            $this->getSaveFormAction()->extraAttributes([
+                "style" => "display:none",
+            ]),
+            $this->getCancelFormAction()->extraAttributes([
+                "style" => "display:none",
+            ]),
+        ];
+    }
+
     protected function getHeaderActions(): array
     {
         return [
@@ -20,6 +32,7 @@ class EditEvent extends EditRecord
                         ? "Unpublish"
                         : "Publish"
                 )
+                ->color("info")
                 ->icon(
                     fn($record) => $record->isPublished()
                         ? "heroicon-o-eye-slash"
@@ -32,6 +45,7 @@ class EditEvent extends EditRecord
                         $record->publish();
                     }
                 }),
+            Actions\Action::make("save")->label("Save changes")->action("save"),
         ];
     }
 }

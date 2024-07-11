@@ -6,20 +6,12 @@
 );
 @import url(https://fonts.bunny.net/css?family=lexend:200,700);
 
-@media only screen and (prefers-color-scheme: dark) {
-    :root:not([data-theme]) {
-        --pico-background-color: #1c1a1a;
-    }
-}
-
 @media only screen and (prefers-color-scheme: light) {
     h1,
     h2,
-    h3 {
+    h3,
+    h4 {
         color: var(--cmc-blue);
-    }
-    :global(:not([data-theme]) #app > header:first-of-type) {
-        background: #ffe2cd;
     }
 }
 :root {

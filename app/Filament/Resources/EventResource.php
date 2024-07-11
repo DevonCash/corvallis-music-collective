@@ -13,6 +13,7 @@ use Filament\Forms\Components;
 use Awcodes\TableRepeater\Components\TableRepeater;
 use Awcodes\TableRepeater\Header;
 use Filament\Forms\Components\SpatieMediaLibraryFileUpload;
+use Filament\Support\Enums\Alignment;
 
 class EventResource extends Resource
 {
@@ -24,10 +25,18 @@ class EventResource extends Resource
     {
         return $form->schema([
             Components\Split::make([
-                Components\Section::make([])->schema([
+                Components\Grid::make([])->schema([
                     Components\TextInput::make("name")
                         ->required()
                         ->maxLength(255),
+                    Components\Select::make("venue_id")
+                        ->relationship("venue", "name")
+                        ->createOptionForm([
+                            Components\TextInput::make("name")
+                                ->required()
+                                ->maxLength(255),
+                            Components\TextInput::make("link")->maxLength(255),
+                        ]),
                     Components\RichEditor::make("description"),
                     TableRepeater::make("links")
                         ->headers([
@@ -61,11 +70,15 @@ class EventResource extends Resource
                             ->responsiveImages()
                             ->disk("s3"),
                         Components\Section::make()->schema([
-                            Components\DateTimePicker::make("door_time"),
                             Components\DateTimePicker::make(
-                                "start_time"
-                            )->required(),
-                            Components\DateTimePicker::make("end_time"),
+                                "door_time"
+                            )->seconds(false),
+                            Components\DateTimePicker::make("start_time")
+                                ->seconds(false)
+                                ->required(),
+                            Components\DateTimePicker::make(
+                                "end_time"
+                            )->seconds(false),
                         ]),
                         Components\TagsInput::make("tags")->grow(false),
                     ])
@@ -81,21 +94,33 @@ class EventResource extends Resource
         return $table
             ->columns([
                 Tables\Columns\TextColumn::make("name")->searchable(),
-                Tables\Columns\TextColumn::make("door_time")
-                    ->dateTime()
-                    ->sortable(),
                 Tables\Columns\TextColumn::make("start_time")
-                    ->dateTime()
+                    ->dateTime("D, M j, Y g:i A")
                     ->sortable(),
-                Tables\Columns\TextColumn::make("end_time")
-                    ->dateTime()
-                    ->sortable(),
-                Tables\Columns\TextColumn::make("venue_id")
-                    ->numeric()
-                    ->sortable(),
-                Tables\Columns\TextColumn::make("published_at")
-                    ->dateTime()
-                    ->sortable(),
+                Tables\Columns\IconColumn::make("published_at")
+                    ->label("Published")
+                    ->alignment(Alignment::Center)
+                    ->tooltip(
+                        fn($record) => $record->published_at ?? "Not Scheduled"
+                    )
+                    ->icon(function ($record) {
+                        if (empty($record->published_at)) {
+                            return "heroicon-o-pencil-square";
+                        }
+                        if ($record->published_at->isFuture()) {
+                            return "heroicon-o-calendar";
+                        }
+                        return "heroicon-o-check-circle";
+                    })
+                    ->color(function ($record) {
+                        if (empty($record->published_at)) {
+                            return "gray";
+                        }
+                        if ($record->published_at->isFuture()) {
+                            return "info";
+                        }
+                        return "success";
+                    }),
                 Tables\Columns\TextColumn::make("created_at")
                     ->dateTime()
                     ->sortable()

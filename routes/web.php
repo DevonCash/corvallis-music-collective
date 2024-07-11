@@ -24,13 +24,22 @@ Route::get("/", function () {
     ]);
 });
 
-Route::get("/donate", function () {
+Route::get("contribute/donate", function () {
     return inertia("Public/Donate");
 });
 
-Route::get("/volunteer", function () {
+Route::get("contribute/volunteer", function () {
     return inertia("Public/Volunteer");
 });
+
+Route::get("contribute", function () {
+    return inertia("Public/Contribute");
+});
+
+Route::get(
+    "events/community-events",
+    fn() => inertia("Public/CommunityEventGuidelines")
+);
 
 Controllers\PostController::routes();
 Controllers\EventController::routes();

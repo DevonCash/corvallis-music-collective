@@ -3,21 +3,18 @@
 namespace App\Filament\Resources;
 
 use App\Filament\Resources\VenueResource\Pages;
-use App\Filament\Resources\VenueResource\RelationManagers;
 use App\Models\Venue;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
-use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\SoftDeletingScope;
 
 class VenueResource extends Resource
 {
     protected static ?string $model = Venue::class;
 
-    protected static ?string $navigationIcon = "heroicon-o-building-storefront";
+    protected static ?string $navigationIcon = "heroicon-o-rectangle-stack";
 
     public static function form(Form $form): Form
     {
@@ -25,10 +22,7 @@ class VenueResource extends Resource
             Forms\Components\TextInput::make("name")
                 ->required()
                 ->maxLength(255),
-            Forms\Components\Textarea::make("description")
-                ->required()
-                ->columnSpanFull(),
-            Forms\Components\TextInput::make("location")->required(),
+            Forms\Components\TextInput::make("link")->maxLength(255),
         ]);
     }
 
@@ -45,11 +39,15 @@ class VenueResource extends Resource
                     ->dateTime()
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
+                Tables\Columns\TextColumn::make("link")->searchable(),
             ])
             ->filters([
                 //
             ])
-            ->actions([Tables\Actions\EditAction::make()])
+            ->actions([
+                Tables\Actions\EditAction::make(),
+                Tables\Actions\DeleteAction::make(),
+            ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
                     Tables\Actions\DeleteBulkAction::make(),
@@ -57,19 +55,10 @@ class VenueResource extends Resource
             ]);
     }
 
-    public static function getRelations(): array
-    {
-        return [
-                //
-            ];
-    }
-
     public static function getPages(): array
     {
         return [
-            "index" => Pages\ListVenues::route("/"),
-            "create" => Pages\CreateVenue::route("/create"),
-            "edit" => Pages\EditVenue::route("/{record}/edit"),
+            "index" => Pages\ManageVenues::route("/"),
         ];
     }
 }

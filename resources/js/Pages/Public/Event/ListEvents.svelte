@@ -4,7 +4,9 @@
     import { inertia } from "@inertiajs/svelte";
     import { groupBy } from "lodash";
     import Calendar from "../../../Components/Calendar.svelte";
+    import pluralize from "pluralize";
 
+    export let tag;
     export let month;
     export let events = [];
 
@@ -25,10 +27,13 @@
         nextMonth = new Date(thisMonth.getFullYear(), thisMonth.getMonth() + 1);
     }
 
-    function getLink(date) {
+    function getLink(date, tags = true) {
         if (!date) return;
         const year = date.getFullYear();
         const month = date.getMonth() + 1;
+        if (tags && tag) {
+            return `/events?month=${year}-${month}&tag=${tag}`;
+        }
         return `/events?month=${year}-${month}`;
     }
 
@@ -46,9 +51,15 @@
     <header>
         <hgroup>
             <h1>
-                Events <time datetime={thisMonth.toISOString()}
+                {tag ? pluralize(tag) : "Events"}
+                <time datetime={thisMonth.toISOString()}
                     >{format(thisMonth)}</time
                 >
+                {#if tag}
+                    <a use:inertia href={getLink(thisMonth, false)}
+                        >Clear Filter</a
+                    >
+                {/if}
             </h1>
             <nav>
                 <ul>
@@ -75,6 +86,16 @@
                 1,
             )}
         />
+        <article>
+            <h5>Your event here?</h5>
+            <p>
+                Submit local events to our community calendar! We'll review and
+                publish them if they meet our <a href="/events/community-events"
+                    >guidelines</a
+                >.
+            </p>
+            <a use:inertia href="/events/submit">Submit Event</a>
+        </article>
     </aside>
 
     <div class="content">
@@ -94,13 +115,20 @@
                 {/each}
             </section>
         {/if}
-        <!-- {#if events?.length === 0}
-            <p>No events found for {format(thisMonth)}</p>
-        {/if} -->
+        {#if events?.length === 0}
+            <div class="empty">
+                <p>No events found for {format(thisMonth)}</p>
+            </div>
+        {/if}
     </div>
 </main>
 
 <style>
+    h1 a {
+        font-size: medium;
+        font-weight: normal;
+    }
+
     h1 time {
         color: var(--pico-primary);
         white-space: nowrap;
@@ -109,7 +137,7 @@
     main {
         max-width: unset !important;
         display: grid;
-        gap: 1rem;
+        gap: 0 4rem;
         padding: 1.5rem 2.5rem !important;
         grid-template-columns: 1fr min-content;
         grid-template-areas: "header aside" "section aside" "section aside";
@@ -117,6 +145,10 @@
 
     header {
         grid-area: header;
+    }
+
+    header nav li {
+        padding: 0.5rem;
     }
     .content {
         grid-area: section;
@@ -126,9 +158,13 @@
         margin-bottom: 1rem;
     }
 
-    aside :global(table) {
+    aside {
         position: sticky;
         top: 1rem;
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+        align-items: center;
     }
 
     @media (max-width: 1024px) {
@@ -141,10 +177,15 @@
         aside {
             grid-row: unset;
         }
-        aside :global(table) {
+        aside {
             position: static;
             margin: auto;
             font-size: larger;
         }
+    }
+
+    .empty {
+        text-align: center;
+        padding: 1rem;
     }
 </style>

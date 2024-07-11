@@ -6,3 +6,7 @@
 .fixed-size > .grid-cols-\[--cols-default\] {
     grid-template-columns: 20rem;
 }
+
+trix-editor {
+    min-height: 50vh !important;
+}

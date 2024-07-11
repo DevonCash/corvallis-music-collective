@@ -21,6 +21,7 @@
     "@tailwindcss/typography": "^0.5.13",
     "autoprefixer": "^10.4.19",
     "lodash": "^4.17.21",
+    "pluralize": "^8.0.0",
     "postcss": "^8.4.39",
     "postcss-nesting": "^12.1.5",
     "svelte-headlessui": "^0.0.42",

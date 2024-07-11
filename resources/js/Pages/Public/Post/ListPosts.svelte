@@ -7,7 +7,7 @@
 
 <main>
     <hgroup>
-        <h1>Posts</h1>
+        <h1>Articles</h1>
     </hgroup>
     <section>
         {#each posts.data as post}

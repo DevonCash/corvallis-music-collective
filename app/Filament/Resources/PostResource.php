@@ -24,34 +24,29 @@ class PostResource extends Resource
 
     public static function form(Form $form): Form
     {
-        return $form->schema([
-            Components\Split::make([
-                Components\Section::make([
-                    Components\TextInput::make("title")
-                        ->required()
-                        ->maxLength(255),
-                    Components\RichEditor::make("content")->required(),
+        return $form->columns(2)->schema([
+            Components\TextInput::make("title")->required()->maxLength(255),
+            Components\TagsInput::make("tags"),
+            Components\RichEditor::make("content")
+                ->columnSpanFull()
+                ->fileAttachmentsDisk("s3")
+                ->fileAttachmentsDirectory("attachments")
+                ->required(),
+            Components\Section::make("Meta")
+                ->collapsed()
+                ->schema([
+                    TableRepeater::make("authors")
+                        ->relationship()
+                        ->orderColumn("order")
+                        ->headers([Header::make("name")])
+                        ->schema([
+                            Components\Select::make("user_id")
+                                ->relationship("authors", "name")
+                                ->required(),
+                            Components\TextInput::make("name")->readOnly(),
+                        ])
+                        ->streamlined(),
                 ]),
-                Components\Grid::make()
-                    ->columns(1)
-                    ->extraAttributes(["class" => "fixed-size"])
-
-                    ->schema([
-                        Components\TagsInput::make("tags"),
-                        TableRepeater::make("authors")
-                            ->relationship()
-                            ->orderColumn("order")
-                            ->headers([Header::make("name")])
-                            ->schema([
-                                Components\Select::make("user_id")
-                                    ->relationship("authors", "name")
-                                    ->required(),
-                                Components\TextInput::make("name")->readOnly(),
-                            ])
-                            ->streamlined(),
-                    ])
-                    ->grow(false),
-            ])->columnSpanFull(),
         ]);
     }
 
