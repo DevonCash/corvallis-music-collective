@@ -83,6 +83,7 @@ class UserResource extends Resource
                             $record
                         );
                         $record->notify($notification);
+                        ray("Sent", $notification);
                     }),
                 Tables\Actions\EditAction::make(),
                 Tables\Actions\DeleteAction::make(),
