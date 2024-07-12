@@ -28,6 +28,8 @@ class AdminPanelProvider extends PanelProvider
             ->path("admin")
             ->login()
             ->passwordReset()
+            ->brandLogo(asset("logo.svg"))
+            ->emailVerification()
             ->unsavedChangesAlerts()
             ->colors([
                 "primary" => Color::Amber,
