@@ -52,7 +52,7 @@
     }
 
     @media (max-width: 768px) {
-        main {
+        div.grid {
             grid-template-columns: 1fr;
         }
     }
