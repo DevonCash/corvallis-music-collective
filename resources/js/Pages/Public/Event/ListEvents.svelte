@@ -135,7 +135,7 @@
     }
 
     main {
-        max-width: unset !important;
+        max-width: 1200px !important;
         display: grid;
         gap: 0 4rem;
         padding: 1.5rem 2.5rem !important;

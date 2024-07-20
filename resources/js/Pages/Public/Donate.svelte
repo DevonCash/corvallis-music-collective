@@ -23,9 +23,8 @@
                     helping us reach our goals.
                 </p>
                 <p>
-                    Our 501(c)(3) status is currently pending. We will provide
-                    receipts for all donations through GiveButter, and we will
-                    update donors when we receive our status.
+                    Corvallis Music Collective is a 501(c)(3) non-profit, so
+                    your donation is tax-deductable!
                 </p>
                 <p>
                     If you would like to contribute in other ways, check out our <a
