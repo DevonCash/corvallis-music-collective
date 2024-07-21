@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Filament\Resources\BandResource\RelationManagers;
+namespace App\Filament\Admin\Resources\BandResource\RelationManagers;
 
 use Filament\Forms;
 use Filament\Forms\Form;

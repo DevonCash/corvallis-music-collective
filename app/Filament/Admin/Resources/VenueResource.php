@@ -1,8 +1,8 @@
 <?php
 
-namespace App\Filament\Resources;
+namespace App\Filament\Admin\Resources;
 
-use App\Filament\Resources\VenueResource\Pages;
+use App\Filament\Admin\Resources\VenueResource\Pages;
 use App\Models\Venue;
 use Filament\Forms;
 use Filament\Forms\Form;

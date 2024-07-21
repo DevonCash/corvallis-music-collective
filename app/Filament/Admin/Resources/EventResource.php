@@ -1,8 +1,8 @@
 <?php
 
-namespace App\Filament\Resources;
+namespace App\Filament\Admin\Resources;
 
-use App\Filament\Resources\EventResource\Pages;
+use App\Filament\Admin\Resources\EventResource\Pages;
 use App\Models\Event;
 use Filament\Forms;
 use Filament\Forms\Form;

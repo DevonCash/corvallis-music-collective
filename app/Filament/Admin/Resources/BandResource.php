@@ -1,19 +1,14 @@
 <?php
 
-namespace App\Filament\Resources;
+namespace App\Filament\Admin\Resources;
 
-use App\Filament\Resources\BandResource\Pages;
-use App\Filament\Resources\BandResource\RelationManagers;
+use App\Filament\Admin\Resources\BandResource\Pages;
 use App\Models\Band;
-use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Forms\Components;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
-use Filament\Actions\Action;
-use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\SoftDeletingScope;
 use Awcodes\TableRepeater\Components\TableRepeater;
 use Awcodes\TableRepeater\Header;
 

@@ -1,8 +1,8 @@
 <?php
 
-namespace App\Filament\Resources\BandResource\Pages;
+namespace App\Filament\Admin\Resources\BandResource\Pages;
 
-use App\Filament\Resources\BandResource;
+use App\Filament\Admin\Resources\BandResource;
 use Filament\Actions;
 use Filament\Resources\Pages\CreateRecord;
 

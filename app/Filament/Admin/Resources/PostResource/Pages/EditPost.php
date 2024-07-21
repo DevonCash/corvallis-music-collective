@@ -1,14 +1,14 @@
 <?php
 
-namespace App\Filament\Resources\EventResource\Pages;
+namespace App\Filament\Admin\Resources\PostResource\Pages;
 
-use App\Filament\Resources\EventResource;
+use App\Filament\Admin\Resources\PostResource;
 use Filament\Actions;
 use Filament\Resources\Pages\EditRecord;
 
-class EditEvent extends EditRecord
+class EditPost extends EditRecord
 {
-    protected static string $resource = EventResource::class;
+    protected static string $resource = PostResource::class;
 
     protected function getFormActions(): array
     {
@@ -45,7 +45,7 @@ class EditEvent extends EditRecord
                         $record->publish();
                     }
                 }),
-            Actions\Action::make("save")->label("Save changes")->action("save"),
+            Actions\Action::make("save")->label("Save")->action("save"),
         ];
     }
 }

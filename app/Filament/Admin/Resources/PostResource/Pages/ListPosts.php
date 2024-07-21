@@ -1,9 +1,9 @@
 <?php
 
-namespace App\Filament\Resources\PostResource\Pages;
+namespace App\Filament\Admin\Resources\PostResource\Pages;
 
-use App\Filament\Resources\PostResource;
-use App\Filament\Resources\UserResource;
+use App\Filament\Admin\Resources\PostResource;
+use App\Filament\Admin\Resources\UserResource;
 use Filament\Actions;
 use Filament\Resources\Pages\ListRecords;
 use App\Models\Post;

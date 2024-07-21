@@ -5,6 +5,7 @@ namespace App\Providers\Filament;
 use Filament\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\DisableBladeIconComponents;
 use Filament\Http\Middleware\DispatchServingFilamentEvent;
+use Filament\Navigation\NavigationItem;
 use Filament\Pages;
 use Filament\Panel;
 use Filament\PanelProvider;
@@ -18,34 +19,29 @@ use Illuminate\Session\Middleware\AuthenticateSession;
 use Illuminate\Session\Middleware\StartSession;
 use Illuminate\View\Middleware\ShareErrorsFromSession;
 
-class AdminPanelProvider extends PanelProvider
+class MemberPanelProvider extends PanelProvider
 {
     public function panel(Panel $panel): Panel
     {
         return $panel
-            ->default()
-            ->id("admin")
-            ->path("admin")
-            ->login()
-            ->passwordReset()
-            ->brandLogo(asset("logo.svg"))
-            ->emailVerification()
-            ->unsavedChangesAlerts()
+            ->id("member")
+            ->path("member")
+            ->topbar(false)
             ->colors([
                 "primary" => Color::Amber,
             ])
             ->discoverResources(
-                in: app_path("Filament/Admin/Resources"),
-                for: "App\\Filament\\Admin\\Resources"
+                in: app_path("Filament/Member/Resources"),
+                for: "App\\Filament\\Member\\Resources"
             )
             ->discoverPages(
-                in: app_path("Filament/Admin/Pages"),
-                for: "App\\Filament\\Pages"
+                in: app_path("Filament/Member/Pages"),
+                for: "App\\Filament\\Member\\Pages"
             )
             ->pages([Pages\Dashboard::class])
             ->discoverWidgets(
-                in: app_path("Filament/Admin/Widgets"),
-                for: "App\\Filament\\Admin\\Widgets"
+                in: app_path("Filament/Member/Widgets"),
+                for: "App\\Filament\\Member\\Widgets"
             )
             ->widgets([
                 Widgets\AccountWidget::class,
@@ -62,10 +58,6 @@ class AdminPanelProvider extends PanelProvider
                 DisableBladeIconComponents::class,
                 DispatchServingFilamentEvent::class,
             ])
-            ->plugin(
-                \TomatoPHP\FilamentMediaManager\FilamentMediaManagerPlugin::make()
-            )
-            ->authMiddleware([Authenticate::class])
-            ->viteTheme("resources/css/filament/admin/theme.css");
+            ->authMiddleware([Authenticate::class]);
     }
 }

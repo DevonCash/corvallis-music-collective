@@ -1,10 +1,9 @@
 <?php
 
-namespace App\Filament\Resources\EventResource\Pages;
+namespace App\Filament\Admin\Resources\EventResource\Pages;
 
-use App\Filament\Resources\EventResource;
+use App\Filament\Admin\Resources\EventResource;
 use Filament\Actions;
-use App\Models\Event;
 use Filament\Resources\Pages\CreateRecord;
 use Livewire\Attributes\Url;
 
