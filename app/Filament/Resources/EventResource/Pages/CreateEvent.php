@@ -4,6 +4,7 @@ namespace App\Filament\Resources\EventResource\Pages;
 
 use App\Filament\Resources\EventResource;
 use Filament\Actions;
+use App\Models\Event;
 use Filament\Resources\Pages\CreateRecord;
 use Livewire\Attributes\Url;
 
@@ -28,7 +29,13 @@ class CreateEvent extends CreateRecord
 
     protected function getHeaderActions(): array
     {
+        return [];
+    }
+
+    protected function getFormActions(): array
+    {
         return [
+            $this->getCreateFormAction(),
             Actions\Action::make("create-publish")
                 ->label("Create & Publish")
                 ->color("info")
@@ -36,18 +43,6 @@ class CreateEvent extends CreateRecord
                 ->action(function ($record) {
                     $record->publish();
                 }),
-            Actions\CreateAction::make()
-                ->label("Create")
-                ->icon("heroicon-o-plus"),
-        ];
-    }
-
-    protected function getFormActions(): array
-    {
-        return [
-            $this->getCreateFormAction()->extraAttributes([
-                "style" => "display:none",
-            ]),
             $this->getCancelFormAction()->extraAttributes([
                 "style" => "display:none",
             ]),
