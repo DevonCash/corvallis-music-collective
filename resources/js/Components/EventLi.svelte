@@ -78,6 +78,19 @@
             </div>
         {/if}
 
+        {#if event.price?.length > 0}
+            <div>
+                <Icon icon="mdi:ticket" />
+                <strong>Tickets</strong>
+                <ul>
+                    {#each event.price as { label, price }}
+                        <li>
+                            <strong>{label}</strong>: {price}
+                        </li>
+                    {/each}
+                </ul>
+            </div>
+        {/if}
         {#if event.links?.length > 0}
             <nav>
                 <ul>
