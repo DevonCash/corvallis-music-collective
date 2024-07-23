@@ -14,13 +14,13 @@ return [
     |
     */
 
-    "paths" => ["js/*", "sanctum/csrf-cookie"],
+    "paths" => ["/js/*", "sanctum/csrf-cookie"],
 
     "allowed_methods" => ["*"],
 
     "allowed_origins" => ["*"],
 
-    "allowed_origins_patterns" => ["https://corvmc.org/*"],
+    "allowed_origins_patterns" => [],
 
     "allowed_headers" => ["*"],
 
