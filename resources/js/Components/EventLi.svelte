@@ -26,43 +26,40 @@
     </figure>
     <div class="content">
         <hgroup>
-            <a use:inertia href="/events/{event.id}"
-                ><h2 id={event.id}>{event.name}</h2></a
-            >
-            <div class="tags">
-                {#each event.tags as tag}
-                    <a use:inertia href="/events?tag={tag}">{tag}</a>
-                {/each}
+            <div class="time" style="color:#e5771e;">
+                <time datetime={event.start_time}>
+                    <strong class="day">{format(event.start_time)}</strong>
+                    <span class="start">▪ {formatTime(event.start_time)}</span>
+                </time>
+                {#if event.end_time}
+                    - <time datetime={event.end_time}>
+                        <span class="end">{formatTime(event.end_time)}</span>
+                    </time>
+                {/if}
             </div>
+            <h2 id={event.id}>
+                <a use:inertia href="/events/{event.id}" style="color:inherit;"
+                    >{event.name}</a
+                >
+            </h2>
+            {#if event.venue}
+                <div class="venue">
+                    <Icon icon="mdi:alternate-email" />
+                    {#if event.venue.link}
+                        <a target="_blank" href={event.venue.link}
+                            >{event.venue?.name}
+                            <Icon icon="mdi:external-link" /></a
+                        >
+                    {:else}
+                        {event.venue?.name}
+                    {/if}
+                </div>
+            {/if}
         </hgroup>
         <section class="desc">
             {@html event.description}
         </section>
-        <div class="time">
-            <Icon icon="mdi:calendar" />
-            <time datetime={event.start_time}>
-                <strong class="day">{format(event.start_time)}</strong>
-                <span class="start">{formatTime(event.start_time)}</span>
-            </time>
-            {#if event.end_time}
-                - <time datetime={event.end_time}>
-                    <span class="end">{formatTime(event.end_time)}</span>
-                </time>
-            {/if}
-        </div>
-        {#if event.venue}
-            <div class="venue">
-                <Icon icon="mdi:map-marker" />
-                {#if event.venue.link}
-                    <a target="_blank" href={event.venue.link}
-                        >{event.venue?.name}
-                        <Icon icon="mdi:external-link" /></a
-                    >
-                {:else}
-                    {event.venue?.name}
-                {/if}
-            </div>
-        {/if}
+
         {#if event.bands.length > 0}
             <div class="bands">
                 <Icon icon="mdi:account-music" />
@@ -79,17 +76,14 @@
         {/if}
 
         {#if event.price?.length > 0}
-            <div>
-                <Icon icon="mdi:ticket" />
-                <strong>Tickets</strong>
-                <ul>
-                    {#each event.price as { label, price }}
-                        <li>
-                            <strong>{label}</strong>: {price}
-                        </li>
-                    {/each}
-                </ul>
-            </div>
+            <ul class="price">
+                {#each event.price as { label, price }}
+                    <li>
+                        <Icon icon="mdi:ticket" />
+                        <strong>{label}</strong>: {price}
+                    </li>
+                {/each}
+            </ul>
         {/if}
         {#if event.links?.length > 0}
             <nav>
@@ -100,6 +94,17 @@
                 </ul>
             </nav>
         {/if}
+        <div class="tags">
+            <Icon icon="mdi:hashtag" />
+            {#each event.tags as tag}
+                <a
+                    role="button"
+                    class="outline"
+                    use:inertia
+                    href="/events?tag={tag}">{tag}</a
+                >
+            {/each}
+        </div>
     </div>
 </li>
 
@@ -118,18 +123,21 @@
     }
     li.event {
         display: flex;
+        flex-direction: row-reverse;
+        align-items: stretch;
         gap: 1rem;
         margin-bottom: 1rem;
         padding: 0.5rem 0;
-        align-items: center;
+        border-bottom: 4px solid var(--cmc-yellow);
     }
 
     .content {
-        padding: 1rem 0;
-        border-bottom: 4px solid var(--cmc-yellow);
-
         display: flex;
         flex-direction: column;
+    }
+
+    .content section {
+        flex: 1 1 auto;
     }
 
     figure {
@@ -161,5 +169,32 @@
         li {
             flex-direction: column;
         }
+    }
+
+    .tags {
+        display: flex;
+        align-items: center;
+        gap: 0.5em;
+    }
+    .tags a[role="button"] {
+        font-size: smaller;
+        padding: 0.25rem 0.5rem;
+        margin: 0;
+    }
+
+    .event :global(.iconify) {
+        color: var(--cmc-blue);
+    }
+
+    ul.price {
+        padding: 0;
+        margin: 0.5rem 0;
+    }
+    .price li {
+        list-style: none;
+    }
+
+    .price li:not(:first-child) :global(.iconify) {
+        visibility: hidden;
     }
 </style>
