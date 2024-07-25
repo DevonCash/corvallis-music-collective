@@ -16,6 +16,6 @@ createInertiaApp({
     return page;
   },
   setup({ el, App, props }) {
-    new App({ target: el, props });
+    new App({ target: el, props, hydrate: true });
   },
 });
