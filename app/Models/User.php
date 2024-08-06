@@ -8,8 +8,9 @@ use Filament\Models\Contracts\FilamentUser;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
+use Filament\Models\Contracts\HasAvatar;
 
-class User extends Authenticatable implements FilamentUser
+class User extends Authenticatable implements FilamentUser, HasAvatar
 {
     use HasFactory;
     use Notifiable;
@@ -20,7 +21,7 @@ class User extends Authenticatable implements FilamentUser
      *
      * @var array<int, string>
      */
-    protected $fillable = ["email", "password", "name"];
+    protected $fillable = ["email", "password", "name", 'avatar_url'];
 
     /**
      * The attributes that should be hidden for serialization.
@@ -42,6 +43,10 @@ class User extends Authenticatable implements FilamentUser
         ];
     }
 
+    public function getFilamentAvatarUrl(): ?string
+    {
+        return $this->avatar_url ?? "https://unavatar.io/" . $this->email;
+    }
     /**
      * Get the bands.
      *
@@ -72,11 +77,15 @@ class User extends Authenticatable implements FilamentUser
         return $this->hasOne(Membership::class, "user_id");
     }
 
+    public function isAdmin(): bool
+    {
+        return $this->hasVerifiedEmail() && str_ends_with($this->email, '@corvmc.org');
+    }
+
     public function canAccessPanel(\Filament\Panel $panel): bool
     {
         if ($panel->getId() == "admin") {
-            return $this->hasVerifiedEmail() &&
-                str_ends_with($this->email, "@corvmc.org");
+            return $this->isAdmin();
         }
         return true;
     }

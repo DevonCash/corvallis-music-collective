@@ -17,9 +17,11 @@ use Illuminate\Routing\Middleware\SubstituteBindings;
 use Illuminate\Session\Middleware\AuthenticateSession;
 use Illuminate\Session\Middleware\StartSession;
 use Illuminate\View\Middleware\ShareErrorsFromSession;
+use App\Filament\Member\Resources;
 
 class AdminPanelProvider extends PanelProvider
 {
+
     public function panel(Panel $panel): Panel
     {
         return $panel
@@ -42,7 +44,10 @@ class AdminPanelProvider extends PanelProvider
                 in: app_path("Filament/Admin/Pages"),
                 for: "App\\Filament\\Pages"
             )
-            ->pages([Pages\Dashboard::class])
+            ->pages([
+                Pages\Dashboard::class,
+            ])
+
             ->discoverWidgets(
                 in: app_path("Filament/Admin/Widgets"),
                 for: "App\\Filament\\Admin\\Widgets"
@@ -62,9 +67,14 @@ class AdminPanelProvider extends PanelProvider
                 DisableBladeIconComponents::class,
                 DispatchServingFilamentEvent::class,
             ])
-            ->plugin(
-                \TomatoPHP\FilamentMediaManager\FilamentMediaManagerPlugin::make()
-            )
+            ->plugins([
+                \Awcodes\Curator\CuratorPlugin::make()
+                    ->label("Media")
+                    ->pluralLabel("Media")
+                    ->navigationIcon("heroicon-o-photo")
+                    ->navigationCountBadge()
+                    ->defaultListView("grid"),
+            ])
             ->authMiddleware([Authenticate::class])
             ->viteTheme("resources/css/filament/admin/theme.css");
     }

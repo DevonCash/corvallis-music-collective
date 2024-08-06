@@ -23,6 +23,9 @@
                         Donate
                     </a>
                 </li>
+                <li>
+                    <a href="/member/login">Join / Sign in</a>
+                </li>
             </ul>
         </nav>
     </hgroup>

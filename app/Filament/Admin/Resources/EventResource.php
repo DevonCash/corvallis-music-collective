@@ -4,6 +4,7 @@ namespace App\Filament\Admin\Resources;
 
 use App\Filament\Admin\Resources\EventResource\Pages;
 use App\Models\Event;
+use Awcodes\Curator\Components\Forms\CuratorPicker;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
@@ -65,10 +66,7 @@ class EventResource extends Resource
                     ->columns(1)
                     ->extraAttributes(["class" => "fixed-size"])
                     ->schema([
-                        SpatieMediaLibraryFileUpload::make("poster")
-                            ->collection("posters")
-                            ->responsiveImages()
-                            ->disk("s3"),
+                        CuratorPicker::make("poster_id"),
                         Components\Section::make()->schema([
                             Components\DateTimePicker::make(
                                 "door_time"

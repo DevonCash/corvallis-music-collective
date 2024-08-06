@@ -20139,9 +20139,9 @@ const Paginator = create_ssr_component(($$result, $$props, $$bindings, slots) =>
   $$result.css.add(css$d);
   return `${links ? (() => {
     let prev = links[0], next = links[links.length - 1], rest = links.slice(1, links.length - 1);
-    return `   <div class="paginator svelte-1o26trg"><a role="button" class="outline svelte-1o26trg" ${!prev.url || null ? "disabled" : ""}${add_attribute("href", prev.url, 0)}>${prev.label}</a> <div role="group" class="svelte-1o26trg">${each(rest, (link) => {
+    return `   <div class="paginator svelte-1o26trg"><a role="button" class="outline svelte-1o26trg" ${!prev.url || null ? "disabled" : ""}${add_attribute("href", prev.url, 0)}><!-- HTML_TAG_START -->${prev.label}<!-- HTML_TAG_END --></a> <div role="group" class="svelte-1o26trg">${each(rest, (link) => {
       return `<a role="button"${add_attribute("href", link.url, 0)} class="${["svelte-1o26trg", !link.active ? "outline" : ""].join(" ").trim()}">${escape$1(link.label)}</a>`;
-    })}</div> <a role="button" class="outline svelte-1o26trg" ${!next.url || null ? "disabled" : ""}${add_attribute("href", next.url, 0)}>${next.label}</a></div>`;
+    })}</div> <a role="button" class="outline svelte-1o26trg" ${!next.url || null ? "disabled" : ""}${add_attribute("href", next.url, 0)}><!-- HTML_TAG_START -->${next.label}<!-- HTML_TAG_END --></a></div>`;
   })() : ``}`;
 });
 const css$c = {
@@ -20152,7 +20152,7 @@ const ListBands = create_ssr_component(($$result, $$props, $$bindings, slots) =>
   let { bands } = $$props;
   if ($$props.bands === void 0 && $$bindings.bands && bands !== void 0) $$bindings.bands(bands);
   $$result.css.add(css$c);
-  return `<header><h1>Bands</h1></header>  <section class="section"><search><form><fieldset role="group"><input class="input" type="text" placeholder="Search bands"> <button class="button">Search</button></fieldset></form></search> <div class="grid svelte-1mobtp7">${each(bands.data, (band) => {
+  return `<header data-svelte-h="svelte-1olwn1d"><h1>Bands</h1></header>  <section class="section"><search data-svelte-h="svelte-1pbk8ce"><form><fieldset role="group"><input class="input" type="text" placeholder="Search bands"> <button class="button">Search</button></fieldset></form></search> <div class="grid svelte-1mobtp7">${each(bands.data, (band) => {
     return `<article class="svelte-1mobtp7"><header>${escape$1(band.name)}</header> <div class="content svelte-1mobtp7">${escape$1(band.description)}</div> <footer><div class="inset" role="group"><a role="button"${add_attribute("href", `/bands/${band.id}`, 0)}>View</a> <a role="button"${add_attribute("href", `/admin/bands/${band.id}/edit`, 0)}>Edit</a> </div></footer> </article>`;
   })}</div> ${validate_component(Paginator, "Paginator").$$render($$result, { links: bands.links }, {}, {})} </section>`;
 });
@@ -20161,7 +20161,7 @@ const __vite_glob_0_0 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.def
   default: ListBands
 }, Symbol.toStringTag, { value: "Module" }));
 const CommunityEventGuidelines = create_ssr_component(($$result, $$props, $$bindings, slots) => {
-  return `<main><nav aria-label="breadcrumb"><ul><li><a href="/">Home</a></li> <li><a href="/Events">Events</a></li> <li>Community Event Guidelines</li></ul></nav> <article><h2>Community Event Guidelines</h2> <p>The Corvallis Music Collective is a community-driven organization
+  return `<main><nav aria-label="breadcrumb"><ul><li><a href="/" data-svelte-h="svelte-1o2t4kz">Home</a></li> <li><a href="/Events" data-svelte-h="svelte-r9k2ag">Events</a></li> <li data-svelte-h="svelte-9pqn8w">Community Event Guidelines</li></ul></nav> <article data-svelte-h="svelte-1sdalpm"><h2>Community Event Guidelines</h2> <p>The Corvallis Music Collective is a community-driven organization
             that supports local music and the people who make it. We are happy
             to help promote your event, but we have a few guidelines to ensure
             that we can continue to provide this service to the community.</p> <ul><li>Events must be music-related and take place in the Corvallis
@@ -21331,34 +21331,34 @@ const Icon = create_ssr_component(($$result, $$props, $$bindings, slots) => {
       }
     }
   }
-  return `${data ? `${data.svg ? `<svg${spread$1([escape_object(data.attributes)], {})}>${data.body}</svg>` : `<span${spread$1([escape_object(data.attributes)], {})}></span>`}` : ``}`;
+  return `${data ? `${data.svg ? `<svg${spread$1([escape_object(data.attributes)], {})}><!-- HTML_TAG_START -->${data.body}<!-- HTML_TAG_END --></svg>` : `<span${spread$1([escape_object(data.attributes)], {})}></span>`}` : ``}`;
 });
 const Socials = create_ssr_component(($$result, $$props, $$bindings, slots) => {
   return `<li><a target="_blank" aria-label="CMC Facebook" href="https://www.facebook.com/profile.php?id=61557301093883">${validate_component(Icon, "Icon").$$render($$result, { icon: "mdi:facebook" }, {}, {})}</a></li> <li><a target="_blank" aria-label="CMC Instagram" href="https://www.instagram.com/corvmc/">${validate_component(Icon, "Icon").$$render($$result, { icon: "mdi:instagram" }, {}, {})}</a></li> <li><a target="_blank" aria-label="CMC Twitter" href="https://x.com/corvmc">${validate_component(Icon, "Icon").$$render($$result, { icon: "mdi:twitter" }, {}, {})}</a></li>`;
 });
 const Contribute = create_ssr_component(($$result, $$props, $$bindings, slots) => {
-  return `<main><nav aria-label="breadcrumb"><ul><li><a href="/">Home</a></li> <li>Contribute</li></ul></nav> <article><header><hgroup><h1>Contribute to the Collective!</h1> <p>The Corvallis Music Collective is a community-driven
-                    organization, and there are many ways to get involved!</p></hgroup></header> <section><h2>Spread the Word</h2> <p>The more people who know about the Corvallis Music Collective,
+  return `<main><nav aria-label="breadcrumb" data-svelte-h="svelte-5au2ph"><ul><li><a href="/">Home</a></li> <li>Contribute</li></ul></nav> <article><header data-svelte-h="svelte-1athba5"><hgroup><h1>Contribute to the Collective!</h1> <p>The Corvallis Music Collective is a community-driven
+                    organization, and there are many ways to get involved!</p></hgroup></header> <section><h2 data-svelte-h="svelte-141isde">Spread the Word</h2> <p data-svelte-h="svelte-18hmhu7">The more people who know about the Corvallis Music Collective,
                 the more we can do to support the local music community. If you
-                believe in what we&#39;re doing, please help us spread the word!</p> <p>Share our website, our events, and our social media posts with
+                believe in what we&#39;re doing, please help us spread the word!</p> <p data-svelte-h="svelte-42e3ow">Share our website, our events, and our social media posts with
                 your friends and family. The more people who know about us, the
-                more we can do to support local music!</p> <nav style="justify-content:center; flex-direction: column; align-items: center; display: flex;"><ul>${validate_component(Socials, "Socials").$$render($$result, {}, {}, {})}</ul> <span>Follow us on social media!</span></nav></section> <section><h2>Attend <a href="/events">Events</a></h2> <p>The best way to support us and the music community as a whole is
+                more we can do to support local music!</p> <nav style="justify-content:center; flex-direction: column; align-items: center; display: flex;"><ul>${validate_component(Socials, "Socials").$$render($$result, {}, {}, {})}</ul> <span data-svelte-h="svelte-knm1w8">Follow us on social media!</span></nav></section> <section><h2>Attend <a href="/events" data-svelte-h="svelte-15cu4j6">Events</a></h2> <p data-svelte-h="svelte-1igtb9d">The best way to support us and the music community as a whole is
                 to attend local music events! Music is a performance art, and
                 that means the audience is the most important part of the show.</p> <p>Whatever your taste in music, there is something around here for
-                everyone! Check out our <a href="/events">events page</a> to see what&#39;s happening in the community.</p> <p>If you&#39;re playing or attending a local show, please consider
-                <a href="/events/submit">submitting it</a> to the community
-                calendar!</p></section> <section><h2><a href="/contribute/volunteer">Volunteer</a></h2> <p>We are always looking for volunteers to help us with our events
+                everyone! Check out our <a href="/events" data-svelte-h="svelte-n0ipr5">events page</a> to see what&#39;s happening in the community.</p> <p>If you&#39;re playing or attending a local show, please consider
+                <a href="/events/submit" data-svelte-h="svelte-c8ji7j">submitting it</a> to the community
+                calendar!</p></section> <section><h2><a href="/contribute/volunteer" data-svelte-h="svelte-ymtumc">Volunteer</a></h2> <p data-svelte-h="svelte-18kq638">We are always looking for volunteers to help us with our events
                 and projects. Whether you&#39;re a seasoned event planner or just
                 looking to get involved, we have a place for you!</p> <p>If you&#39;re interested in volunteering, fill out our
-                <a href="contribute/volunteer">volunteer form</a> and
-                we&#39;ll get in touch with you soon!</p></section> <section><h2><a href="/contribute/donate">Donate</a></h2> <p>The Corvallis Music Collective is a non-profit organization, and
+                <a href="contribute/volunteer" data-svelte-h="svelte-1tklkk5">volunteer form</a> and
+                we&#39;ll get in touch with you soon!</p></section> <section><h2><a href="/contribute/donate" data-svelte-h="svelte-1ernzxa">Donate</a></h2> <p data-svelte-h="svelte-42jbo7">The Corvallis Music Collective is a non-profit organization, and
                 we rely on donations to keep the lights on. If you believe in
                 what we&#39;re doing and want to help us continue to support the
-                local music community, please consider making a donation!</p> <p>If you own a local business, you can also sponsor one of our
+                local music community, please consider making a donation!</p> <p data-svelte-h="svelte-1a5i473">If you own a local business, you can also sponsor one of our
                 events or arrange an ongoing partnership with us. We are always
                 looking for new ways to support the local music community!</p> <p>You can donate online through our
-                <a href="contribute/donate">donation page</a>, or
-                <a href="mailto:contact@corvmc.org">contact us directly</a> to make
+                <a href="contribute/donate" data-svelte-h="svelte-9oqth9">donation page</a>, or
+                <a href="mailto:contact@corvmc.org" data-svelte-h="svelte-9381j0">contact us directly</a> to make
                 other arrangements.</p></section></article></main>`;
 });
 const __vite_glob_0_2 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
@@ -21371,7 +21371,7 @@ const css$b = {
 };
 const Donate = create_ssr_component(($$result, $$props, $$bindings, slots) => {
   $$result.css.add(css$b);
-  return `<main><h1>Donate</h1> <div class="grid svelte-1mibein"><section><article><figure><img src="/building_fund.png" alt="A cartoon illustration of a building with a sign that reads 'Corvallis Music Collective'"></figure> <h2>Help us find a home!</h2> <p>We are currently raising funds to secure a location to work
+  return `<main data-svelte-h="svelte-1mmiipb"><h1>Donate</h1> <div class="grid svelte-1mibein"><section><article><figure><img src="/building_fund.png" alt="A cartoon illustration of a building with a sign that reads 'Corvallis Music Collective'"></figure> <h2>Help us find a home!</h2> <p>We are currently raising funds to secure a location to work
                     as a meeting place, small venue, and community practice
                     space. If you can support us, please consider donating using
                     the form on this page!</p> <p>If it makes sense for you, please consider the monthly
@@ -21394,19 +21394,19 @@ const CreateEvent = create_ssr_component(($$result, $$props, $$bindings, slots) 
   if ($$props.csrf === void 0 && $$bindings.csrf && csrf !== void 0) $$bindings.csrf(csrf);
   if ($$props.errors === void 0 && $$bindings.errors && errors !== void 0) $$bindings.errors(errors);
   $$result.css.add(css$a);
-  return ` <main><article><h2>Submit Community Event</h2> <p>Have an event you&#39;d like to share? Fill out the form below to submit
-            your event to our calendar!</p> ${``} <form><input type="hidden" name="_token"${add_attribute("value", csrf, 0)}> <section class="info grid svelte-1sqao86"><div><label class="svelte-1sqao86">Name
+  return ` <main><article><h2 data-svelte-h="svelte-zfzplf">Submit Community Event</h2> <p data-svelte-h="svelte-18c43mg">Have an event you&#39;d like to share? Fill out the form below to submit
+            your event to our calendar!</p> ${``} <form><input type="hidden" name="_token"${add_attribute("value", csrf, 0)}> <section class="info grid svelte-1sqao86"><div data-svelte-h="svelte-1bjkb8p"><label class="svelte-1sqao86">Name
                         <input required name="name" type="text"></label> <div class="grid"><label class="svelte-1sqao86">Date
                             <input required name="start_date" type="date"></label> <label class="svelte-1sqao86">Time
                             <input required name="start_time" type="time"></label></div> <label class="svelte-1sqao86">Description
                         <textarea rows="5" name="description" required placeholder="Include any relevant information about your event here, including who's playing, ticket prices, venue information, and any other details you'd like to share."></textarea></label></div> <label class="svelte-1sqao86">Poster
-                    <figure style="height: 25vh; padding: .5rem;" class="grid svelte-1sqao86">${`<img style="filter: grayscale(.8); max-width: 80%; margin:auto; position: relative; left: 8%; opacity: .2;" aria-hidden alt="Corvallis Music Collective Logo Watermark" src="/logo.svg" class="svelte-1sqao86">`} <figcaption style="display: none;">Preview of poster file upload</figcaption></figure> <input name="poster" type="file"></label></section> <section><fieldset class="grid" style="grid-template-columns: autofill(100px, 1fr)"><legend style="grid-column: 1 / -1">Other Info</legend> <label class="svelte-1sqao86"><input type="checkbox" name="tags[]" value="Free">
+                    <figure style="height: 25vh; padding: .5rem;" class="grid svelte-1sqao86">${`<img style="filter: grayscale(.8); max-width: 80%; margin:auto; position: relative; left: 8%; opacity: .2;" aria-hidden alt="Corvallis Music Collective Logo Watermark" src="/logo.svg" class="svelte-1sqao86">`} <figcaption style="display: none;" data-svelte-h="svelte-1ovi1bc">Preview of poster file upload</figcaption></figure> <input name="poster" type="file"></label></section> <section data-svelte-h="svelte-9er8r8"><fieldset class="grid" style="grid-template-columns: autofill(100px, 1fr)"><legend style="grid-column: 1 / -1">Other Info</legend> <label class="svelte-1sqao86"><input type="checkbox" name="tags[]" value="Free">
                         Free</label> <label class="svelte-1sqao86"><input type="checkbox" name="tags[]" value="Age Restricted">
                         Age Restricted</label> <label class="svelte-1sqao86"><input type="checkbox" name="tags[]" value="Masks Mandatory">
                         Masks Mandatory</label> <label class="svelte-1sqao86"><input type="checkbox" name="tags[]" value="Alcohol Served">
                         Alcohol Served</label></fieldset> <fieldset><legend>Community Guidelines</legend> <label class="svelte-1sqao86"><input type="checkbox" name="terms" required>
                         This event complies with our
-                        <a href="/events/community-events">posting guidelines</a></label></fieldset></section> <button type="submit">Submit Event</button></form></article> </main>`;
+                        <a href="/events/community-events">posting guidelines</a></label></fieldset></section> <button type="submit" data-svelte-h="svelte-6bpv67">Submit Event</button></form></article> </main>`;
 });
 const __vite_glob_0_4 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   __proto__: null,
@@ -21431,7 +21431,7 @@ const EventLi = create_ssr_component(($$result, $$props, $$bindings, slots) => {
   let { event } = $$props;
   if ($$props.event === void 0 && $$bindings.event && event !== void 0) $$bindings.event(event);
   $$result.css.add(css$9);
-  return `<li class="event svelte-pxz0ax"><figure class="svelte-pxz0ax"><img${add_attribute("src", event.poster, 0)} alt="${"Poster for " + escape$1(event.name, true)}" class="svelte-pxz0ax"> <figcaption style="display: none;">Poster for ${escape$1(event.name)}</figcaption></figure> <div class="content svelte-pxz0ax"><hgroup class="svelte-pxz0ax"><div class="time" style="color:#e5771e;"><time${add_attribute("datetime", event.start_time, 0)}><strong class="day">${escape$1(format$1(event.start_time))}</strong> <span class="start">▪ ${escape$1(formatTime(event.start_time))}</span></time> ${event.end_time ? `- <time${add_attribute("datetime", event.end_time, 0)}><span class="end">${escape$1(formatTime(event.end_time))}</span></time>` : ``}</div> <h2${add_attribute("id", event.id, 0)} class="svelte-pxz0ax"><a href="${"/events/" + escape$1(event.id, true)}" style="color:inherit;" class="svelte-pxz0ax">${escape$1(event.name)}</a></h2> ${event.venue ? `<div class="venue">${validate_component(Icon, "Icon").$$render($$result, { icon: "mdi:alternate-email" }, {}, {})} ${event.venue.link ? `<a target="_blank"${add_attribute("href", event.venue.link, 0)} class="svelte-pxz0ax">${escape$1((_a = event.venue) == null ? void 0 : _a.name)} ${validate_component(Icon, "Icon").$$render($$result, { icon: "mdi:external-link" }, {}, {})}</a>` : `${escape$1((_b = event.venue) == null ? void 0 : _b.name)}`}</div>` : ``}</hgroup> <section class="desc svelte-pxz0ax">${event.description}</section> ${event.bands.length > 0 ? `<div class="bands svelte-pxz0ax">${validate_component(Icon, "Icon").$$render($$result, { icon: "mdi:account-music" }, {}, {})} <ul class="svelte-pxz0ax">${each(event.bands, (band) => {
+  return `<li class="event svelte-pxz0ax"><figure class="svelte-pxz0ax"><img${add_attribute("src", event.poster, 0)} alt="${"Poster for " + escape$1(event.name, true)}" class="svelte-pxz0ax"> <figcaption style="display: none;">Poster for ${escape$1(event.name)}</figcaption></figure> <div class="content svelte-pxz0ax"><hgroup class="svelte-pxz0ax"><div class="time" style="color:#e5771e;"><time${add_attribute("datetime", event.start_time, 0)}><strong class="day">${escape$1(format$1(event.start_time))}</strong> <span class="start">▪ ${escape$1(formatTime(event.start_time))}</span></time> ${event.end_time ? `- <time${add_attribute("datetime", event.end_time, 0)}><span class="end">${escape$1(formatTime(event.end_time))}</span></time>` : ``}</div> <h2${add_attribute("id", event.id, 0)} class="svelte-pxz0ax"><a href="${"/events/" + escape$1(event.id, true)}" style="color:inherit;" class="svelte-pxz0ax">${escape$1(event.name)}</a></h2> ${event.venue ? `<div class="venue">${validate_component(Icon, "Icon").$$render($$result, { icon: "mdi:alternate-email" }, {}, {})} ${event.venue.link ? `<a target="_blank"${add_attribute("href", event.venue.link, 0)} class="svelte-pxz0ax">${escape$1((_a = event.venue) == null ? void 0 : _a.name)} ${validate_component(Icon, "Icon").$$render($$result, { icon: "mdi:external-link" }, {}, {})}</a>` : `${escape$1((_b = event.venue) == null ? void 0 : _b.name)}`}</div>` : ``}</hgroup> <section class="desc svelte-pxz0ax"><!-- HTML_TAG_START -->${event.description}<!-- HTML_TAG_END --></section> ${event.bands.length > 0 ? `<div class="bands svelte-pxz0ax">${validate_component(Icon, "Icon").$$render($$result, { icon: "mdi:account-music" }, {}, {})} <ul class="svelte-pxz0ax">${each(event.bands, (band) => {
     return `<li class="svelte-pxz0ax"><a href="${"/bands/" + escape$1(band.id, true)}" class="svelte-pxz0ax">${escape$1(band.name)}</a> </li>`;
   })}</ul></div>` : ``} ${((_c = event.price) == null ? void 0 : _c.length) > 0 ? `<ul class="price svelte-pxz0ax">${each(event.price, ({ label, price }) => {
     return `<li class="svelte-pxz0ax">${validate_component(Icon, "Icon").$$render($$result, { icon: "mdi:ticket" }, {}, {})} <strong>${escape$1(label)}</strong>: ${escape$1(price)} </li>`;
@@ -28294,10 +28294,10 @@ const ListEvents = create_ssr_component(($$result, $$props, $$bindings, slots) =
     },
     {},
     {}
-  )} <article><h5>Your event here?</h5> <p>Submit local events to our community calendar! We&#39;ll review and
-                publish them if they meet our <a href="/events/community-events">guidelines</a>.</p> <a href="/events/submit">Submit Event</a></article></aside> <div class="content svelte-k2tjaq">${upcoming.length > 0 ? `<section><h3>Upcoming</h3> ${each(upcoming, (event) => {
+  )} <article><h5 data-svelte-h="svelte-1bd25qc">Your event here?</h5> <p data-svelte-h="svelte-17a0lt2">Submit local events to our community calendar! We&#39;ll review and
+                publish them if they meet our <a href="/events/community-events">guidelines</a>.</p> <a href="/events/submit" data-svelte-h="svelte-i0ixrw">Submit Event</a></article></aside> <div class="content svelte-k2tjaq">${upcoming.length > 0 ? `<section><h3 data-svelte-h="svelte-5teeaq">Upcoming</h3> ${each(upcoming, (event) => {
     return `${validate_component(EventLi, "EventLi").$$render($$result, { event }, {}, {})}`;
-  })}</section>` : ``} ${past.length > 0 ? `<section><h3>Past</h3> ${each(past, (event) => {
+  })}</section>` : ``} ${past.length > 0 ? `<section><h3 data-svelte-h="svelte-97wfow">Past</h3> ${each(past, (event) => {
     return `${validate_component(EventLi, "EventLi").$$render($$result, { event }, {}, {})}`;
   })}</section>` : ``} ${(events2 == null ? void 0 : events2.length) === 0 ? `<div class="empty svelte-k2tjaq"><p>No events found for ${escape$1(format(thisMonth))}</p></div>` : ``}</div> </main>`;
 });
@@ -28308,7 +28308,7 @@ const __vite_glob_0_5 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.def
 const ShowEvent = create_ssr_component(($$result, $$props, $$bindings, slots) => {
   let { event } = $$props;
   if ($$props.event === void 0 && $$bindings.event && event !== void 0) $$bindings.event(event);
-  return `<main><nav aria-label="breadcrumb"><ul><li><a href="/">Home</a></li> <li><a href="/events">Events</a></li> <li>${escape$1(event.name)}</li></ul></nav> ${validate_component(EventLi, "EventLi").$$render($$result, { event }, {}, {})}</main>`;
+  return `<main><nav aria-label="breadcrumb"><ul><li data-svelte-h="svelte-1huopth"><a href="/">Home</a></li> <li data-svelte-h="svelte-1l88nlm"><a href="/events">Events</a></li> <li>${escape$1(event.name)}</li></ul></nav> ${validate_component(EventLi, "EventLi").$$render($$result, { event }, {}, {})}</main>`;
 });
 const __vite_glob_0_6 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   __proto__: null,
@@ -28327,7 +28327,7 @@ const EventCard = create_ssr_component(($$result, $$props, $$bindings, slots) =>
 const PostCard = create_ssr_component(($$result, $$props, $$bindings, slots) => {
   let { post } = $$props;
   if ($$props.post === void 0 && $$bindings.post && post !== void 0) $$bindings.post(post);
-  return `<article><header><h3>${escape$1(post.title)}</h3></header> <div class="content">${post.excerpt}</div> <footer><a${add_attribute("href", post.url, 0)}>Read More</a></footer></article>`;
+  return `<article><header><h3>${escape$1(post.title)}</h3></header> <div class="content"><!-- HTML_TAG_START -->${post.excerpt}<!-- HTML_TAG_END --></div> <footer><a${add_attribute("href", post.url, 0)}>Read More</a></footer></article>`;
 });
 const css$5 = {
   code: 'header.svelte-1v49gyr.svelte-1v49gyr.svelte-1v49gyr{display:flex;justify-content:space-between;align-items:center}section.svelte-1v49gyr header.svelte-1v49gyr.svelte-1v49gyr{display:flex;justify-content:space-between;align-items:baseline;border-bottom:4px solid var(--cmc-yellow);margin-bottom:1rem}.events.svelte-1v49gyr div.grid.svelte-1v49gyr.svelte-1v49gyr{grid-template-columns:repeat(auto-fill, minmax(300px, 1fr))}.mission.svelte-1v49gyr.svelte-1v49gyr.svelte-1v49gyr{font-size:xx-large;font-weight:bold;color:var(--cmc-blue)}a.svelte-1v49gyr article.svelte-1v49gyr.svelte-1v49gyr{padding:0;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:space-between;transform:scale(1);transition:transform 0.3s}a.svelte-1v49gyr article.svelte-1v49gyr p.svelte-1v49gyr{margin:0 1rem}a.svelte-1v49gyr article footer.svelte-1v49gyr.svelte-1v49gyr{margin:0;position:relative;padding-left:0;padding-right:0;padding-bottom:0;width:100%}a.svelte-1v49gyr:hover article.svelte-1v49gyr.svelte-1v49gyr{transform:scale(1.05)}a.svelte-1v49gyr.svelte-1v49gyr.svelte-1v49gyr:has(article){text-decoration:none;color:inherit}.speaker-logo.svelte-1v49gyr.svelte-1v49gyr.svelte-1v49gyr{position:relative;width:70%;left:8%;margin:2rem auto}a.svelte-1v49gyr article footer.svelte-1v49gyr.svelte-1v49gyr::before{content:"";position:absolute;top:-1px;left:0;background:linear-gradient(\n            to bottom,\n            var(--cmc-blue) 0%,\n            var(--cmc-blue) 33%,\n            var(--cmc-yellow) 33%,\n            var(--cmc-yellow) 66%,\n            var(--cmc-red) 66%,\n            var(--cmc-red) 100%\n        );height:0.5em;width:100%}',
@@ -28339,18 +28339,18 @@ const Home = create_ssr_component(($$result, $$props, $$bindings, slots) => {
   if ($$props.posts === void 0 && $$bindings.posts && posts !== void 0) $$bindings.posts(posts);
   if ($$props.events === void 0 && $$bindings.events && events2 !== void 0) $$bindings.events(events2);
   $$result.css.add(css$5);
-  return `<main><section><section class="grid" style="align-items: center;"><h2 class="mission svelte-1v49gyr">Building and connecting music communities around Corvallis</h2> <p>The Corvallis Music Collective is a community-driven
+  return `<main><section data-svelte-h="svelte-7f6oes"><section class="grid" style="align-items: center;"><h2 class="mission svelte-1v49gyr">Building and connecting music communities around Corvallis</h2> <p>The Corvallis Music Collective is a community-driven
                 organization that supports local music and musicians. We believe
                 that music is a vital part of a healthy community, and we work
                 to create opportunities for musicians and music appreciators of
                 all ages and skills.</p></section> <div class="grid"><article style="text-align: center; padding: 2rem; margin: auto;" class="svelte-1v49gyr"><h3>Want to help us out?</h3> <p class="svelte-1v49gyr">Corvallis Music Collective is a community-driven
-                    organization, and we need your help!</p> <a role="button" href="/contribute" class="svelte-1v49gyr">Learn how you can get involved!</a></article></div></section> <section class="events svelte-1v49gyr"><header class="grid svelte-1v49gyr"><hgroup><h2>Upcoming Events</h2></hgroup> <a href="/events" class="svelte-1v49gyr">View All</a></header> <div class="grid svelte-1v49gyr">${events2.length ? each(events2, (event) => {
+                    organization, and we need your help!</p> <a role="button" href="/contribute" class="svelte-1v49gyr">Learn how you can get involved!</a></article></div></section> <section class="events svelte-1v49gyr"><header class="grid svelte-1v49gyr" data-svelte-h="svelte-yg3kl3"><hgroup><h2>Upcoming Events</h2></hgroup> <a href="/events" class="svelte-1v49gyr">View All</a></header> <div class="grid svelte-1v49gyr">${events2.length ? each(events2, (event) => {
     return `${validate_component(EventCard, "EventCard").$$render($$result, { event }, {}, {})}`;
-  }) : `<p>No events to display</p>`} ${events2.length < 3 ? `<a href="/events" aria-label="Community Events" class="svelte-1v49gyr"><article style="text-align: center;" class="svelte-1v49gyr"><img class="speaker-logo svelte-1v49gyr" src="/logo.svg" alt="Corvallis Music Collective Speaker Logo"> <p class="svelte-1v49gyr">Looking for more local music? Check out our
-                            <a href="/events" class="svelte-1v49gyr">events page</a>
-                            for our full community calendar!</p> <footer class="svelte-1v49gyr"><h4>Community Events</h4></footer></article></a>` : ``}</div></section> <section class="news svelte-1v49gyr"><header class="svelte-1v49gyr"><h2>Recent Articles</h2> <a href="/posts" class="svelte-1v49gyr">View All</a></header> <div class="grid">${posts.length ? each(posts, (post) => {
+  }) : `<p data-svelte-h="svelte-bpgr1h">No events to display</p>`} ${events2.length < 3 ? `<a href="/events" aria-label="Community Events" class="svelte-1v49gyr"><article style="text-align: center;" class="svelte-1v49gyr"><img class="speaker-logo svelte-1v49gyr" src="/logo.svg" alt="Corvallis Music Collective Speaker Logo"> <p class="svelte-1v49gyr">Looking for more local music? Check out our
+                            <a href="/events" class="svelte-1v49gyr" data-svelte-h="svelte-zjv3h5">events page</a>
+                            for our full community calendar!</p> <footer class="svelte-1v49gyr" data-svelte-h="svelte-175eup7"><h4>Community Events</h4></footer></article></a>` : ``}</div></section> <section class="news svelte-1v49gyr"><header class="svelte-1v49gyr"><h2 data-svelte-h="svelte-1spfu7g">Recent Articles</h2> <a href="/posts" class="svelte-1v49gyr" data-svelte-h="svelte-jugsz1">View All</a></header> <div class="grid">${posts.length ? each(posts, (post) => {
     return `${validate_component(PostCard, "PostCard").$$render($$result, { post }, {}, {})}`;
-  }) : `<p>No posts to display</p>`}</div></section> </main>`;
+  }) : `<p data-svelte-h="svelte-zk3m7r">No posts to display</p>`}</div></section> </main>`;
 });
 const __vite_glob_0_7 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   __proto__: null,
@@ -28375,12 +28375,12 @@ const PostLi = create_ssr_component(($$result, $$props, $$bindings, slots) => {
   })} on
                 ` : ``}${escape$1(format2(post.published_at))}</div> <div class="tags">${each(post.tags, (tag) => {
     return `<a href="${"/posts?tag=" + escape$1(tag, true)}" class="tag">${escape$1(tag)}</a>`;
-  })}</div></div> <div class="content">${post.excerpt}</div> <nav><ul><li class="svelte-qb1sg6"><a href="${"/posts/" + escape$1(post.id, true)}">Full Article</a></li></ul></nav></article> </li>`;
+  })}</div></div> <div class="content"><!-- HTML_TAG_START -->${post.excerpt}<!-- HTML_TAG_END --></div> <nav><ul><li class="svelte-qb1sg6"><a href="${"/posts/" + escape$1(post.id, true)}">Full Article</a></li></ul></nav></article> </li>`;
 });
 const ListPosts = create_ssr_component(($$result, $$props, $$bindings, slots) => {
   let { posts } = $$props;
   if ($$props.posts === void 0 && $$bindings.posts && posts !== void 0) $$bindings.posts(posts);
-  return `<main><hgroup><h1>Articles</h1></hgroup> <section>${each(posts.data, (post) => {
+  return `<main><hgroup data-svelte-h="svelte-18vpv6a"><h1>Articles</h1></hgroup> <section>${each(posts.data, (post) => {
     return `${validate_component(PostLi, "PostLi").$$render($$result, { post }, {}, {})}`;
   })} ${validate_component(Paginator, "Paginator").$$render($$result, { links: posts.links }, {}, {})}</section></main>`;
 });
@@ -28393,12 +28393,12 @@ const ShowPost = create_ssr_component(($$result, $$props, $$bindings, slots) => 
   let { authors } = $$props;
   if ($$props.post === void 0 && $$bindings.post && post !== void 0) $$bindings.post(post);
   if ($$props.authors === void 0 && $$bindings.authors && authors !== void 0) $$bindings.authors(authors);
-  return ` <main><div class="grid"><nav aria-label="breadcrumb"><ul><li><a href="/">Home</a></li> <li><a href="/posts">Posts</a></li> <li style="max-width: 10em; overflow: hidden; white-space: nowrap; text-overflow: ellipsis;">${escape$1(post.title)}</li></ul></nav> <menu><li><button class="outline">${validate_component(Icon, "Icon").$$render($$result, { icon: "mdi:share" }, {}, {})} <span>Share</span></button></li></menu></div> <article><header><hgroup><h2>${escape$1(post.title)}</h2> <div class="grid"><div class="tags">${each(post.tags, (tag) => {
+  return ` <main><div class="grid"><nav aria-label="breadcrumb"><ul><li><a href="/" data-svelte-h="svelte-1o2t4kz">Home</a></li> <li><a href="/posts" data-svelte-h="svelte-cc704y">Posts</a></li> <li style="max-width: 10em; overflow: hidden; white-space: nowrap; text-overflow: ellipsis;">${escape$1(post.title)}</li></ul></nav> <menu><li><button class="outline">${validate_component(Icon, "Icon").$$render($$result, { icon: "mdi:share" }, {}, {})} <span data-svelte-h="svelte-1ahaqi7">Share</span></button></li></menu></div> <article><header><hgroup><h2>${escape$1(post.title)}</h2> <div class="grid"><div class="tags">${each(post.tags, (tag) => {
     return `<a href="${"/posts?tag=" + escape$1(tag, true)}" class="tag">${escape$1(tag)}</a>`;
   })}</div> <div style="text-align: right;">${validate_component(Icon, "Icon").$$render($$result, { icon: "material-symbols:calendar-month" }, {}, {})} <time>${escape$1(new Date(post.published_at).toLocaleDateString())}</time></div></div> ${authors.length ? `<div class="authors">by
                         ${each(authors, (author, idx) => {
     return `<span>${escape$1(idx !== 0 && ", ")}${escape$1(author.name)}</span>`;
-  })}</div>` : ``}</hgroup></header> ${post.content} ${new Date(post.updated_at) > new Date(post.published_at) ? `<footer>${validate_component(Icon, "Icon").$$render($$result, { icon: "mdi:clock-time-four-outline" }, {}, {})} <time>Updated
+  })}</div>` : ``}</hgroup></header> <!-- HTML_TAG_START -->${post.content}<!-- HTML_TAG_END --> ${new Date(post.updated_at) > new Date(post.published_at) ? `<footer>${validate_component(Icon, "Icon").$$render($$result, { icon: "mdi:clock-time-four-outline" }, {}, {})} <time>Updated
                     ${escape$1(new Date(post.updated_at).toLocaleDateString())}</time></footer>` : ``}</article></main>`;
 });
 const __vite_glob_0_9 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
@@ -28411,7 +28411,7 @@ const css$3 = {
 };
 const Volunteer = create_ssr_component(($$result, $$props, $$bindings, slots) => {
   $$result.css.add(css$3);
-  return `<main class="svelte-nd3nkc"><section><h1>Volunteer with us!</h1> <p>We are always looking for volunteers to help us with our mission! If
+  return `<main class="svelte-nd3nkc" data-svelte-h="svelte-1jg0bp7"><section><h1>Volunteer with us!</h1> <p>We are always looking for volunteers to help us with our mission! If
             you are interested in volunteering, please fill out this form with
             your preferences.</p></section> <iframe title="Corvallis Music Collective Volunteer Form" src="https://docs.google.com/forms/d/e/1FAIpQLSc6fJfjDsSjH7bND6ETgVwU5vmW0Mlr_LUJjbtHxlzN44LvcQ/viewform?embedded=true" width="100%" height="1285" frameborder="0" marginheight="0" marginwidth="0" class="svelte-nd3nkc">Loading…</iframe> </main>`;
 });
@@ -28420,7 +28420,7 @@ const __vite_glob_0_10 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.de
   default: Volunteer
 }, Symbol.toStringTag, { value: "Module" }));
 const Admin = create_ssr_component(($$result, $$props, $$bindings, slots) => {
-  return `<main class="grid" style="grid-template-columns: minmax(auto, 10rem) 1fr;"><aside><nav><ul><li><a href="/admin">Dashboard</a></li> <li><a href="/admin/events">Events</a></li> <li><a href="/admin/venues">Venues</a></li> <li><a href="/admin/bands">Bands</a></li> <li><a href="/admin/posts">Posts</a></li> <li><a href="/admin/users">Users</a></li></ul></nav></aside> <div>${slots.default ? slots.default({}) : ``}</div></main>`;
+  return `<main class="grid" style="grid-template-columns: minmax(auto, 10rem) 1fr;"><aside><nav><ul><li><a href="/admin" data-svelte-h="svelte-z7s07p">Dashboard</a></li> <li><a href="/admin/events" data-svelte-h="svelte-1ks3rh0">Events</a></li> <li><a href="/admin/venues" data-svelte-h="svelte-1lnr48o">Venues</a></li> <li><a href="/admin/bands" data-svelte-h="svelte-ydwfc4">Bands</a></li> <li><a href="/admin/posts" data-svelte-h="svelte-opm05y">Posts</a></li> <li><a href="/admin/users" data-svelte-h="svelte-1wwo4ks">Users</a></li></ul></nav></aside> <div>${slots.default ? slots.default({}) : ``}</div></main>`;
 });
 const __vite_glob_1_0 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   __proto__: null,
@@ -28432,7 +28432,7 @@ const css$2 = {
 };
 const PublicHeader = create_ssr_component(($$result, $$props, $$bindings, slots) => {
   $$result.css.add(css$2);
-  return `<header class="cmc svelte-1hwxbcq"><img src="/logo.svg" alt="Corvallis Music Collective Logo" class="svelte-1hwxbcq"> <hgroup class="svelte-1hwxbcq"><h1>Corvallis Music Collective</h1> <nav class="svelte-1hwxbcq"><ul><li><a href="/">Home</a></li> <li><a href="/events">Events</a></li> <li><a href="/posts">Articles</a></li> <li><a href="/contribute">Contribute</a></li></ul> <ul><li><a style="white-space: nowrap" href="/contribute/donate">${validate_component(Icon, "Icon").$$render($$result, { icon: "mdi:heart" }, {}, {})}
+  return `<header class="cmc svelte-1hwxbcq"><img src="/logo.svg" alt="Corvallis Music Collective Logo" class="svelte-1hwxbcq"> <hgroup class="svelte-1hwxbcq"><h1 data-svelte-h="svelte-1hw7qh2">Corvallis Music Collective</h1> <nav class="svelte-1hwxbcq"><ul><li><a href="/" data-svelte-h="svelte-1o2t4kz">Home</a></li> <li><a href="/events" data-svelte-h="svelte-187a1a0">Events</a></li> <li><a href="/posts" data-svelte-h="svelte-j3pm9e">Articles</a></li> <li><a href="/contribute" data-svelte-h="svelte-18706kk">Contribute</a></li></ul> <ul><li><a style="white-space: nowrap" href="/contribute/donate">${validate_component(Icon, "Icon").$$render($$result, { icon: "mdi:heart" }, {}, {})}
                         Donate</a></li></ul></nav></hgroup> </header>`;
 });
 const css$1 = {
@@ -28441,8 +28441,8 @@ const css$1 = {
 };
 const PublicFooter = create_ssr_component(($$result, $$props, $$bindings, slots) => {
   $$result.css.add(css$1);
-  return `<footer class="svelte-pxd3jc"><div style="font-size: smaller;"><h2 class="svelte-pxd3jc">Corvallis <br class="svelte-pxd3jc">Music <br class="svelte-pxd3jc">Collective</h2> <nav style="margin: 0;" class="svelte-pxd3jc"><ul style="flex-direction: row;" class="svelte-pxd3jc">${validate_component(Socials, "Socials").$$render($$result, {}, {}, {})}</ul></nav> <div><a style="white-space: nowrap;" href="mailto:contact@corvmc.org">${validate_component(Icon, "Icon").$$render($$result, { icon: "mdi:email" }, {}, {})}
-                contact@corvmc.org</a></div></div> <nav class="svelte-pxd3jc"><ul class="svelte-pxd3jc"><li><a href="/">Home</a></li></ul> <ul class="svelte-pxd3jc"><li><a href="/events">Events</a></li> <li><a href="/events/submit">Submit Event</a></li> <li><a href="/events/community-events">Submission Guidelines</a></li></ul> <ul class="svelte-pxd3jc"><li><a href="/posts">Articles</a></li></ul> <ul class="svelte-pxd3jc"><li><a href="/contribute">Contribute</a></li> <li><a href="/contribute/donate">Donate</a></li> <li><a href="/contribute/volunteer">Volunteer</a></li></ul></nav> <img src="/logo.svg" alt="Corvallis Music Collective Logo" class="svelte-pxd3jc"> </footer>`;
+  return `<footer class="svelte-pxd3jc"><div style="font-size: smaller;"><h2 class="svelte-pxd3jc" data-svelte-h="svelte-12dbcs0">Corvallis <br class="svelte-pxd3jc">Music <br class="svelte-pxd3jc">Collective</h2> <nav style="margin: 0;" class="svelte-pxd3jc"><ul style="flex-direction: row;" class="svelte-pxd3jc">${validate_component(Socials, "Socials").$$render($$result, {}, {}, {})}</ul></nav> <div><a style="white-space: nowrap;" href="mailto:contact@corvmc.org">${validate_component(Icon, "Icon").$$render($$result, { icon: "mdi:email" }, {}, {})}
+                contact@corvmc.org</a></div></div> <nav class="svelte-pxd3jc"><ul class="svelte-pxd3jc"><li><a href="/" data-svelte-h="svelte-1o2t4kz">Home</a></li></ul> <ul class="svelte-pxd3jc"><li><a href="/events" data-svelte-h="svelte-187a1a0">Events</a></li> <li><a href="/events/submit" data-svelte-h="svelte-i0ixrw">Submit Event</a></li> <li><a href="/events/community-events" data-svelte-h="svelte-1eq52fw">Submission Guidelines</a></li></ul> <ul class="svelte-pxd3jc"><li><a href="/posts" data-svelte-h="svelte-j3pm9e">Articles</a></li></ul> <ul class="svelte-pxd3jc"><li><a href="/contribute" data-svelte-h="svelte-18706kk">Contribute</a></li> <li><a href="/contribute/donate" data-svelte-h="svelte-3b6w3a">Donate</a></li> <li><a href="/contribute/volunteer" data-svelte-h="svelte-1a37gf2">Volunteer</a></li></ul></nav> <img src="/logo.svg" alt="Corvallis Music Collective Logo" class="svelte-pxd3jc"> </footer>`;
 });
 const css = {
   code: 'a[href="#top"].svelte-1d7uhsg{position:fixed;bottom:1rem;right:1rem;transform:translateX(calc(100% + 2rem));transition:transform 0.1s;z-index:20}a[href="#top"].show.svelte-1d7uhsg{transform:translateX(0)}',

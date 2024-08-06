@@ -4,14 +4,11 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Spatie\MediaLibrary\HasMedia;
 use App\Traits\Publishable;
-use Spatie\MediaLibrary\InteractsWithMedia;
 
-class Event extends Model implements HasMedia
+class Event extends Model
 {
     use HasFactory;
-    use InteractsWithMedia;
     use Publishable;
 
     protected $guarded = [];
@@ -24,8 +21,6 @@ class Event extends Model implements HasMedia
         "price" => "array",
         "tags" => "array",
     ];
-
-    protected $appends = ["poster"];
 
     public function venue()
     {
@@ -47,8 +42,8 @@ class Event extends Model implements HasMedia
         return $this->hasMany(Event::class, "parent_id");
     }
 
-    public function getPosterAttribute()
+    public function poster()
     {
-        return $this->getFirstMediaUrl("posters");
+        return $this->belongsTo(AttributedMedia::class, "poster_id", "id");
     }
 }

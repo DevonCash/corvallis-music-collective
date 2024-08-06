@@ -58,7 +58,6 @@ class EventController
             "start_time" => "required|date_format:H:i",
             "tags" => "array",
             "tags.*" => "string",
-            "poster" => "file|image",
         ]);
 
         ray($data);
