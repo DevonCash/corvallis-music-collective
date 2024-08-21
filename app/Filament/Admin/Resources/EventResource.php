@@ -13,7 +13,6 @@ use Filament\Tables\Table;
 use Filament\Forms\Components;
 use Awcodes\TableRepeater\Components\TableRepeater;
 use Awcodes\TableRepeater\Header;
-use Filament\Forms\Components\SpatieMediaLibraryFileUpload;
 use Filament\Support\Enums\Alignment;
 
 class EventResource extends Resource
