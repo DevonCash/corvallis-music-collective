@@ -12,6 +12,10 @@ class ManageUsers extends ManageRecords
 
     protected function getHeaderActions(): array
     {
-        return [Actions\CreateAction::make()];
+        return [Actions\CreateAction::make()
+    ->using(function (array $data) {
+        $data['password'] ??= bcrypt( fake()->password(20) );
+        return static::getModel()::create($data);
+    })];
     }
 }

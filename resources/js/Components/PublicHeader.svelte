@@ -18,14 +18,14 @@
 
             <ul>
                 <li>
-                    <a style="white-space: nowrap" href="/contribute/donate">
+                    <a role='button' style="white-space: nowrap" href="/contribute/donate">
                         <Icon icon="mdi:heart" />
                         Donate
                     </a>
                 </li>
-                <li>
+                <!-- <li>
                     <a href="/member/login">Join / Sign in</a>
-                </li>
+                </li> -->
             </ul>
         </nav>
     </hgroup>

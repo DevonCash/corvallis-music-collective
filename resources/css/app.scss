@@ -25,6 +25,7 @@
     --cmc-blue: #00859b;
     --cmc-yellow: #ffb500;
     --cmc-red: #f84d13;
+    --cmc-orange: #e5771e;
 
     --cmc-stripe: linear-gradient(
         to bottom,
@@ -74,7 +75,14 @@ menu {
 }
 
 .iconify {
+    color: var(--cmc-blue);
     position: relative;
     font-size: 1.2em;
     top: -2px;
 }
+
+.date {
+    color: var(--cmc-orange);
+    font-weight: bold;
+}
+

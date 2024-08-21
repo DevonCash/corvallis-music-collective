@@ -66,7 +66,9 @@ class EventResource extends Resource
                     ->columns(1)
                     ->extraAttributes(["class" => "fixed-size"])
                     ->schema([
-                        CuratorPicker::make("poster_id"),
+                        CuratorPicker::make("poster_id")
+                            ->label('Poster')
+                            ->disk('s3'),
                         Components\Section::make()->schema([
                             Components\DateTimePicker::make(
                                 "door_time"

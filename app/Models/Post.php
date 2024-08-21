@@ -27,12 +27,16 @@ class Post extends Model
 
     public function getExcerptAttribute()
     {
-        return Str::words($this->content, 30, "...");
+        return Str::words($this->content, 100, "...");
     }
 
     public function authors()
     {
         return $this->belongsToMany(User::class);
+    }
+
+    public function postUsers() {
+        return $this->hasMany(PostUser::class);
     }
 
     public function mention()

@@ -11,19 +11,21 @@
         <a
             use:inertia
             role="button"
-            class=" outline"
+            class="outline"
             disabled={!prev.url || null}
             href={prev.url}>{@html prev.label}</a
         >
-        <div role="group">
-            {#each rest as link}
-                <a
-                    use:inertia
-                    role="button"
-                    href={link.url}
-                    class:outline={!link.active}>{link.label}</a
-                >
-            {/each}
+        <div>
+            <div role="group">
+                {#each rest as link}
+                    <a
+                        use:inertia
+                        role="button"
+                        href={link.url}
+                        class:outline={!link.active}>{link.label}</a
+                    >
+                {/each}
+            </div>
         </div>
         <a
             use:inertia
@@ -36,10 +38,11 @@
 {/if}
 
 <style>
+
     .paginator {
         margin: auto;
         display: grid;
-        grid-template-columns: 1fr auto 1fr;
+        grid-template-columns: min-content 1fr min-content;
         justify-content: center;
         align-items: center;
         gap: 1rem;

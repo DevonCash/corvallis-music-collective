@@ -1,8 +1,16 @@
 <script>
     import { inertia } from "@inertiajs/svelte";
     import Icon from "@iconify/svelte";
+    import Tags from '../../../Components/Tags.svelte';
     export let post;
     export let authors;
+
+    const format = (isoDate) =>
+        new Date(isoDate).toLocaleString(undefined, {
+            month: "long",
+            day: "numeric",
+            year: "numeric",
+        });
 </script>
 
 {@debug post}
@@ -35,32 +43,18 @@
     <article>
         <header>
             <hgroup>
+                <time class='date' datetime={post.published_at}
+                    >{format(post.published_at)}</time
+                >
                 <h2>{post.title}</h2>
-                <div class="grid">
-                    <div class="tags">
-                        {#each post.tags as tag}
-                            <a use:inertia href="/posts?tag={tag}" class="tag"
-                                >{tag}</a
-                            >
+                <div>
+                    {#if post.authors.length}
+                        by {#each post.authors as author}
+                            <a use:inertia href={author.url}>{author.name}</a>
                         {/each}
-                    </div>
-                    <div style="text-align: right;">
-                        <Icon icon="material-symbols:calendar-month" />
-                        <time
-                            >{new Date(
-                                post.published_at,
-                            ).toLocaleDateString()}</time
-                        >
-                    </div>
+                    {/if}
                 </div>
-                {#if authors.length}
-                    <div class="authors">
-                        by
-                        {#each authors as author, idx}
-                            <span>{idx !== 0 && ", "}{author.name}</span>
-                        {/each}
-                    </div>
-                {/if}
+               <Tags tags={post.tags}/>
             </hgroup>
         </header>
         {@html post.content}

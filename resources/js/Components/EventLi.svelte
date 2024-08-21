@@ -1,6 +1,7 @@
 <script>
     import Icon from "@iconify/svelte";
     import { inertia } from "@inertiajs/svelte";
+    import Tags from "./Tags.svelte";
     export let event;
 
     function format(isoDate) {
@@ -19,12 +20,14 @@
     }
 </script>
 
-<li class="event">
-    <figure>
-        <img src={event.poster} alt="Poster for {event.name}" />
-        <figcaption style="display: none;">Poster for {event.name}</figcaption>
-    </figure>
-    <div class="content">
+<li class="event" id={event.id}>
+
+        {#if event.poster}
+            <figure style='display: inline-block; float: right;'>
+                <img src={event.poster?.thumbnail_url} alt="Poster for {event.name}" />
+                <figcaption style="display: none;">Poster for {event.name}</figcaption>
+            </figure>
+        {/if}
         <hgroup>
             <div class="time" style="color:#e5771e;">
                 <time datetime={event.start_time}>
@@ -37,7 +40,7 @@
                     </time>
                 {/if}
             </div>
-            <h2 id={event.id}>
+            <h2 >
                 <a use:inertia href="/events/{event.id}" style="color:inherit;"
                     >{event.name}</a
                 >
@@ -94,27 +97,22 @@
                 </ul>
             </nav>
         {/if}
-        <div class="tags">
-            <Icon icon="mdi:hashtag" />
-            {#each event.tags as tag}
-                <a
-                    role="button"
-                    class="outline"
-                    use:inertia
-                    href="/events?tag={tag}">{tag}</a
-                >
-            {/each}
-        </div>
-    </div>
+        <Tags tags={event.tags} listPage='/events'/>
 </li>
 
 <style>
     figure {
-        flex: 0 0 auto;
-        display: flex;
+        float: right;
+        margin: 0 0 .5em .5em;
+        border: 2px solid var(--cmc-yellow);
+        height: 16rem;
+        border-radius: calc(var(--pico-border-radius) + .2em);
+        overflow: hidden;
+        padding: .2em;
+        max-width: 40%;
     }
     img {
-        flex: auto;
+        border-radius: var(--pico-border-radius);
         height: 100%;
     }
 
@@ -122,29 +120,10 @@
         flex: 1 1 auto;
     }
     li.event {
-        display: flex;
-        flex-direction: row-reverse;
-        align-items: stretch;
-        gap: 1rem;
         margin-bottom: 1rem;
-        padding: 0.5rem 0;
-        border-bottom: 4px solid var(--cmc-yellow);
-    }
-
-    .content {
-        display: flex;
-        flex-direction: column;
-    }
-
-    .content section {
-        flex: 1 1 auto;
-    }
-
-    figure {
-        aspect-ratio: 3/4;
-        height: 16rem;
-        border-radius: var(--pico-border-radius);
-        overflow: hidden;
+        padding: 0.8rem 0;
+        border-top: 4px solid var(--cmc-yellow);
+        list-style: none;
     }
 
     .bands ul {
@@ -169,21 +148,6 @@
         li {
             flex-direction: column;
         }
-    }
-
-    .tags {
-        display: flex;
-        align-items: center;
-        gap: 0.5em;
-    }
-    .tags a[role="button"] {
-        font-size: smaller;
-        padding: 0.25rem 0.5rem;
-        margin: 0;
-    }
-
-    .event :global(.iconify) {
-        color: var(--cmc-blue);
     }
 
     ul.price {

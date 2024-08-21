@@ -44,6 +44,6 @@ class Event extends Model
 
     public function poster()
     {
-        return $this->belongsTo(AttributedMedia::class, "poster_id", "id");
+        return $this->belongsTo(AttributedMedia::class, 'poster_id');
     }
 }

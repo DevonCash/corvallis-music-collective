@@ -15,6 +15,7 @@ use Illuminate\Database\Eloquent\SoftDeletingScope;
 use Filament\Forms\Components;
 use Awcodes\TableRepeater\Components\TableRepeater;
 use Awcodes\TableRepeater\Header;
+use App\Models\User;
 
 class PostResource extends Resource
 {
@@ -24,7 +25,7 @@ class PostResource extends Resource
 
     public static function form(Form $form): Form
     {
-        return $form->columns(2)->schema([
+        return $form->columns(1)->schema([
             Components\TextInput::make("title")->required()->maxLength(255),
             Components\TagsInput::make("tags"),
             Components\RichEditor::make("content")
@@ -32,20 +33,19 @@ class PostResource extends Resource
                 ->fileAttachmentsDisk("s3")
                 ->fileAttachmentsDirectory("attachments")
                 ->required(),
-            Components\Section::make("Meta")
-                ->collapsed()
+
+            TableRepeater::make('postUsers')
+                ->relationship()
+                ->headers([
+                    Header::make('User')
+                ])
+                ->streamlined()
+                ->orderable()
+                ->orderColumn('order')
                 ->schema([
-                    TableRepeater::make("authors")
-                        ->relationship()
-                        ->orderColumn("order")
-                        ->headers([Header::make("name")])
-                        ->schema([
-                            Components\Select::make("user_id")
-                                ->relationship("authors", "name")
-                                ->required(),
-                            Components\TextInput::make("name")->readOnly(),
-                        ])
-                        ->streamlined(),
+                    Components\Select::make('user_id')
+                        ->relationship('user', 'name')
+                        ->required(),
                 ]),
         ]);
     }
@@ -81,7 +81,6 @@ class PostResource extends Resource
     public static function getRelations(): array
     {
         return [
-                //
             ];
     }
 

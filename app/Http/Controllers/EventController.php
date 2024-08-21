@@ -16,6 +16,7 @@ class EventController
         $nextMonth->addMonth()->startOfMonth();
 
         $events = Event::published()
+            ->with('poster')
             ->with("bands:id,name")
             ->with("venue:id,name,link")
             ->where("start_time", ">=", $month)
@@ -59,8 +60,6 @@ class EventController
             "tags" => "array",
             "tags.*" => "string",
         ]);
-
-        ray($data);
 
         $event = Event::create([
             "name" => $data["name"],

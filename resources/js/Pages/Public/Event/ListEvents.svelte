@@ -47,7 +47,7 @@
 
 {@debug events}
 
-<main>
+<main class='container' style='position: relative;'>
     <header>
         <hgroup>
             <h1>
@@ -86,7 +86,7 @@
                 1,
             )}
         />
-        <article>
+        <article style='min-width: 60%;'>
             <h5>Your event here?</h5>
             <p>
                 Submit local events to our community calendar! We'll review and
@@ -169,18 +169,27 @@
 
     @media (max-width: 1024px) {
         main {
+            margin: auto;
             grid-template-columns: 1fr;
             grid-template-areas: "header" "aside" "section";
             align-items: center;
-            padding: 1rem !important;
-        }
-        aside {
-            grid-row: unset;
         }
         aside {
             position: static;
             margin: auto;
             font-size: larger;
+            grid-row: unset;
+            flex-direction: row;
+            justify-content: center;
+            align-items: center;
+            width: min-content;
+
+        }
+    }
+
+    @media (max-width: 576px) {
+        aside {
+            flex-wrap: wrap;
         }
     }
 

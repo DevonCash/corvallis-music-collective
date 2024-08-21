@@ -21,7 +21,7 @@ class UserPolicy
     {
         if ($user->id == $model->id) return true;
         if ($model->isPublished()) return true;
-        return false;
+        return $user->isAdmin();
     }
 
     /**

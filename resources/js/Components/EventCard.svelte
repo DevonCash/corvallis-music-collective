@@ -15,7 +15,7 @@
         <figure class:loading={loadingImage} style="--img: url({event.poster})">
             <img
                 on:loadeddata={() => (loadingImage = false)}
-                src={event.poster}
+                src={event.poster?.thumbnail_url}
                 alt="Poster for {event.name}"
             />
             <figcaption style="display: none;">
