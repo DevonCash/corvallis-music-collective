@@ -69,11 +69,11 @@ class EventController
             ),
             "tags" => $data["tags"] ?? [],
         ]);
-        if (request()->hasFile("poster")) {
-            $event
-                ->addMediaFromRequest("poster")
-                ->toMediaCollection("posters", "s3");
-        }
+        // if (request()->hasFile("poster")) {
+        //     $event
+        //         ->addMediaFromRequest("poster")
+        //         ->toMediaCollection("posters", "s3");
+        // }
 
         return response()->json([
             "message" => "Event submitted! Keep an eye out for it on the site!",
