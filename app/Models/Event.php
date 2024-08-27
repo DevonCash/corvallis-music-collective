@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Awcodes\Curator\Models\Media;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use App\Traits\Publishable;
@@ -44,6 +45,6 @@ class Event extends Model
 
     public function poster()
     {
-        return $this->belongsTo(AttributedMedia::class, 'poster_id');
+        return $this->belongsTo(Media::class, 'poster_id');
     }
 }

@@ -72,7 +72,7 @@ class AdminPanelProvider extends PanelProvider
                     ->pluralLabel("Media")
                     ->navigationIcon("heroicon-o-photo")
                     ->navigationCountBadge()
-                    ->defaultListView("grid"),
+                    ->defaultListView("grid")
             ])
             ->authMiddleware([Authenticate::class])
             ->viteTheme("resources/css/filament/admin/theme.css");
