@@ -4,7 +4,7 @@
     <section class="hero container mx-auto" style="min-height: 50vh;">
       <div class="hero-content py-16">
         <div class="md:grid grid-cols-2 items-end gap-6">
-          <h2 class="grow md:text-right md:text-5xl text-secondary">
+          <h2 class="grow md:text-right md:text-5xl text-secondary font-bold">
             Building and connecting music communities in Corvallis
           </h2>
           <div class="grow prose">

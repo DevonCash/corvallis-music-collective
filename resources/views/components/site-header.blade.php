@@ -1,5 +1,5 @@
 <header
-  class="flex w-full items-center gap-8 p-4 px-12 pb-10 flex-col md:flex-row text-center md:text-left mb-8"
+  class="border-stripe flex w-full items-center gap-8 p-4 px-12 pb-10 flex-col md:flex-row text-center md:text-left mb-8"
 >
   <x-logo class="size-48 shrink-0 relative left-10 md:left-0 -my-6" />
   <div class="flex flex-col items-stretch grow h-full md:items-start">

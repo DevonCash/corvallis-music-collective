@@ -7,7 +7,7 @@
   <div class="flex flex-col gap-1">
     <h6 class="footer-title">Contact</h6>
     <a class="link flex items-center gap-2">
-      <i class="i-mdi-map-marker size-5"></i>
+      <x-filament::icon icon="heroicon-o-map-pin" class="size-5"></x-filament::icon>
       <span
         >6775 A Philomath Blvd, <div class="text-xs">
           Corvallis, OR 97333
@@ -15,18 +15,18 @@
       >
     </a>
     <a class="link flex items-center gap-2" href="mailto:contact@corvmc.org">
-      <i class="i-mdi-email size-5"></i>
+      <x-filament::icon icon="heroicon-o-envelope" class="size-5"></x-filament::icon>
       contact@corvmc.org
     </a>
     <a
       class="link flex items-center gap-2"
       href="https://www.facebook.com/profile.php?id=61557301093883"
     >
-      <i class="i-mdi-facebook size-5"></i>
+      <x-filament::icon icon="heroicon-o-globe-alt" class="size-5"></x-filament::icon>
       Corvallis Music Collective
     </a>
     <a class="link flex items-center gap-2" href="https://www.instagram.com/corvmc/">
-      <i class="i-mdi-instagram size-5"></i>
+      <x-filament::icon icon="heroicon-o-camera" class="size-5"></x-filament::icon>
       @corvmc
     </a>
   </div>

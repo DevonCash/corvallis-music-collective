@@ -1,13 +1,5 @@
 @import "../../vendor/filament/filament/resources/css/index.css";
 
-html,
-  body {
-    font-family: "Lexend", sans-serif;
-  }
-
-  h2 {
-    @apply text-3xl text-primary font-bold;
-  }
 :root {
   --cmc-orange: #e5771e;
   --cmc-yellow: #ffe28a;
@@ -17,28 +9,30 @@ html,
   --speaker-fill: oklch(var(--a));
   --sound-lines: oklch(var(--s));
   --speaker-front: oklch(var(--b3));
+
+  --stripe: linear-gradient(
+    to bottom,
+    oklch(var(--s)) 0%,
+    oklch(var(--s)) 33%,
+    oklch(var(--wa)) 33%,
+    oklch(var(--wa)) 66%,
+    oklch(var(--er)) 66%,
+    oklch(var(--er)) 100%
+  );
 }
 
-  header.site-header {
-    position: relative;
-  }
-  header.site-header:after {
-    --stripe: linear-gradient(
-      to bottom,
-      oklch(var(--s)) 0%,
-      oklch(var(--s)) 33%,
-      oklch(var(--wa)) 33%,
-      oklch(var(--wa)) 66%,
-      oklch(var(--er)) 66%,
-      oklch(var(--er)) 100%
-    );
+.border-stripe {
+  position: relative;
+}
 
-    content: "";
-    display: block;
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    width: 100%;
-    height: 1.75em;
-    background: var(--stripe);
-  }
+.border-stripe:after {
+  content: "";
+  display: block;
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 1.75em;
+  background: var(--stripe);
+}
+

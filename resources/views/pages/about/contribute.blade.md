@@ -17,7 +17,6 @@ Share our website, our events, and our social media posts with your friends and 
     <div class='flex justify-center'>
         <a class='btn btn-circle btn-ghost text-secondary' href="https://www.facebook.com/profile.php?id=61557301093883"><x-filament::icon icon='heroicon-o-globe-alt' class='size-6'></x-filament::icon></a>
         <a class='btn btn-circle btn-ghost text-secondary' href="https://www.instagram.com/corvmc/"><x-filament::icon icon='heroicon-o-camera' class='size-6'></x-filament::icon></a>
-        <a class='btn btn-circle btn-ghost text-secondary' href="https://x.com/corvmc"><x-filament::icon icon='heroicon-o-x-mark' class='size-6'></x-filament::icon></a>
     </div>
     Follow us on social media!
 </div>
