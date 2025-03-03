@@ -13,10 +13,12 @@ class RoomSeeder extends Seeder
      */
     public function run(): void
     {
-        // Create products for rooms if they don't exist
-        $products = [
-            [
+        // Create products for rooms using ProductFactory
+        $basicProduct = Product::firstOrCreate(
+            ['name' => 'Basic Practice Room'],
+            Product::factory()->create([
                 'name' => 'Basic Practice Room',
+                'description' => 'Basic room for practicing',
                 'prices' => [
                     'hourly' => [
                         'amount' => 2000, // $20.00
@@ -31,10 +33,15 @@ class RoomSeeder extends Seeder
                         'currency' => 'usd',
                     ],
                 ],
-                'description' => 'Basic room for practicing',
-            ],
-            [
+                'stripe_product_id' => 'prod_basicRoom' . fake()->regexify('[A-Za-z0-9]{8}'),
+            ])->toArray()
+        );
+
+        $premiumProduct = Product::firstOrCreate(
+            ['name' => 'Premium Practice Room'],
+            Product::factory()->create([
                 'name' => 'Premium Practice Room',
+                'description' => 'Premium room with better acoustics',
                 'prices' => [
                     'hourly' => [
                         'amount' => 3500, // $35.00
@@ -49,10 +56,15 @@ class RoomSeeder extends Seeder
                         'currency' => 'usd',
                     ],
                 ],
-                'description' => 'Premium room with better acoustics',
-            ],
-            [
+                'stripe_product_id' => 'prod_premiumRoom' . fake()->regexify('[A-Za-z0-9]{8}'),
+            ])->toArray()
+        );
+
+        $studioProduct = Product::firstOrCreate(
+            ['name' => 'Recording Studio'],
+            Product::factory()->create([
                 'name' => 'Recording Studio',
+                'description' => 'Professional recording studio',
                 'prices' => [
                     'hourly' => [
                         'amount' => 5000, // $50.00
@@ -67,58 +79,98 @@ class RoomSeeder extends Seeder
                         'currency' => 'usd',
                     ],
                 ],
-                'description' => 'Professional recording studio',
-            ],
-        ];
+                'stripe_product_id' => 'prod_studioRoom' . fake()->regexify('[A-Za-z0-9]{8}'),
+            ])->toArray()
+        );
 
-        foreach ($products as $productData) {
-            Product::firstOrCreate(
-                ['name' => $productData['name']],
-                $productData
-            );
+        // Create rooms using RoomFactory
+        Room::firstOrCreate(
+            ['name' => 'Practice Room A'],
+            Room::factory()
+                ->withProduct($basicProduct)
+                ->create([
+                    'name' => 'Practice Room A',
+                    'description' => 'Small practice room suitable for individual practice',
+                    'capacity' => 2,
+                    'amenities' => [
+                        'piano' => true,
+                        'music_stand' => true,
+                        'chair' => true
+                    ],
+                    'hours' => $this->generateStandardHours('9:00', '22:00'),
+                ])->toArray()
+        );
+
+        Room::firstOrCreate(
+            ['name' => 'Practice Room B'],
+            Room::factory()
+                ->withProduct($basicProduct)
+                ->create([
+                    'name' => 'Practice Room B',
+                    'description' => 'Small practice room with natural lighting',
+                    'capacity' => 2,
+                    'amenities' => [
+                        'music_stand' => true,
+                        'chair' => true,
+                        'mirror' => true
+                    ],
+                    'hours' => $this->generateStandardHours('9:00', '22:00'),
+                ])->toArray()
+        );
+
+        Room::firstOrCreate(
+            ['name' => 'Ensemble Room'],
+            Room::factory()
+                ->withProduct($premiumProduct)
+                ->create([
+                    'name' => 'Ensemble Room',
+                    'description' => 'Medium-sized room good for small ensembles',
+                    'capacity' => 6,
+                    'amenities' => [
+                        'piano' => true,
+                        'music_stand' => true,
+                        'chair' => true,
+                        'amplifier' => true
+                    ],
+                    'hours' => $this->generateStandardHours('9:00', '22:00'),
+                ])->toArray()
+        );
+
+        Room::firstOrCreate(
+            ['name' => 'Studio'],
+            Room::factory()
+                ->withProduct($studioProduct)
+                ->create([
+                    'name' => 'Studio',
+                    'description' => 'Professional recording studio with sound isolation',
+                    'capacity' => 8,
+                    'amenities' => [
+                        'piano' => true, 
+                        'mixing_console' => true, 
+                        'microphone' => true, 
+                        'headphones' => true
+                    ],
+                    'hours' => $this->generateStandardHours('10:00', '20:00'),
+                ])->toArray()
+        );
+    }
+
+    /**
+     * Generate standard hours for all days of the week
+     */
+    private function generateStandardHours(string $open, string $close): array
+    {
+        $days = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
+        $hours = [];
+        
+        foreach ($days as $day) {
+            $hours[$day] = [
+                'open' => $open,
+                'close' => $close,
+                'is_open' => true,
+            ];
         }
-
-        // Create rooms
-        $rooms = [
-            [
-                'name' => 'Practice Room A',
-                'product_id' => Product::where('name', 'Basic Practice Room')->first()->id,
-                'description' => 'Small practice room suitable for individual practice',
-                'capacity' => 2,
-                'amenities' => ['Piano', 'Music Stand', 'Chair'],
-                'hours' => ['open' => '9:00', 'close' => '22:00'],
-            ],
-            [
-                'name' => 'Practice Room B',
-                'product_id' => Product::where('name', 'Basic Practice Room')->first()->id,
-                'description' => 'Small practice room with natural lighting',
-                'capacity' => 2,
-                'amenities' => ['Music Stand', 'Chair', 'Mirror'],
-                'hours' => ['open' => '9:00', 'close' => '22:00'],
-            ],
-            [
-                'name' => 'Ensemble Room',
-                'product_id' => Product::where('name', 'Premium Practice Room')->first()->id,
-                'description' => 'Medium-sized room good for small ensembles',
-                'capacity' => 6,
-                'amenities' => ['Piano', 'Music Stands', 'Chairs', 'Amplifier'],
-                'hours' => ['open' => '9:00', 'close' => '22:00'],
-            ],
-            [
-                'name' => 'Studio',
-                'product_id' => Product::where('name', 'Recording Studio')->first()->id,
-                'description' => 'Professional recording studio with sound isolation',
-                'capacity' => 8,
-                'amenities' => ['Piano', 'Mixing Console', 'Microphones', 'Headphones'],
-                'hours' => ['open' => '10:00', 'close' => '20:00'],
-            ],
-        ];
-
-        foreach ($rooms as $roomData) {
-            Room::firstOrCreate(
-                ['name' => $roomData['name']],
-                $roomData
-            );
-        }
+        
+        return $hours;
     }
 }

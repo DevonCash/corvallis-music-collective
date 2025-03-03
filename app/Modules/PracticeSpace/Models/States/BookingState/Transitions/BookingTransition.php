@@ -10,6 +10,7 @@ use Filament\Support\Contracts\HasColor;
 use Filament\Support\Contracts\HasLabel;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Str;
 use Spatie\ModelStates\Transition;
 use Override;
 
@@ -34,7 +35,7 @@ abstract class BookingTransition extends Transition implements FilamentSpatieTra
             static fn(mixed $value, string $key): array => [Str::camel($key) => $value],
         );
 
-        return new static($model, ...$formData);
+        return new static($model, $formData);
     }
 
     public function handle(): Booking

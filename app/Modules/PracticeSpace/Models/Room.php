@@ -3,10 +3,14 @@
 namespace App\Modules\PracticeSpace\Models;
 
 use App\Modules\Payments\Models\Product;
+use Database\Factories\RoomFactory;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 class Room extends Model
 {
+    use HasFactory;
+
     protected $fillable = [
         'name',
         'product_id',
@@ -20,6 +24,14 @@ class Room extends Model
         'amenities' => 'array',
         'hours' => 'array'
     ];
+
+    /**
+     * Create a new factory instance for the model.
+     */
+    protected static function newFactory()
+    {
+        return RoomFactory::new();
+    }
 
     public function bookings()
     {

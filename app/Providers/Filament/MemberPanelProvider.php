@@ -18,6 +18,7 @@ use Illuminate\Foundation\Http\Middleware\VerifyCsrfToken;
 use Illuminate\Routing\Middleware\SubstituteBindings;
 use Illuminate\Session\Middleware\StartSession;
 use Illuminate\View\Middleware\ShareErrorsFromSession;
+use App\Modules\Payments\Filament\PaymentsPluginProvider;
 use Rmsramos\Activitylog\ActivitylogPlugin;
 
 class MemberPanelProvider extends PanelProvider
@@ -39,6 +40,7 @@ class MemberPanelProvider extends PanelProvider
             ])
             ->plugins([
                 PracticeSpacePluginProvider::make(),
+                PaymentsPluginProvider::make(),
                 ActivitylogPlugin::make()
             ])
             ->discoverWidgets(in: app_path('Filament/Widgets'), for: 'App\\Filament\\Widgets')
@@ -60,6 +62,6 @@ class MemberPanelProvider extends PanelProvider
             ->authMiddleware([
                 Authenticate::class,
             ])
-            ->viteTheme('resources/css/filament/member/theme.css');
+            ->viteTheme('resources/css/app.css');
     }
 }

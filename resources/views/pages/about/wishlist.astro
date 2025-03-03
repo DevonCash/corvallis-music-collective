@@ -1,0 +1,60 @@
+---
+import Layout from "@/layouts/Layout.astro";
+import { groupBy } from "lodash-es";
+import { getSheetData } from "@/lib/google";
+
+const sheetId = "115Ng7S3EyUEMzdgWYLpASNSsnvT1p8KV2K2gezyMVjc";
+const range = "A1:DD";
+const [headers, ...rows] = await getSheetData(sheetId, range);
+
+const data = rows.map((row) => {
+  return headers.reduce((obj, header, index) => {
+    obj[header] = row[index];
+    return obj;
+  }, {});
+});
+---
+
+<Layout title="Donation Wishlist">
+  <main class="container mx-auto space-y-6">
+    <section>
+      <h1 class="text-3xl font-bold text-primary mb-3">Donation Wishlist</h1>
+      <p>
+        Every donated item – whether it's office supplies, music gear, or
+        building materials – means we can put more of our resources into growing
+        our programs and supporting local artists. If you have any of these
+        items to share, you're helping us make music more accessible for
+        everyone in our community.
+      </p>
+    </section>
+    {
+      Object.entries(groupBy(data, (i) => i.Category))
+        .sort((a, b) => a[0].localeCompare(b[0]))
+        .map(([key, items]) => (
+          <section>
+            <h2 class="text-2xl text-secondary">{key}</h2>
+            <ul class="space-y-3 p-4" style="list-style:square;">
+              {items.map((item) => (
+                <li>
+                  <h3 class="text-xl">{item.Name}</h3>
+                  <p class="text-neutral">{item.Description}</p>
+                </li>
+              ))}
+            </ul>
+          </section>
+        ))
+    }
+    <section class="card border-base-300 border-4">
+      <div class="card-body">
+        <h3 class="card-title ">Have something on our list? We'd love to hear from you!</h3>
+        <p>
+          Drop us a line at <a class="link" href="mailto:contact@corvmc.org"
+            >contact@corvmc.org</a
+          > to coordinate your donation. Even if you don't see what you'd like to
+          donate on our list, we're always happy to discuss how your contribution
+          might help our community grow.
+        </p>
+      </div>
+    </section>
+  </main>
+</Layout>

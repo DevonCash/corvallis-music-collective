@@ -24,6 +24,7 @@ return new class extends Migration
 
         Schema::create('payments', function (Blueprint $table) {
             $table->id();
+            $table->foreignId('user_id')->constrained();
             $table->foreignId('product_id')->constrained();
             $table->string('stripe_payment_intent_id')->unique();
             $table->integer('amount');

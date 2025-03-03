@@ -3,10 +3,14 @@
 namespace App\Modules\Payments\Models;
 
 use App\Modules\User\Models\User;
+use Database\Factories\ProductFactory;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 class Product extends Model
 {
+    use HasFactory;
+
     protected $fillable = [
         'name',
         'description',
@@ -20,6 +24,14 @@ class Product extends Model
         'is_visible' => 'boolean',
         'prices' => 'array',
     ];
+
+    /**
+     * Create a new factory instance for the model.
+     */
+    protected static function newFactory()
+    {
+        return ProductFactory::new();
+    }
 
     public function getPaymentMode(): string
     {
@@ -49,4 +61,5 @@ class Product extends Model
     {
         return $this->hasMany(Payment::class);
     }
+
 }
