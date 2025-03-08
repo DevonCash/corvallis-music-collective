@@ -45,18 +45,16 @@ class BookingCancelledDueToNoConfirmationNotification extends Notification imple
         
         return (new MailMessage)
             ->subject("Booking Cancelled: No Confirmation Received - {$roomName}")
-            ->greeting("Hello {$notifiable->name}!")
-            ->line("Your booking for {$roomName} has been automatically cancelled because we did not receive your confirmation by the deadline.")
-            ->line("**Cancelled Booking Details:**")
-            ->line("- **Date and Time:** {$startTime} to {$endTime}")
-            ->line("- **Room:** {$roomName}")
-            ->line("- **Booking ID:** {$this->booking->id}")
-            ->line("- **Confirmation Requested On:** {$requestedAt}")
-            ->line("- **Confirmation Deadline:** {$deadlineTime}")
-            ->line("This space will now be made available to other members.")
-            ->line("If you still wish to use this space and it remains available, you can make a new booking.")
-            ->action('Book Another Session', url('/practice-space/bookings/create'))
-            ->line("Thank you for using our practice spaces.");
+            ->markdown('practice-space::emails.bookings.cancelled-no-confirmation', [
+                'userName' => $notifiable->name,
+                'roomName' => $roomName,
+                'startTime' => $startTime,
+                'endTime' => $endTime,
+                'bookingId' => $this->booking->id,
+                'requestedAt' => $requestedAt,
+                'deadlineTime' => $deadlineTime,
+                'bookAgainUrl' => url('/practice-space/bookings/create'),
+            ]);
     }
 
     /**

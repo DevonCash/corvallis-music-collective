@@ -61,18 +61,16 @@ class BookingConfirmationRequestNotification extends Notification implements Sho
         
         return (new MailMessage)
             ->subject("Action Required: Confirm Your Practice Space Booking")
-            ->greeting("Hello {$notifiable->name}!")
-            ->line("You have an upcoming booking for {$roomName} that requires your confirmation.")
-            ->line("**Booking Details:**")
-            ->line("- **Date and Time:** {$startTime} to {$endTime}")
-            ->line("- **Room:** {$roomName}")
-            ->line("- **Booking ID:** {$this->booking->id}")
-            ->line("**Please confirm by {$confirmByTime} or your booking may be cancelled.**")
-            ->action('Confirm Booking', $confirmUrl)
-            ->line("If you can no longer attend this session, please cancel your booking:")
-            ->action('Cancel Booking', $cancelUrl)
-            ->line("If you don't confirm within the time window, your booking will be automatically cancelled and the space will be made available to others.")
-            ->line("Thank you for using our practice spaces!");
+            ->markdown('practice-space::emails.bookings.confirmation-request', [
+                'userName' => $notifiable->name,
+                'roomName' => $roomName,
+                'startTime' => $startTime,
+                'endTime' => $endTime,
+                'bookingId' => $this->booking->id,
+                'confirmByTime' => $confirmByTime,
+                'confirmUrl' => $confirmUrl,
+                'cancelUrl' => $cancelUrl,
+            ]);
     }
 
     /**

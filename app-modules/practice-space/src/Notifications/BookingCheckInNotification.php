@@ -43,22 +43,25 @@ class BookingCheckInNotification extends Notification implements ShouldQueue
         $checkInTime = $this->booking->check_in_time->format('g:i A');
         $checkOutTime = $this->booking->end_time->format('g:i A');
         
+        $hasEquipment = $this->booking->room->equipment->count() > 0;
+        $equipmentList = $hasEquipment 
+            ? $this->booking->room->equipment->pluck('name')->join(', ')
+            : '';
+        
         return (new MailMessage)
             ->subject("Check-In Confirmed: {$roomName}")
-            ->greeting("Hello {$notifiable->name}!")
-            ->line("You have successfully checked in to your booking for {$roomName}.")
-            ->line("**Booking Details:**")
-            ->line("- **Date and Time:** {$startTime} to {$endTime}")
-            ->line("- **Room:** {$roomName}")
-            ->line("- **Check-In Time:** {$checkInTime}")
-            ->line("- **Expected Check-Out Time:** {$checkOutTime}")
-            ->when($this->booking->room->equipment->count() > 0, function (MailMessage $mail) {
-                return $mail->line("**Available Equipment:** " . $this->booking->room->equipment->pluck('name')->join(', '));
-            })
-            ->line("Please remember to check out when you're finished and leave the space clean and tidy for the next user.")
-            ->line("If you need any assistance during your session, please contact staff.")
-            ->action('View Booking Details', url('/practice-space/bookings/' . $this->booking->id))
-            ->line("Enjoy your practice session!");
+            ->markdown('practice-space::emails.bookings.check-in', [
+                'userName' => $notifiable->name,
+                'roomName' => $roomName,
+                'startTime' => $startTime,
+                'endTime' => $endTime,
+                'checkInTime' => $checkInTime,
+                'checkOutTime' => $checkOutTime,
+                'bookingId' => $this->booking->id,
+                'hasEquipment' => $hasEquipment,
+                'equipmentList' => $equipmentList,
+                'viewUrl' => url('/practice-space/bookings/' . $this->booking->id),
+            ]);
     }
 
     /**

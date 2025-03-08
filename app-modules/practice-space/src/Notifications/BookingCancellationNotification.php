@@ -44,16 +44,15 @@ class BookingCancellationNotification extends Notification implements ShouldQueu
         
         return (new MailMessage)
             ->subject("Booking Cancelled: {$roomName}")
-            ->greeting("Hello {$notifiable->name}!")
-            ->line("Your booking for {$roomName} has been cancelled.")
-            ->line("**Cancelled Booking Details:**")
-            ->line("- **Date and Time:** {$startTime} to {$endTime}")
-            ->line("- **Room:** {$roomName}")
-            ->line("- **Booking ID:** {$this->booking->id}")
-            ->line("- **Cancellation Reason:** {$reason}")
-            ->line("If you did not intend to cancel this booking, please contact us immediately.")
-            ->action('Book Another Session', url('/practice-space/bookings/create'))
-            ->line("Thank you for using our practice spaces.");
+            ->markdown('practice-space::emails.bookings.cancellation', [
+                'userName' => $notifiable->name,
+                'roomName' => $roomName,
+                'startTime' => $startTime,
+                'endTime' => $endTime,
+                'bookingId' => $this->booking->id,
+                'reason' => $reason,
+                'bookAgainUrl' => url('/practice-space/bookings/create'),
+            ]);
     }
 
     /**

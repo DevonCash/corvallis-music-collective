@@ -44,15 +44,14 @@ class BookingConfirmationNotification extends Notification implements ShouldQueu
         
         return (new MailMessage)
             ->subject("Practice Space Booking Confirmation: {$roomName}")
-            ->greeting("Hello {$notifiable->name}!")
-            ->line("Your booking for {$roomName} has been confirmed.")
-            ->line("**Booking Details:**")
-            ->line("- **Date and Time:** {$startTime} to {$endTime}")
-            ->line("- **Duration:** {$duration} hours")
-            ->line("- **Room:** {$roomName}")
-            ->line("- **Booking ID:** {$this->booking->id}")
-            ->action('View Booking Details', url('/practice-space/bookings/' . $this->booking->id))
-            ->line('Thank you for using our practice spaces!');
+            ->markdown('practice-space::emails.bookings.confirmation', [
+                'userName' => $notifiable->name,
+                'roomName' => $roomName,
+                'startTime' => $startTime,
+                'endTime' => $endTime,
+                'bookingId' => $this->booking->id,
+                'viewUrl' => url('/practice-space/bookings/' . $this->booking->id),
+            ]);
     }
 
     /**

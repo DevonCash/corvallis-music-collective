@@ -59,13 +59,16 @@ class NotificationTest extends TestCase
         );
     }
 
+    /**
+     * Test that notification content can be rendered.
+     */
     public function test_notification_content_can_be_rendered()
     {
         // This test demonstrates how to test the actual content of the notification
         // without sending real emails
         
         // Arrange
-        $user = User::factory()->create();
+        $user = User::factory()->create(['name' => 'Test User']);
         $room = Room::factory()->create(['name' => 'Test Room']);
         $booking = Booking::factory()->create([
             'user_id' => $user->id,
@@ -80,7 +83,13 @@ class NotificationTest extends TestCase
         
         // Assert
         $this->assertStringContainsString('Test Room', $mailMessage->subject);
-        $this->assertStringContainsString('has been confirmed', $mailMessage->introLines[0]);
+        
+        // Test that the view data contains the expected values
+        $viewData = $mailMessage->viewData;
+        $this->assertEquals('Test User', $viewData['userName']);
+        $this->assertEquals('Test Room', $viewData['roomName']);
+        $this->assertEquals($booking->id, $viewData['bookingId']);
+        $this->assertStringContainsString('/practice-space/bookings/' . $booking->id, $viewData['viewUrl']);
     }
 
     /**

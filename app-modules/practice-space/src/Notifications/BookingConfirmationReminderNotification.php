@@ -65,17 +65,17 @@ class BookingConfirmationReminderNotification extends Notification implements Sh
         
         return (new MailMessage)
             ->subject("URGENT: {$reminderText} to confirm your booking - {$roomName}")
-            ->greeting("Hello {$notifiable->name}!")
-            ->line("**This is an urgent reminder that you need to confirm your booking for {$roomName}.**")
-            ->line("If you don't confirm by {$deadlineTime}, your booking will be automatically cancelled and the space will be made available to others.")
-            ->line("**Booking Details:**")
-            ->line("- **Date and Time:** {$startTime} to {$endTime}")
-            ->line("- **Room:** {$roomName}")
-            ->line("- **Booking ID:** {$this->booking->id}")
-            ->action('Confirm Booking Now', $confirmUrl)
-            ->line("If you can no longer attend this session, please cancel your booking:")
-            ->action('Cancel Booking', $cancelUrl)
-            ->line("Thank you for using our practice spaces!");
+            ->markdown('practice-space::emails.bookings.confirmation-reminder', [
+                'userName' => $notifiable->name,
+                'roomName' => $roomName,
+                'startTime' => $startTime,
+                'endTime' => $endTime,
+                'bookingId' => $this->booking->id,
+                'deadlineTime' => $deadlineTime,
+                'reminderText' => $reminderText,
+                'confirmUrl' => $confirmUrl,
+                'cancelUrl' => $cancelUrl,
+            ]);
     }
 
     /**

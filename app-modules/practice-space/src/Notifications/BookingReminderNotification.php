@@ -47,20 +47,24 @@ class BookingReminderNotification extends Notification implements ShouldQueue
             ? "Your booking is in 1 hour" 
             : "Your booking is in {$this->hoursUntilBooking} hours";
         
+        $hasEquipment = $this->booking->room->equipment->count() > 0;
+        $equipmentList = $hasEquipment 
+            ? $this->booking->room->equipment->pluck('name')->join(', ')
+            : '';
+        
         return (new MailMessage)
             ->subject("Reminder: {$reminderText} - {$roomName}")
-            ->greeting("Hello {$notifiable->name}!")
-            ->line("This is a reminder about your upcoming booking for {$roomName}.")
-            ->line("**Booking Details:**")
-            ->line("- **Date and Time:** {$startTime} to {$endTime}")
-            ->line("- **Room:** {$roomName}")
-            ->line("- **Booking ID:** {$this->booking->id}")
-            ->line("Please remember to arrive on time and check in with staff when you arrive.")
-            ->when($this->booking->room->equipment->count() > 0, function (MailMessage $mail) {
-                return $mail->line("**Available Equipment:** " . $this->booking->room->equipment->pluck('name')->join(', '));
-            })
-            ->action('View Booking Details', url('/practice-space/bookings/' . $this->booking->id))
-            ->line("If you need to cancel, please do so as soon as possible so others can use the space.");
+            ->markdown('practice-space::emails.bookings.reminder', [
+                'userName' => $notifiable->name,
+                'roomName' => $roomName,
+                'startTime' => $startTime,
+                'endTime' => $endTime,
+                'bookingId' => $this->booking->id,
+                'reminderText' => $reminderText,
+                'hasEquipment' => $hasEquipment,
+                'equipmentList' => $equipmentList,
+                'viewUrl' => url('/practice-space/bookings/' . $this->booking->id),
+            ]);
     }
 
     /**

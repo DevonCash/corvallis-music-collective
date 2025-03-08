@@ -43,24 +43,23 @@ class BookingCompletedNotification extends Notification implements ShouldQueue
         $checkInTime = $this->booking->check_in_time->format('g:i A');
         $checkOutTime = $this->booking->check_out_time->format('g:i A');
         $duration = $this->booking->getDurationInHours();
+        $totalPrice = $this->booking->total_price ? number_format($this->booking->total_price, 2) : null;
         
         return (new MailMessage)
             ->subject("Booking Completed: {$roomName}")
-            ->greeting("Hello {$notifiable->name}!")
-            ->line("Your booking for {$roomName} has been completed.")
-            ->line("**Booking Details:**")
-            ->line("- **Date and Time:** {$startTime} to {$endTime}")
-            ->line("- **Room:** {$roomName}")
-            ->line("- **Check-In Time:** {$checkInTime}")
-            ->line("- **Check-Out Time:** {$checkOutTime}")
-            ->line("- **Total Duration:** {$duration} hours")
-            ->when($this->booking->total_price, function (MailMessage $mail) {
-                return $mail->line("- **Total Cost:** $" . number_format($this->booking->total_price, 2));
-            })
-            ->line("Thank you for using our practice spaces! We hope you had a productive session.")
-            ->line("**Please take a moment to provide feedback on your experience:**")
-            ->action('Provide Feedback', url('/practice-space/bookings/' . $this->booking->id . '/feedback'))
-            ->line("We look forward to seeing you again soon!");
+            ->markdown('practice-space::emails.bookings.completed', [
+                'userName' => $notifiable->name,
+                'roomName' => $roomName,
+                'startTime' => $startTime,
+                'endTime' => $endTime,
+                'checkInTime' => $checkInTime,
+                'checkOutTime' => $checkOutTime,
+                'duration' => $duration,
+                'totalPrice' => $totalPrice,
+                'bookingId' => $this->booking->id,
+                'feedbackUrl' => url('/practice-space/bookings/' . $this->booking->id . '/feedback'),
+                'bookAgainUrl' => url('/practice-space/bookings/create'),
+            ]);
     }
 
     /**

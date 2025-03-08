@@ -44,16 +44,15 @@ class BookingCreatedNotification extends Notification implements ShouldQueue
         
         return (new MailMessage)
             ->subject("Booking Request Received: {$roomName}")
-            ->greeting("Hello {$notifiable->name}!")
-            ->line("Your booking request for {$roomName} has been received and is now in the **Scheduled** state.")
-            ->line("**Booking Details:**")
-            ->line("- **Date and Time:** {$startTime} to {$endTime}")
-            ->line("- **Room:** {$roomName}")
-            ->line("- **Booking ID:** {$this->booking->id}")
-            ->line("**Important:** You will need to confirm this booking before {$confirmationNeededBy}. We'll send you a confirmation request email closer to the date.")
-            ->line("If you need to cancel or modify this booking, please do so as early as possible.")
-            ->action('View Booking Details', url('/practice-space/bookings/' . $this->booking->id))
-            ->line('Thank you for using our practice spaces!');
+            ->markdown('practice-space::emails.bookings.created', [
+                'userName' => $notifiable->name,
+                'roomName' => $roomName,
+                'startTime' => $startTime,
+                'endTime' => $endTime,
+                'bookingId' => $this->booking->id,
+                'confirmationNeededBy' => $confirmationNeededBy,
+                'viewUrl' => url('/practice-space/bookings/' . $this->booking->id),
+            ]);
     }
 
     /**

@@ -43,6 +43,11 @@ class PracticeSpaceServiceProvider extends ServiceProvider
                 SendConfirmationReminders::class,
                 ProcessExpiredConfirmations::class,
             ]);
+            
+            // Publish views
+            $this->publishes([
+                __DIR__ . '/../resources/views' => resource_path('views/vendor/practice-space'),
+            ], 'practice-space-views');
         }
     }
 } 

@@ -43,15 +43,14 @@ class BookingUserConfirmedNotification extends Notification implements ShouldQue
         
         return (new MailMessage)
             ->subject("Booking Confirmed: {$roomName}")
-            ->greeting("Hello {$notifiable->name}!")
-            ->line("Thank you for confirming your booking for {$roomName}.")
-            ->line("**Booking Details:**")
-            ->line("- **Date and Time:** {$startTime} to {$endTime}")
-            ->line("- **Room:** {$roomName}")
-            ->line("- **Booking ID:** {$this->booking->id}")
-            ->action('View Booking Details', url('/practice-space/bookings/' . $this->booking->id))
-            ->line("We look forward to seeing you at your scheduled time. Please remember to check in when you arrive.")
-            ->line("If you need to make any changes to your booking, please do so at least 24 hours in advance.");
+            ->markdown('practice-space::emails.bookings.user-confirmed', [
+                'userName' => $notifiable->name,
+                'roomName' => $roomName,
+                'startTime' => $startTime,
+                'endTime' => $endTime,
+                'bookingId' => $this->booking->id,
+                'viewUrl' => url('/practice-space/bookings/' . $this->booking->id),
+            ]);
     }
 
     /**
