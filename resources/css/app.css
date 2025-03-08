@@ -1,5 +1,36 @@
 @import "../../vendor/filament/filament/resources/css/index.css";
 
+
+/* Custom Filament styles */
+@layer components {
+  .border-stripe {
+    position: relative;
+  }
+
+  .border-stripe:after {
+    content: "";
+    display: block;
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 1.75em;
+    background: var(--stripe);
+  }
+  
+  .fi-ta-actions {
+    @apply justify-end;
+  }
+
+  .fi-fo-wizard-header{
+    @apply flex flex-col sm:flex-row;
+  }
+
+  .fi-fo-wizard-header-step{
+    flex: 1;
+  }
+}
+
 :root {
   --cmc-orange: #e5771e;
   --cmc-yellow: #ffe28a;
@@ -19,30 +50,4 @@
     oklch(var(--er)) 66%,
     oklch(var(--er)) 100%
   );
-}
-
-.border-stripe {
-  position: relative;
-}
-
-.border-stripe:after {
-  content: "";
-  display: block;
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  width: 100%;
-  height: 1.75em;
-  background: var(--stripe);
-}
-.fi-ta-actions {
-  @apply justify-end;
-}
-
-.fi-fo-wizard-header{
-  @apply flex flex-col sm:flex-row;
-}
-
-.fi-fo-wizard-header-step{
-  flex: 1;
 }

@@ -69,7 +69,11 @@ class MemberPanelProvider extends PanelProvider
             ])
             ->navigationItems([
                 NavigationItem::make('Membership')
-                ->url(fn() => 'https://billing.stripe.com/p/login/28oaFS9Xoahu1ygaEE?prefilled_email=' . urlencode( User::find(Auth::id())->email), true)
+                ->url(function(){
+                    /** @var \App\Models\User $user */
+                    $user = Auth::user();
+                    return 'https://billing.stripe.com/p/login/28oaFS9Xoahu1ygaEE?prefilled_email=' . urlencode($user->email);
+                }, true) 
                 ->icon('heroicon-o-credit-card')
             ])
             ->viteTheme('resources/css/app.css');

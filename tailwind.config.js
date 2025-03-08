@@ -15,6 +15,8 @@ export default {
         './resources/**/*.blade.php',
         './resources/**/*.js',
         './resources/**/*.vue',
+        './app-modules/**/*.blade.php',
+        './app-modules/**/*.js',
     ],
     theme: {
         extend: {
