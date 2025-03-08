@@ -22,6 +22,8 @@ use Filament\Tables\Contracts\HasTable;
 use Filament\Forms\Components\Wizard\Step;
 use CorvMC\PracticeSpace\Filament\Actions\CreateBookingAction;
 use CorvMC\PracticeSpace\Models\States\BookingState;
+use Filament\Tables\Actions\Action as TableAction;
+use CorvMC\StateManagement\Filament\Actions\TransitionTableActions;
 
 class UserBookings extends Page implements HasTable
 {
@@ -91,9 +93,9 @@ class UserBookings extends Page implements HasTable
                     ->label('Past Bookings')
                     ->query(fn (Builder $query): Builder => $query->where('end_time', '<', now())),
             ])
-            ->actions([
-                ...BookingState::getTableActions()
-            ])
+            ->actions(
+                [...TransitionTableActions::make(BookingState::class)]
+            )
             ->bulkActions([])
             ->emptyStateHeading('No bookings yet')
             ->emptyStateDescription('Once you book a practice room, your reservations will appear here.')

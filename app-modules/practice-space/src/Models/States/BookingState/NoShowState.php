@@ -13,6 +13,7 @@ use Illuminate\Database\Eloquent\Model;
  */
 class NoShowState extends BookingState
 {
+    public static string $name = 'no_show';
     public static string $label = 'No Show';
     public static string $icon = 'heroicon-o-user-minus';
     public static string $color = 'danger';

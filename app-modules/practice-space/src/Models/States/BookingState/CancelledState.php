@@ -27,15 +27,6 @@ class CancelledState extends BookingState
      */
     public static function getForm(): array
     {
-        return [
-            Forms\Components\Textarea::make('notes')
-                ->label('Cancellation Reason')
-                ->placeholder('Add the reason for cancellation')
-                ->required(),
-                
-            Forms\Components\Toggle::make('refund_payment')
-                ->label('Refund payment to member')
-                ->default(false),
-        ];
+        return [];
     }
 } 

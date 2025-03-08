@@ -5,6 +5,8 @@ namespace CorvMC\PracticeSpace\Models\States;
 use CorvMC\StateManagement\AbstractState;
 use CorvMC\StateManagement\Casts\State;
 use Illuminate\Contracts\Database\Eloquent\CastsAttributes;
+use Filament\Tables\Actions\Action;
+use CorvMC\PracticeSpace\Models\Booking;
 
 /**
  * BookingState Base Class
@@ -36,26 +38,11 @@ abstract class BookingState extends AbstractState
     ];
     
     /**
-     * Resolve a state class from a state name.
-     */
-    public static function resolveStateClass(string $state): string
-    {
-        return static::$states[$state] ?? static::$states['scheduled'];
-    }
-    
-    /**
-     * Get all available states.
-     */
-    public static function getAvailableStates(): array
-    {
-        return static::$states;
-    }
-    
-    /**
      * Cast method for Laravel.
      */
     public static function castUsing(array $arguments): CastsAttributes
     {
         return new State(static::class);
     }
+
 } 

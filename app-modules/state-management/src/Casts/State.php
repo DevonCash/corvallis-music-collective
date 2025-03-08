@@ -39,7 +39,7 @@ class State implements CastsAttributes
     {
         
         // Validate that the state exists
-        $states = $this->stateTypeClass::getAvailableStates();
+        $states = $this->stateTypeClass::getStates();
         if (!isset($states[$value])) {
             // Use the first state as default if the current value is invalid
             $value = array_key_first($states);

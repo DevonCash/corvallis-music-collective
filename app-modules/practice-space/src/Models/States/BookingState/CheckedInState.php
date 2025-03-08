@@ -13,6 +13,7 @@ use Illuminate\Database\Eloquent\Model;
  */
 class CheckedInState extends BookingState
 {
+    public static string $name = 'checked_in';
     public static string $label = 'Checked In';
     public static string $icon = 'heroicon-o-user-circle';
     public static string $color = 'info';

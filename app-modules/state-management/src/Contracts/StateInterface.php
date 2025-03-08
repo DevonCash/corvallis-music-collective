@@ -14,6 +14,11 @@ interface StateInterface
     public static function getName(): string;
     
     /**
+     *  Get the verb for the state.
+     */
+    public static function getVerb(): string;
+    
+    /**
      * Get the display name of the state.
      */
     public static function getLabel(): string;
@@ -50,19 +55,10 @@ interface StateInterface
     public static function transitionTo(Model $model, string $stateClass, array $data = []): Model;
     
     /**
-     * Get Filament actions for transitioning from this state.
-     */
-    public static function getActions(): array;
-    
-    /**
      * Get the form schema for transitioning to this state.
      * 
      * @return array<\Filament\Forms\Components\Component>
      */
     public static function getForm(): array;
 
-    /**
-     * Create a Filament infolist section for this state.
-     */
-    public static function getInfolistSection(Model $model): Section;
 } 
