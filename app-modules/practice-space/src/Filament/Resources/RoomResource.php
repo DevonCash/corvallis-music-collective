@@ -22,6 +22,7 @@ use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Filters\Filter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Facades\Auth;
 
 class RoomResource extends Resource
 {
@@ -31,6 +32,13 @@ class RoomResource extends Resource
     
     protected static ?string $navigationGroup = 'Practice Space';
 
+
+    public static function canAccess(): bool
+    {
+        /** @var User $user */
+        $user = Auth::user();
+        return $user->can('manage', Room::class);
+    }
     public static function form(Form $form): Form
     {
         return $form

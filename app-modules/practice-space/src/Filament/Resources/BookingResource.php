@@ -15,6 +15,10 @@ use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Auth;
+use Filament\Tables\Grouping\Group;
+use CorvMC\PracticeSpace\Models\States\BookingState;
+
+use CorvMC\StateManagement\Filament\Table\Columns\StateColumn;
 
 class BookingResource extends Resource
 {
@@ -22,6 +26,15 @@ class BookingResource extends Resource
 
     protected static ?string $navigationGroup = 'Practice Space';
     protected static ?string $navigationIcon = 'heroicon-o-calendar';
+
+
+    
+    public static function canAccess(): bool
+    {
+        /** @var User $user */
+        $user = Auth::user();
+        return $user->can('manage', Booking::class);
+    }
 
     public static function form(Form $form): Form
     {
@@ -112,23 +125,15 @@ class BookingResource extends Resource
                 TextColumn::make('user.name')
                     ->sortable()
                     ->searchable(),
+                TextColumn::make('date')
+                    ->getStateUsing(fn (Booking $record): string => $record->start_time)
+                    ->date()
+                    ->sortable(),
                 TextColumn::make('start_time')
-                    ->dateTime()
+                    ->formatStateUsing(fn (Booking $record): string => $record->start_time->format('g:i a') . ' - ' . $record->end_time->format('g:i a'))
+                    ->tooltip(fn (Booking $record): string => $record->start_time->diffForHumans(now(), true))
                     ->sortable(),
-                TextColumn::make('end_time')
-                    ->dateTime()
-                    ->sortable(),
-                TextColumn::make('status')
-                    ->badge()
-                    ->color(fn (string $state): string => match ($state) {
-                        'reserved' => 'gray',
-                        'confirmed' => 'info',
-                        'checked_in' => 'warning',
-                        'completed' => 'success',
-                        'cancelled' => 'danger',
-                        default => 'gray',
-                    })
-                    ->sortable(),
+                StateColumn::make('state'),
                 TextColumn::make('total_price')
                     ->money('USD')
                     ->sortable(),
@@ -151,17 +156,19 @@ class BookingResource extends Resource
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
+            ->groups([
+                Group::make('room.name')
+                    ->label('Room')
+            ])
             ->filters([
                 Tables\Filters\SelectFilter::make('room_id')
                     ->label('Room')
                     ->options(Room::query()->pluck('name', 'id')),
-                Tables\Filters\SelectFilter::make('status')
+                Tables\Filters\SelectFilter::make('state')
                     ->options([
-                        'reserved' => 'Reserved',
-                        'confirmed' => 'Confirmed',
-                        'checked_in' => 'Checked In',
-                        'completed' => 'Completed',
-                        'cancelled' => 'Cancelled',
+                        'in_progress' => 'In Progress',
+                        'finished' => 'Finished',
+                        ...array_map(fn (string $stateClass): string => $stateClass::getLabel(), BookingState::getStates()),
                     ]),
                 Tables\Filters\Filter::make('start_time')
                     ->form([

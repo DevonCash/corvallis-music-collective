@@ -2,37 +2,26 @@
 
 namespace CorvMC\PracticeSpace\Filament\Pages;
 
-use App\Models\User;
-use Carbon\Carbon;
-use Filament\Forms;
-use Filament\Forms\Form;
-use Filament\Notifications\Notification;
 use Filament\Pages\Page;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Support\Facades\Auth;
 use CorvMC\PracticeSpace\Models\Booking;
-use CorvMC\PracticeSpace\Models\Room;
-use Filament\Actions\Action;
-use Filament\Actions\ActionGroup;
-use Filament\Support\Enums\MaxWidth;
 use Illuminate\Database\Eloquent\Builder;
 use Filament\Tables\Concerns\InteractsWithTable;
 use Filament\Tables\Contracts\HasTable;
-use Filament\Forms\Components\Wizard\Step;
 use CorvMC\PracticeSpace\Filament\Actions\CreateBookingAction;
 use CorvMC\PracticeSpace\Models\States\BookingState;
-use Filament\Tables\Actions\Action as TableAction;
 use CorvMC\StateManagement\Filament\Actions\TransitionTableActions;
 
 class UserBookings extends Page implements HasTable
 {
     use InteractsWithTable;
     
-    protected static ?string $navigationIcon = 'heroicon-o-calendar';
-    protected static ?string $navigationLabel = 'My Practice Room Bookings';
+    protected static ?string $navigationIcon = 'heroicon-o-calendar-days';
+    protected static ?string $navigationLabel = 'Practice Space';
     // protected static ?string $navigationGroup = 'Practice Space';
-    protected static ?string $title = 'My Practice Room Bookings';
+    protected static ?string $title = 'My Practice Space Bookings';
     protected static ?string $slug = 'practice-space/my-bookings';
     protected static ?int $navigationSort = 1;
     

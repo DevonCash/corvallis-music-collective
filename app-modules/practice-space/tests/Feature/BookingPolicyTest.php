@@ -30,42 +30,42 @@ class BookingPolicyTest extends TestCase
             'name' => 'Test Booking Policy User',
         ]);
         
-        // Create a room category
-        $this->roomCategory = RoomCategory::factory()->create([
-            'name' => 'Standard Practice Room',
-            'description' => 'Standard practice room for bands',
-        ]);
-        
-        // Create a room
-        $this->room = Room::factory()->create([
-            'room_category_id' => $this->roomCategory->id,
-            'hourly_rate' => 25.00,
-        ]);
-        
         // Create a booking policy as a value object
         $this->bookingPolicy = new BookingPolicy(
             openingTime: '08:00',
             closingTime: '22:00',
-            maxBookingDurationHours: 4.0,
-            minBookingDurationHours: 1.0,
-            maxAdvanceBookingDays: 30,
-            minAdvanceBookingHours: 2.0,
+            maxBookingDurationHours: 8.0,
+            minBookingDurationHours: 0.5,
+            maxAdvanceBookingDays: 90,
+            minAdvanceBookingHours: 1.0,
             cancellationHours: 24,
-            maxBookingsPerWeek: 3
+            maxBookingsPerWeek: 5
         );
         
-        // Assign the booking policy to the room
-        $this->room->booking_policy = $this->bookingPolicy;
-        $this->room->save();
+        // Create a room category with the default policy
+        $this->roomCategory = RoomCategory::factory()->create([
+            'name' => 'Standard Practice Room',
+            'description' => 'Standard practice room for bands',
+            'default_booking_policy' => $this->bookingPolicy
+        ]);
+        
+        // Create a room without a specific booking policy (will use category default)
+        $this->room = Room::factory()->create([
+            'room_category_id' => $this->roomCategory->id,
+            'hourly_rate' => 25.00,
+            'booking_policy' => null // Explicitly set to null to use category default
+        ]);
     }
 
     /** @test */
     public function booking_policy_is_associated_with_room_category()
     {
-        // Since we're now using a value object directly on the room, we'll test that
-        // the room has the booking policy value object
+        // Test that the room falls back to the category's default booking policy
         $this->assertInstanceOf(BookingPolicy::class, $this->room->booking_policy);
-        $this->assertEquals(4.0, $this->room->booking_policy->maxBookingDurationHours);
+        $this->assertEquals(8.0, $this->room->booking_policy->maxBookingDurationHours);
+        
+        // Verify that it's using the category's policy
+        $this->assertEquals($this->roomCategory->default_booking_policy->openingTime, $this->room->booking_policy->openingTime);
     }
 
     /** @test */
@@ -87,7 +87,7 @@ class BookingPolicyTest extends TestCase
             'room_id' => $this->room->id,
             'user_id' => $this->testUser->id,
             'start_time' => now()->addDay()->setHour(10),
-            'end_time' => now()->addDay()->setHour(15), // 5 hours, exceeds max
+            'end_time' => now()->addDay()->setHour(19), // 9 hours, exceeds max of 8 hours
             'state' => 'scheduled',
         ]);
         
@@ -98,7 +98,7 @@ class BookingPolicyTest extends TestCase
             'room_id' => $this->room->id,
             'user_id' => $this->testUser->id,
             'start_time' => now()->addDay()->setHour(10),
-            'end_time' => now()->addDay()->setHour(10)->addMinutes(30), // 30 minutes, below min
+            'end_time' => now()->addDay()->setHour(10)->addMinutes(20), // 20 minutes, below min of 30 minutes
             'state' => 'scheduled',
         ]);
         
@@ -123,8 +123,8 @@ class BookingPolicyTest extends TestCase
         $tooSoonBooking = new Booking([
             'room_id' => $this->room->id,
             'user_id' => $this->testUser->id,
-            'start_time' => now()->addHour(), // 1 hour in advance, below min
-            'end_time' => now()->addHours(3),
+            'start_time' => now()->addMinutes(30), // 30 minutes in advance, below min of 1 hour
+            'end_time' => now()->addHours(2)->addMinutes(30),
             'state' => 'scheduled',
         ]);
         
@@ -134,8 +134,8 @@ class BookingPolicyTest extends TestCase
         $tooFarBooking = new Booking([
             'room_id' => $this->room->id,
             'user_id' => $this->testUser->id,
-            'start_time' => now()->addDays(31), // 31 days in advance, exceeds max
-            'end_time' => now()->addDays(31)->addHours(2),
+            'start_time' => now()->addDays(91), // 91 days in advance, exceeds max of 90 days
+            'end_time' => now()->addDays(91)->addHours(2),
             'state' => 'scheduled',
         ]);
         
@@ -179,8 +179,8 @@ class BookingPolicyTest extends TestCase
         $booking = Booking::factory()->create([
             'room_id' => $this->room->id,
             'user_id' => $this->testUser->id,
-            'start_time' => now()->addDay()->setHour(10),
-            'end_time' => now()->addDay()->setHour(12),
+            'start_time' => now()->addDays(2)->setHour(10), // 48 hours in advance (more than 24 hours)
+            'end_time' => now()->addDays(2)->setHour(12),
             'state' => 'confirmed',
             'payment_status' => 'paid',
         ]);

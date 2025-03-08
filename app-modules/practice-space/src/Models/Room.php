@@ -2,13 +2,18 @@
 
 namespace CorvMC\PracticeSpace\Models;
 
+use App\Models\User;
+use Carbon\Carbon;
+use CorvMC\Finance\Models\Product;
+use CorvMC\PracticeSpace\Casts\BookingPolicyCast;
+use CorvMC\PracticeSpace\ValueObjects\BookingPolicy;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\MorphOne;
+use Illuminate\Support\Facades\Log;
 use CorvMC\PracticeSpace\Database\Factories\RoomFactory;
-use CorvMC\PracticeSpace\Casts\BookingPolicyCast;
-use CorvMC\PracticeSpace\ValueObjects\BookingPolicy;
 
 class Room extends Model
 {
@@ -25,6 +30,7 @@ class Room extends Model
         'is_active',
         'photos',
         'specifications',
+        'booking_policy',
     ];
 
     protected $casts = [
@@ -54,6 +60,25 @@ class Room extends Model
         return $this->hasMany(Booking::class);
     }
 
+    public function bookingsIntersecting(Carbon $start, Carbon $end)
+    {
+        return $this->bookings()
+            ->where(function ($query) use ($start, $end) {
+                $query->whereBetween('start_time', [$start, $end])
+                    ->orWhereBetween('end_time', [$start, $end])
+                    ->orWhere(function ($query) use ($start, $end) {
+                        $query->where('start_time', '<=', $start)
+                            ->where('end_time', '>=', $end);
+                    });
+            });
+    }
+    public function bookingsOn(Carbon $date)
+    {
+        $startOfDay = $date->copy()->startOfDay();
+        $endOfDay = $date->copy()->endOfDay();
+        return $this->bookingsIntersecting($startOfDay, $endOfDay);
+    }
+
     /**
      * Get the equipment in the room.
      */
@@ -72,7 +97,7 @@ class Room extends Model
 
     /**
      * Get the product associated with this room from the finance module.
-     * 
+     *
      * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
      */
     public function product()
@@ -81,111 +106,14 @@ class Room extends Model
         if (class_exists('CorvMC\Finance\Models\Product')) {
             return $this->belongsTo('CorvMC\Finance\Models\Product');
         }
-        
+
         // Return a null relationship if the Finance module is not installed
         return $this->belongsTo(self::class, 'id', 'id')->whereNull('id');
     }
 
-    /**
-     * Create or update the associated product in the finance module.
-     * 
-     * @param array $attributes Additional product attributes
-     * @return mixed The product model or null if Finance module is not available
-     */
-    public function syncProduct(array $attributes = [])
+    public function getHourlyRateAttribute()
     {
-        if (!class_exists('CorvMC\Finance\Models\Product')) {
-            return null;
-        }
-
-        $productClass = 'CorvMC\Finance\Models\Product';
-        
-        $productData = array_merge([
-            'name' => $this->name,
-            'description' => $this->description,
-            'price' => $this->hourly_rate,
-            'type' => 'service',
-            'is_active' => $this->is_active,
-        ], $attributes);
-
-        if ($this->product_id) {
-            // Update existing product
-            $product = $productClass::find($this->product_id);
-            if ($product) {
-                $product->update($productData);
-                return $product;
-            }
-        }
-        
-        // Create new product
-        $product = $productClass::create($productData);
-        $this->update(['product_id' => $product->id]);
-        return $product;
-    }
-
-    /**
-     * Sync the room's hourly rate with the product price.
-     * 
-     * @return self
-     */
-    public function syncWithProduct(): self
-    {
-        if (!class_exists('CorvMC\Finance\Models\Product') || !$this->product_id) {
-            return $this;
-        }
-
-        $product = $this->product;
-        if ($product && $this->hourly_rate != $product->price) {
-            $this->update(['hourly_rate' => $product->price]);
-        }
-
-        return $this;
-    }
-
-    /**
-     * Update the product price based on the room's hourly rate.
-     * 
-     * @return mixed The product model or null if Finance module is not available
-     */
-    public function updateProductPrice()
-    {
-        if (!class_exists('CorvMC\Finance\Models\Product') || !$this->product_id) {
-            return null;
-        }
-
-        $product = $this->product;
-        if ($product && $product->price != $this->hourly_rate) {
-            $product->update(['price' => $this->hourly_rate]);
-        }
-
-        return $product;
-    }
-
-    /**
-     * Deactivate the associated product.
-     * 
-     * @return mixed The product model or null if Finance module is not available
-     */
-    public function deactivateProduct()
-    {
-        if (!class_exists('CorvMC\Finance\Models\Product') || !$this->product_id) {
-            return null;
-        }
-
-        $product = $this->product;
-        if ($product && $product->is_active) {
-            $product->update(['is_active' => false]);
-        }
-
-        return $product;
-    }
-
-    /**
-     * Create a new factory instance for the model.
-     */
-    protected static function newFactory()
-    {
-        return RoomFactory::new();
+        return $this->product?->price ?? $this->attributes['hourly_rate'];
     }
 
     /**
@@ -195,57 +123,43 @@ class Room extends Model
      * @param \Carbon\Carbon $endDateTime
      * @return bool
      */
-    public function isAvailable(\Carbon\Carbon $startDateTime, \Carbon\Carbon $endDateTime): bool
+    public function isAvailable(Carbon $startDateTime, Carbon $endDateTime): bool
     {
-        $conflictingBookings = $this->bookings()
-            ->where(function ($query) use ($startDateTime, $endDateTime) {
-                $query->whereBetween('start_time', [$startDateTime, $endDateTime])
-                    ->orWhereBetween('end_time', [$startDateTime, $endDateTime])
-                    ->orWhere(function ($query) use ($startDateTime, $endDateTime) {
-                        $query->where('start_time', '<=', $startDateTime)
-                            ->where('end_time', '>=', $endDateTime);
-                    });
-            })
+        $conflictingBookings = $this->bookingsIntersecting($startDateTime, $endDateTime)
             ->where('state', '!=', 'cancelled')
             ->count();
-            
+
         return $conflictingBookings === 0;
     }
 
     /**
      * Get available time slots for this room on a specific date
      *
-     * @param string $date
+     * @param \Carbon\Carbon $date
      * @param float|null $duration Duration in hours (optional)
      * @return array
      */
-    public function getAvailableTimeSlots(string $date, ?float $duration = null): array
+    public function getAvailableTimeSlots(Carbon $date): array
     {
         // Get operating hours
-        $operatingHours = $this->getOperatingHours($date);
-        $openingTime = $operatingHours['opening'];
-        $closingTime = $operatingHours['closing'];
-        
-        // Get the booking policy
-        $policy = $this->getBookingPolicy();
-        
+        $openingTime = $date->copy()->setTimeFromTimeString($this->booking_policy->openingTime);
+        $closingTime = $date->copy()->setTimeFromTimeString($this->booking_policy->closingTime);
+
         // If no duration is specified, use the minimum booking duration from the policy
-        $minDuration = $policy->minBookingDurationHours;
-        $effectiveDuration = $duration !== null ? max($duration, $minDuration) : $minDuration;
-        
+        $minDuration = $this->booking_policy->minBookingDurationHours;
+
         // Check if the date is today and apply minimum advance booking hours
-        $now = \Carbon\Carbon::now();
-        $bookingDate = \Carbon\Carbon::parse($date);
-        $isToday = $now->isSameDay($bookingDate);
-        
+        $now = Carbon::now();
+        $isToday = $now->isSameDay($date);
+
         // If booking is for today, adjust the opening time based on minimum advance booking hours
-        if ($isToday && $policy->minAdvanceBookingHours > 0) {
-            $minAdvanceTime = $now->copy()->addHours($policy->minAdvanceBookingHours);
-            
+        if ($isToday && $this->booking_policy->minAdvanceBookingHours > 0) {
+            $minAdvanceTime = $now->copy()->addHours($this->booking_policy->minAdvanceBookingHours);
+
             // If the minimum advance time is after the opening time, use it instead
             if ($minAdvanceTime->gt($openingTime)) {
                 $openingTime = $minAdvanceTime;
-                
+
                 // Round up to the next half hour if needed
                 $minutes = (int) $openingTime->format('i');
                 if ($minutes > 0 && $minutes < 30) {
@@ -254,276 +168,195 @@ class Room extends Model
                     $openingTime->setTime($openingTime->hour + 1, 0);
                 }
             }
-            
+
             // If the adjusted opening time is after closing time, return no available slots
             if ($openingTime->gte($closingTime)) {
                 return [];
             }
         }
-        
+
         // Get all bookings for this room on this date
-        $bookings = $this->bookings()
+        $bookings = $this->bookingsOn($date)
             ->where('state', '!=', 'cancelled')
-            ->where(function ($query) use ($date) {
-                $startOfDay = \Carbon\Carbon::parse($date)->startOfDay();
-                $endOfDay = \Carbon\Carbon::parse($date)->endOfDay();
-                
-                $query->whereBetween('start_time', [$startOfDay, $endOfDay])
-                    ->orWhereBetween('end_time', [$startOfDay, $endOfDay])
-                    ->orWhere(function ($query) use ($startOfDay, $endOfDay) {
-                        $query->where('start_time', '<=', $startOfDay)
-                            ->where('end_time', '>=', $endOfDay);
-                    });
-            })
             ->get();
-        
+
         // Generate all possible time slots
         $timeSlots = [];
-        $currentTime = $openingTime->copy();
-        
-        while ($currentTime < $closingTime) {
-            $timeKey = $currentTime->format('H:i');
-            $displayTime = $currentTime->format('g:i A');
-            
+
+        for ($t = $openingTime->copy(); $t < $closingTime; $t->addMinutes(30)) {
+            $timeKey = $t->format('H:i');
+            $displayTime = $t->format('g:i A');
+
             // Check if this time slot is available (not within any existing booking)
-            $isTimeSlotBooked = $bookings->contains(function ($booking) use ($currentTime) {
-                // Check if this time falls within a booking
-                return $currentTime->between(
-                    $booking->start_time, 
-                    $booking->end_time->subMinute()
-                );
-            });
-            
-            if (!$isTimeSlotBooked) {
-                // Check if there's enough time for at least the minimum booking duration
-                $endTimeSlot = $currentTime->copy()->addMinutes($effectiveDuration * 60);
-                
-                // Check if the end time exceeds closing time
-                if ($endTimeSlot > $closingTime) {
-                    $currentTime->addMinutes(30);
-                    continue;
-                }
-                
-                // Find any booking that would conflict with this duration
-                $conflictingBooking = $bookings->first(function ($booking) use ($currentTime, $endTimeSlot) {
-                    // Check if booking starts during our time slot
-                    $bookingStartsDuringSlot = $booking->start_time->between($currentTime, $endTimeSlot);
-                    
-                    // Check if our time slot starts during booking
-                    $slotStartsDuringBooking = $currentTime->between(
-                        $booking->start_time, 
-                        $booking->end_time
-                    );
-                    
-                    return $bookingStartsDuringSlot || $slotStartsDuringBooking;
-                });
-                
-                if (!$conflictingBooking) {
-                    $timeSlots[$timeKey] = $displayTime;
-                }
+            if ($bookings->contains(
+                fn($b) => $t->between(
+                    $b->start_time,
+                    $b->end_time->subMinute()
+                )
+            )) {
+                continue;
             }
-            
-            $currentTime->addMinutes(30); // Move to next half-hour
+
+            // Check if there's enough time for at least the minimum booking duration
+            $end = $t->copy()->addMinutes($minDuration * 60);
+
+            // Check if the end time exceeds closing time
+            if ($end > $closingTime) {
+                continue;
+            }
+
+            // Find any booking that would conflict with this duration
+            $conflictingBooking = $bookings->first(function ($booking) use ($t, $end) {
+                // Check if booking starts during our time slot
+                $bookingStartsDuringSlot = $booking->start_time->between($t, $end);
+
+                // Check if our time slot starts during booking
+                $slotStartsDuringBooking = $t->between(
+                    $booking->start_time,
+                    $booking->end_time
+                );
+
+                return $bookingStartsDuringSlot || $slotStartsDuringBooking;
+            });
+
+            if (!$conflictingBooking) {
+                $timeSlots[$timeKey] = $displayTime;
+            }
         }
-        
+
         return $timeSlots;
     }
 
     /**
      * Get the booking policy for this room
      * 
+     * If the room has a custom policy, it will be returned.
+     * Otherwise, the category's default policy will be used.
+     * If neither exists, a new default policy will be returned.
+     *
      * @return BookingPolicy
      */
-    public function getBookingPolicy(): BookingPolicy
+    public function getBookingPolicyAttribute(): BookingPolicy
     {
-        // If this room has a specific policy, use it
-        if ($this->booking_policy !== null) {
-            return $this->booking_policy;
+        // First check if this room has a specific booking policy
+        if (isset($this->attributes['booking_policy']) && $this->attributes['booking_policy']) {
+            // Use the cast to convert the JSON to a BookingPolicy object
+            return $this->castAttribute('booking_policy', $this->attributes['booking_policy']);
         }
         
-        // Otherwise, use the category's default policy if available
-        if ($this->category && $this->category->default_booking_policy !== null) {
+        // If no room-specific policy, fall back to the category's default policy
+        if ($this->category && $this->category->default_booking_policy) {
             return $this->category->default_booking_policy;
         }
         
-        // Fall back to default policy
+        // If no policy found, return a default BookingPolicy
         return new BookingPolicy();
     }
-    
+
     /**
-     * Update the booking policy for this room
+     * Set the booking policy for this room
      * 
-     * @param BookingPolicy|array $policy
-     * @return self
+     * @param BookingPolicy|array|null $value
+     * @return void
      */
-    public function updateBookingPolicy(BookingPolicy|array $policy): self
+    public function setBookingPolicyAttribute($value): void
     {
-        $this->booking_policy = $policy instanceof BookingPolicy 
-            ? $policy 
-            : BookingPolicy::fromArray($policy);
-            
-        $this->save();
+        // If null is provided, reset to use the category default
+        if ($value === null) {
+            $this->attributes['booking_policy'] = null;
+            return;
+        }
         
-        return $this;
-    }
-    
-    /**
-     * Reset the room's booking policy to use the category default
-     * 
-     * @return self
-     */
-    public function resetBookingPolicy(): self
-    {
-        $this->booking_policy = null;
-        $this->save();
+        // If an array is provided, ensure it uses snake_case keys
+        if (is_array($value)) {
+            // The BookingPolicy::fromArray method expects snake_case keys
+            // If you're using this method, make sure your array keys are in snake_case format
+            // e.g., 'opening_time' instead of 'openingTime'
+            $value = BookingPolicy::fromArray($value);
+        }
         
-        return $this;
+        // Ensure the value is a BookingPolicy instance
+        if (!$value instanceof BookingPolicy) {
+            throw new \InvalidArgumentException('The booking policy must be a BookingPolicy instance, an array, or null.');
+        }
+        
+        // Store the policy as JSON
+        $this->attributes['booking_policy'] = json_encode($value);
     }
-    
-    /**
-     * Get the operating hours for this room on a specific date
-     * 
-     * @param string $date
-     * @return array Returns ['opening' => Carbon, 'closing' => Carbon]
-     */
-    public function getOperatingHours(string $date): array
-    {
-        return $this->getBookingPolicy()->getOperatingHours($date);
-    }
-    
+
     /**
      * Get the maximum booking duration in hours
-     * 
+     *
      * @return float
      */
     public function getMaxBookingDuration(): float
     {
-        return $this->getBookingPolicy()->maxBookingDurationHours;
+        return $this->booking_policy->maxBookingDurationHours;
     }
-    
+
     /**
      * Get the minimum booking duration in hours
-     * 
+     *
      * @return float
      */
     public function getMinBookingDuration(): float
     {
-        return $this->getBookingPolicy()->minBookingDurationHours;
+        return $this->booking_policy->minBookingDurationHours;
     }
 
     /**
      * Get available durations for this room at a specific date and time
      *
-     * @param string $date
-     * @param string|null $time Optional time parameter
+     * @param Carbon $date
+     * @param string $time Start time parameter
      * @param bool $includeHalfHour
      * @return array
      */
-    public function getAvailableDurations(string $date, ?string $time = null, bool $includeHalfHour = false): array
+    public function getAvailableDurations(Carbon $startTime): array
     {
         // Get operating hours
-        $operatingHours = $this->getOperatingHours($date);
-        $openingTime = $operatingHours['opening'];
-        $closingTime = $operatingHours['closing'];
-        
+        $openingTime = $startTime->copy()->setTimeFromTimeString($this->booking_policy->openingTime);
+        $closingTime = $startTime->copy()->setTimeFromTimeString($this->booking_policy->closingTime);
+
         // Get all bookings for this room on this date
-        $bookings = $this->bookings()
+        $bookings = $this->bookingsOn($startTime)
             ->where('state', '!=', 'cancelled')
-            ->where(function ($query) use ($date) {
-                $startOfDay = \Carbon\Carbon::parse($date)->startOfDay();
-                $endOfDay = \Carbon\Carbon::parse($date)->endOfDay();
-                
-                $query->whereBetween('start_time', [$startOfDay, $endOfDay])
-                    ->orWhereBetween('end_time', [$startOfDay, $endOfDay])
-                    ->orWhere(function ($query) use ($startOfDay, $endOfDay) {
-                        $query->where('start_time', '<=', $startOfDay)
-                            ->where('end_time', '>=', $endOfDay);
-                    });
-            })
-            ->orderBy('start_time')
             ->get();
-        
-        // If no specific time is provided, return half-hour blocks between opening and closing times
-        if ($time === null) {
-            $result = [];
-            $currentTime = $openingTime->copy();
-            
-            // Generate half-hour blocks
-            while ($currentTime < $closingTime) {
-                $timeKey = $currentTime->format('H:i');
-                
-                // Check if this time slot is available (not within any existing booking)
-                $isTimeSlotBooked = $bookings->contains(function ($booking) use ($currentTime) {
-                    // Check if this time falls within a booking
-                    return $currentTime->between(
-                        $booking->start_time, 
-                        $booking->end_time->subMinute()
-                    );
-                });
-                
-                if (!$isTimeSlotBooked) {
-                    // For each available time slot, get available durations
-                    
-                    // Find the next booking that starts after this time
-                    $nextBooking = $bookings->first(function ($booking) use ($currentTime) {
-                        return $booking->start_time > $currentTime;
-                    });
-                    
-                    // Calculate maximum possible duration in hours
-                    if ($nextBooking) {
-                        $maxPossibleDuration = $currentTime->diffInMinutes($nextBooking->start_time) / 60;
-                    } else {
-                        $maxPossibleDuration = $currentTime->diffInMinutes($closingTime) / 60;
-                    }
-                    
-                    // Generate duration options
-                    $durations = $this->generateDurationOptions($maxPossibleDuration, $includeHalfHour);
-                    
-                    if (!empty($durations)) {
-                        $result[$timeKey] = $durations;
-                    }
-                }
-                
-                $currentTime->addMinutes(30);
-            }
-            
-            return $result;
-        }
-        
-        // Parse the start time
-        $startTime = \Carbon\Carbon::parse($date . ' ' . $time);
-        
+
         // If start time is after closing time, return empty array
         if ($startTime >= $closingTime) {
             return [];
         }
-        
+
         // Check if the start time is within any existing booking
         $isStartTimeBooked = $bookings->contains(function ($booking) use ($startTime) {
             return $startTime->between(
-                $booking->start_time, 
+                $booking->start_time,
                 $booking->end_time->subMinute()
             );
         });
-        
+
         if ($isStartTimeBooked) {
             return []; // Start time is already booked
         }
-        
+
         // Find the next booking that starts after this time
         $nextBooking = $bookings->first(function ($booking) use ($startTime) {
             return $booking->start_time > $startTime;
         });
-        
+
         // Calculate maximum possible duration in hours
         if ($nextBooking) {
             $maxPossibleDuration = $startTime->diffInMinutes($nextBooking->start_time) / 60;
         } else {
             $maxPossibleDuration = $startTime->diffInMinutes($closingTime) / 60;
         }
-        
+
+        $maxPossibleDuration = min($maxPossibleDuration, $this->booking_policy->maxBookingDurationHours);
+
+
         // Generate duration options
-        return $this->generateDurationOptions($maxPossibleDuration, $includeHalfHour);
+        return $this->generateDurationOptions($maxPossibleDuration, true);
     }
 
     /**
@@ -536,35 +369,43 @@ class Room extends Model
     private function generateDurationOptions(float $maxDuration, bool $includeHalfHour = false): array
     {
         $options = [];
-        $policy = $this->getBookingPolicy();
-        
+        $policy = $this->booking_policy;
+
         // Respect the policy's min and max durations
         $minDuration = $policy->minBookingDurationHours;
-        $maxPolicyDuration = $policy->maxBookingDurationHours;
-        
-        // The actual max duration is the minimum of the policy max and the available time
-        $effectiveMaxDuration = min($maxDuration, $maxPolicyDuration);
-        
-        // Determine the step size based on includeHalfHour and policy min duration
-        $step = $includeHalfHour ? min(0.5, $minDuration) : max(1.0, $minDuration);
-        
+
         // Start from the minimum duration
-        for ($duration = $minDuration; $duration <= $effectiveMaxDuration; $duration += $step) {
+        for ($duration = $minDuration; $duration <= $maxDuration; $duration += 0.5) {
             // Format the duration label
-            if ($duration == 0.5) {
-                $options[$duration] = '30 minutes';
+            if ($duration < 1) {
+                $options[$duration] = (string) floor($duration * 60) . " mins";
             } elseif ($duration == 1) {
                 $options[$duration] = '1 hour';
-            } elseif ($duration - floor($duration) == 0) {
-                // Whole hours
-                $options[$duration] = $duration . ' hours';
             } else {
-                // Fractional hours (e.g., 1.5 hours)
                 $options[$duration] = $duration . ' hours';
             }
         }
-        
+
         return $options;
+    }
+
+    public function getMinimumBookingDate()
+    {
+        // Get the minimum advance booking hours from the room's policy
+        $policy = $this->booking_policy;
+        $leadTimeInDays = $policy->minAdvanceBookingHours / 24;
+
+        // Allow bookings for today if the lead time is less than 1 day
+        return $leadTimeInDays < 1 ? now() : now()->addDays(ceil($leadTimeInDays));
+    }
+
+    public function getMaximumBookingDate()
+    {
+        // Get the maximum advance booking days from the room's policy
+        $policy = $this->booking_policy;
+        $leadTimeInDays = $policy->maxAdvanceBookingDays;
+
+        return now()->addDays($leadTimeInDays);
     }
 
     /**
@@ -574,21 +415,17 @@ class Room extends Model
      * @param \Carbon\Carbon|null $endDate End date for the range (defaults to 3 months from start)
      * @return array Array of dates in Y-m-d format that are fully booked
      */
-    public function getFullyBookedDates(?\Carbon\Carbon $startDate = null, ?\Carbon\Carbon $endDate = null): array
+    public function getFullyBookedDates(?Carbon $startDate = null, ?Carbon $endDate = null): array
     {
         // Default date range: today to 3 months from now
-        $startDate = $startDate ?? \Carbon\Carbon::today();
-        $endDate = $endDate ?? \Carbon\Carbon::today()->addMonths(3);
-        
+        $startDate = $startDate ?? Carbon::today();
+        $endDate = $endDate ?? Carbon::today()->addMonths(3);
+
         // Get all bookings for this room within the date range
-        $bookings = $this->bookings()
+        $bookings = $this->bookingsIntersecting($startDate, $endDate)
             ->where('state', '!=', 'cancelled')
-            ->where(function ($query) use ($startDate, $endDate) {
-                $query->whereBetween('start_time', [$startDate->startOfDay(), $endDate->endOfDay()])
-                    ->orWhereBetween('end_time', [$startDate->startOfDay(), $endDate->endOfDay()]);
-            })
             ->get();
-        
+
         // Group bookings by date
         $bookingsByDate = [];
         foreach ($bookings as $booking) {
@@ -598,42 +435,42 @@ class Room extends Model
             }
             $bookingsByDate[$date][] = $booking;
         }
-        
+
         // Check which dates are fully booked
         $fullyBookedDates = [];
-        
+
         // Check each day in the range
         $currentDate = $startDate->copy();
         while ($currentDate <= $endDate) {
             $dateString = $currentDate->format('Y-m-d');
-            
+
             // If we already have bookings for this date, check if it's fully booked
             if (isset($bookingsByDate[$dateString])) {
                 $dateBookings = $bookingsByDate[$dateString];
-                
+
                 // Get operating hours for this date
                 $operatingHours = $this->getOperatingHours($dateString);
                 $openingTime = $operatingHours['opening'];
                 $closingTime = $operatingHours['closing'];
-                
+
                 // Check if the date is fully booked
                 if ($this->isDateFullyBooked($dateBookings, $openingTime, $closingTime)) {
                     $fullyBookedDates[] = $dateString;
                 }
             } else {
                 // If there are no bookings, check if there are any available time slots
-                $availableTimeSlots = $this->getAvailableTimeSlots($dateString);
+                $availableTimeSlots = $this->getAvailableTimeSlots(Carbon::parse($dateString));
                 if (empty($availableTimeSlots)) {
                     $fullyBookedDates[] = $dateString;
                 }
             }
-            
+
             $currentDate->addDay();
         }
-        
+
         return $fullyBookedDates;
     }
-    
+
     /**
      * Check if a date is fully booked
      *
@@ -642,29 +479,52 @@ class Room extends Model
      * @param \Carbon\Carbon $closingTime
      * @return bool
      */
-    private function isDateFullyBooked(array $bookings, \Carbon\Carbon $openingTime, \Carbon\Carbon $closingTime): bool
+    private function isDateFullyBooked(array $bookings, Carbon $openingTime, Carbon $closingTime): bool
     {
         // Sort bookings by start time
         usort($bookings, function ($a, $b) {
             return $a->start_time <=> $b->start_time;
         });
-        
+
         // Check if there are any available time slots
         $currentTime = $openingTime->copy();
-        
+
         foreach ($bookings as $booking) {
             // If there's a gap between current time and booking start time, the date is not fully booked
             if ($currentTime < $booking->start_time) {
                 return false;
             }
-            
+
             // Move current time to the end of this booking
             if ($booking->end_time > $currentTime) {
                 $currentTime = $booking->end_time->copy();
             }
         }
-        
+
         // If current time is before closing time, there's still available time
         return $currentTime >= $closingTime;
     }
-} 
+
+    public function getDisabledBookingDates() {}
+
+    /**
+     * Get operating hours for a specific date
+     *
+     * @param string $date Date in Y-m-d format
+     * @return array Array with 'opening' and 'closing' Carbon instances
+     */
+    private function getOperatingHours(string $date): array
+    {
+        $dateObj = Carbon::parse($date);
+        $policy = $this->booking_policy;
+
+        // Set opening and closing times for this date
+        $openingTime = $dateObj->copy()->setTimeFromTimeString($policy->openingTime);
+        $closingTime = $dateObj->copy()->setTimeFromTimeString($policy->closingTime);
+
+        return [
+            'opening' => $openingTime,
+            'closing' => $closingTime
+        ];
+    }
+}

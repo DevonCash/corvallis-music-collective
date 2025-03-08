@@ -33,6 +33,9 @@ class MemberPanelProvider extends PanelProvider
             ->id('member')
             ->path('member')
             ->login()
+            ->brandName('Corvallis Music Collective')
+            ->brandLogo(fn() => view('filament.brand'))
+            ->brandLogoHeight('4rem')
             ->colors([
                 'primary' => Color::Amber,
             ])

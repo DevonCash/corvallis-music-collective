@@ -4,7 +4,6 @@ namespace CorvMC\StateManagement\Casts;
 
 use CorvMC\StateManagement\AbstractState;
 use Illuminate\Contracts\Database\Eloquent\CastsAttributes;
-use Illuminate\Database\Eloquent\Model;
 
 class State implements CastsAttributes
 {

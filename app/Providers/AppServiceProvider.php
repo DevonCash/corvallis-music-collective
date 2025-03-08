@@ -7,15 +7,14 @@ use Laravel\Cashier\Cashier;
 use Laravel\Folio\Folio;
 use Snelling\FolioMarkdown\Facades\FolioMarkdown;
 use Stripe\StripeClient;
-use App\Policies\UserPolicy;
+
 use App\Models\User;
+
 
 class AppServiceProvider extends ServiceProvider
 {
 
-    protected $policies = [
-        User::class => UserPolicy::class,
-    ];
+  
 
     /**
      * Register any application services.

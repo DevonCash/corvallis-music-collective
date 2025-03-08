@@ -40,6 +40,7 @@ class RoomTest extends TestCase
             'is_active',
             'photos',
             'specifications',
+            'booking_policy',
         ];
 
         $room = new Room();
@@ -55,6 +56,9 @@ class RoomTest extends TestCase
             'is_active' => 'boolean',
             'photos' => 'array',
             'specifications' => 'array',
+            'size_sqft' => 'integer',
+            'amenities' => 'array',
+            'booking_policy' => 'CorvMC\PracticeSpace\Casts\BookingPolicyCast',
         ];
 
         $room = new Room();
