@@ -3,10 +3,11 @@
 namespace CorvMC\PracticeSpace\ValueObjects;
 
 use Carbon\Carbon;
+use Illuminate\Contracts\Database\Eloquent\CastsAttributes;
 use Illuminate\Contracts\Support\Arrayable;
 use JsonSerializable;
 
-class BookingPolicy implements Arrayable, JsonSerializable
+class BookingPolicy implements Arrayable, JsonSerializable, CastsAttributes
 {
     /**
      * @param string $openingTime Opening time in 24-hour format (HH:MM)
@@ -188,5 +189,51 @@ class BookingPolicy implements Arrayable, JsonSerializable
     {
         // Since we're using a value object now, we don't have database-backed overrides
         // This is a no-op method for compatibility with tests
+    }
+
+    /**
+     * Cast the given value.
+     *
+     * @param  \Illuminate\Database\Eloquent\Model  $model
+     * @param  string  $key
+     * @param  mixed  $value
+     * @param  array  $attributes
+     * @return BookingPolicy
+     */
+    public function get($model, string $key, $value, array $attributes)
+    {
+        if ($value === null) {
+            return new self();
+        }
+        
+        $data = is_array($value) ? $value : json_decode($value, true);
+        
+        return self::fromArray($data);
+    }
+
+    /**
+     * Prepare the given value for storage.
+     *
+     * @param  \Illuminate\Database\Eloquent\Model  $model
+     * @param  string  $key
+     * @param  mixed  $value
+     * @param  array  $attributes
+     * @return string|null
+     */
+    public function set($model, string $key, $value, array $attributes)
+    {
+        if ($value === null) {
+            return null;
+        }
+        
+        if (is_array($value)) {
+            $value = self::fromArray($value);
+        }
+        
+        if (!$value instanceof self) {
+            throw new \InvalidArgumentException('The given value is not a BookingPolicy instance.');
+        }
+        
+        return json_encode($value);
     }
 } 

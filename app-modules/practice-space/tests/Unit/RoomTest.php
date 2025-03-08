@@ -58,7 +58,7 @@ class RoomTest extends TestCase
             'specifications' => 'array',
             'size_sqft' => 'integer',
             'amenities' => 'array',
-            'booking_policy' => 'CorvMC\PracticeSpace\Casts\BookingPolicyCast',
+            'booking_policy' => 'CorvMC\PracticeSpace\ValueObjects\BookingPolicy',
         ];
 
         $room = new Room();

@@ -5,7 +5,6 @@ namespace CorvMC\PracticeSpace\Models;
 use App\Models\User;
 use Carbon\Carbon;
 use CorvMC\Finance\Models\Product;
-use CorvMC\PracticeSpace\Casts\BookingPolicyCast;
 use CorvMC\PracticeSpace\ValueObjects\BookingPolicy;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -41,7 +40,7 @@ class Room extends Model
         'specifications' => 'array',
         'size_sqft' => 'integer',
         'amenities' => 'array',
-        'booking_policy' => BookingPolicyCast::class,
+        'booking_policy' => \CorvMC\PracticeSpace\ValueObjects\BookingPolicy::class,
     ];
 
     /**
