@@ -33,6 +33,11 @@ class MemberPanelProvider extends PanelProvider
             ->id('member')
             ->path('member')
             ->login()
+            ->registration()
+            ->passwordReset()
+            ->emailVerification()
+
+
             ->brandName('Corvallis Music Collective')
             ->brandLogo(fn() => view('filament.brand'))
             ->brandLogoHeight('4rem')
@@ -79,6 +84,7 @@ class MemberPanelProvider extends PanelProvider
                 }, true) 
                 ->icon('heroicon-o-credit-card')
             ])
+            ->databaseNotifications()
             ->viteTheme('resources/css/app.css');
     }
 }

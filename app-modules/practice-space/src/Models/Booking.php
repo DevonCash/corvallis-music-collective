@@ -17,11 +17,12 @@ use CorvMC\StateManagement\Casts\State;
 use Spatie\Activitylog\LogOptions;
 use Spatie\Activitylog\Traits\LogsActivity;
 use CorvMC\Finance\Concerns\HasPayments;
+use CorvMC\PracticeSpace\Traits\LogsNotifications;
 
 class Booking extends Model
 {
     // Temporarily commented out HasPayments for testing
-    use LogsActivity, HasFactory, SoftDeletes, HasPayments;
+    use LogsActivity, HasFactory, SoftDeletes, HasPayments, LogsNotifications;
 
     protected $table = 'practice_space_bookings';
 
@@ -39,6 +40,11 @@ class Booking extends Model
         'total_price',
         'payment_status',
         'state',
+        'confirmation_requested_at',
+        'confirmation_deadline',
+        'confirmed_at',
+        'cancelled_at',
+        'cancellation_reason',
     ];
 
     protected $casts = [

@@ -2,6 +2,10 @@
 
 namespace CorvMC\PracticeSpace;
 
+use CorvMC\PracticeSpace\Console\Commands\SendBookingConfirmationRequests;
+use CorvMC\PracticeSpace\Console\Commands\SendBookingReminders;
+use CorvMC\PracticeSpace\Console\Commands\SendConfirmationReminders;
+use CorvMC\PracticeSpace\Console\Commands\ProcessExpiredConfirmations;
 use Illuminate\Support\ServiceProvider;
 
 class PracticeSpaceServiceProvider extends ServiceProvider
@@ -31,5 +35,14 @@ class PracticeSpaceServiceProvider extends ServiceProvider
         // Load translations
         $this->loadTranslationsFrom(__DIR__ . '/../resources/lang', 'practice-space');
         
+        // Register commands
+        if ($this->app->runningInConsole()) {
+            $this->commands([
+                SendBookingConfirmationRequests::class,
+                SendBookingReminders::class,
+                SendConfirmationReminders::class,
+                ProcessExpiredConfirmations::class,
+            ]);
+        }
     }
 } 
