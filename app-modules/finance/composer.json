@@ -1,16 +1,23 @@
 {
 	"name": "corvmc/finance",
-	"description": "",
+	"description": "Finance module for CorvMC",
 	"type": "library",
 	"version": "1.0",
-	"license": "proprietary",
-	"require": {},
+	"license": "MIT",
+	"require": {
+		"php": "^8.2"
+	},
 	"autoload": {
 		"psr-4": {
 			"CorvMC\\Finance\\": "src/",
 			"CorvMC\\Finance\\Tests\\": "tests/",
 			"CorvMC\\Finance\\Database\\Factories\\": "database/factories/",
 			"CorvMC\\Finance\\Database\\Seeders\\": "database/seeders/"
+		}
+	},
+	"autoload-dev": {
+		"psr-4": {
+			"CorvMC\\Finance\\Tests\\": "tests/"
 		}
 	},
 	"minimum-stability": "stable",

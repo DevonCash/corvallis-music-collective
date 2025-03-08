@@ -11,15 +11,13 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('practice_space_room_equipment', function (Blueprint $table) {
+        Schema::create('finance_products', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('room_id')->constrained('practice_space_rooms')->cascadeOnDelete();
             $table->string('name');
             $table->text('description')->nullable();
-            $table->integer('quantity')->default(1);
-            $table->string('condition')->nullable();
-            $table->string('status')->nullable();
-            $table->date('last_maintenance_date')->nullable();
+            $table->decimal('price', 10, 2)->default(0);
+            $table->boolean('is_active')->default(true);
+            $table->nullableMorphs('productable');
             $table->timestamps();
         });
     }
@@ -29,6 +27,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('practice_space_room_equipment');
+        Schema::dropIfExists('finance_products');
     }
 }; 

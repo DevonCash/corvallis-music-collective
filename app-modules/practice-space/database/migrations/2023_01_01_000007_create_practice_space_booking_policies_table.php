@@ -16,12 +16,12 @@ return new class extends Migration
             $table->foreignId('room_category_id')->nullable()->constrained('practice_space_room_categories')->nullOnDelete();
             $table->string('name');
             $table->text('description')->nullable();
-            $table->integer('max_booking_duration_hours')->nullable();
-            $table->integer('min_booking_duration_hours')->nullable();
-            $table->integer('max_booking_duration')->nullable()->comment('Alias for max_booking_duration_hours');
-            $table->integer('min_booking_duration')->nullable()->comment('Alias for min_booking_duration_hours');
+            $table->decimal('max_booking_duration_hours', 5, 2)->nullable();
+            $table->decimal('min_booking_duration_hours', 5, 2)->nullable();
+            $table->decimal('max_booking_duration', 5, 2)->nullable()->comment('Alias for max_booking_duration_hours');
+            $table->decimal('min_booking_duration', 5, 2)->nullable()->comment('Alias for min_booking_duration_hours');
             $table->integer('max_advance_booking_days')->nullable();
-            $table->integer('min_advance_booking_hours')->nullable()->comment('Minimum hours in advance a booking must be made');
+            $table->decimal('min_advance_booking_hours', 5, 2)->nullable()->comment('Minimum hours in advance a booking must be made');
             $table->text('cancellation_policy')->nullable()->comment('Text description of the cancellation policy');
             $table->integer('cancellation_hours')->nullable()->comment('Hours before start time when cancellation with refund is allowed');
             $table->integer('max_bookings_per_week')->nullable()->comment('Maximum number of bookings a user can make per week');

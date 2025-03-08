@@ -14,19 +14,20 @@ return new class extends Migration
         Schema::create('practice_space_bookings', function (Blueprint $table) {
             $table->id();
             $table->foreignId('room_id')->constrained('practice_space_rooms')->cascadeOnDelete();
-            $table->foreignId('user_id')->constrained('users')->cascadeOnDelete();
+            $table->foreignId('user_id')->constrained()->cascadeOnDelete();
             $table->dateTime('start_time');
             $table->dateTime('end_time');
             $table->string('status')->default('reserved');
+            $table->string('state')->default('scheduled');
             $table->text('notes')->nullable();
             $table->boolean('is_recurring')->default(false);
-            $table->string('recurring_pattern')->nullable();
+            $table->json('recurring_pattern')->nullable();
             $table->dateTime('check_in_time')->nullable();
             $table->dateTime('check_out_time')->nullable();
             $table->decimal('total_price', 8, 2)->nullable();
             $table->string('payment_status')->nullable();
-            $table->timestamps();
             $table->softDeletes();
+            $table->timestamps();
         });
     }
 

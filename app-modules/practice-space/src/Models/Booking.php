@@ -17,11 +17,12 @@ use CorvMC\StateManagement\Casts\State;
 use Spatie\Activitylog\LogOptions;
 use Spatie\Activitylog\Traits\LogsActivity;
 use Illuminate\Support\Facades\DB;
+use CorvMC\Finance\Concerns\HasPayments;
 
 class Booking extends Model
 {
     // Temporarily commented out HasPayments for testing
-    use LogsActivity, HasFactory, SoftDeletes;
+    use LogsActivity, HasFactory, SoftDeletes, HasPayments;
 
     protected $table = 'practice_space_bookings';
 
@@ -50,6 +51,25 @@ class Booking extends Model
         'total_price' => 'decimal:2',
         'state' => State::class.':'.BookingState::class,
     ];
+
+    /**
+     * Boot the model.
+     */
+    protected static function boot()
+    {
+        parent::boot();
+
+        static::creating(function ($booking) {
+            // Calculate total price if not set and room exists
+            if (empty($booking->total_price) && $booking->room_id) {
+                $room = Room::find($booking->room_id);
+                if ($room && $booking->start_time && $booking->end_time) {
+                    $hours = $booking->start_time->diffInHours($booking->end_time);
+                    $booking->total_price = $room->hourly_rate * $hours;
+                }
+            }
+        });
+    }
 
     /**
      * Get the room that was booked.
@@ -245,107 +265,60 @@ class Booking extends Model
     }
 
     /**
-     * Calculate the total price based on the room's hourly rate.
+     * Calculate the total price for this booking
+     * 
+     * @return float
      */
     public function calculateTotalPrice(): float
     {
-        $duration = $this->getDurationInHours();
-        $hourlyRate = $this->room->hourly_rate;
-        
-        $totalPrice = $duration * $hourlyRate;
-        
-        // Apply any discounts if the method exists
-        if (method_exists($this, 'applyDiscounts')) {
-            return $this->applyDiscounts($totalPrice);
+        if ($this->total_price) {
+            return (float) $this->total_price;
         }
         
-        return $totalPrice;
+        if (!$this->room) {
+            return 0;
+        }
+        
+        $hours = $this->getDurationInHours();
+        $hourlyRate = $this->room->hourly_rate ?? 0;
+        
+        return $hours * $hourlyRate;
     }
-
+    
     /**
-     * Apply a discount to the booking's total price.
+     * Apply a discount to the booking's total price
+     * 
+     * @param float $discountPercent Percentage discount (0-100)
+     * @param string|null $reason Reason for the discount
+     * @return self
      */
     public function applyDiscount(float $discountPercent, string $reason = null): self
     {
         if ($discountPercent <= 0 || $discountPercent > 100) {
-            throw new \InvalidArgumentException('Discount percent must be between 0 and 100');
+            return $this;
         }
         
-        $originalPrice = $this->total_price;
-        $discountMultiplier = (100 - $discountPercent) / 100;
-        $discountedPrice = $originalPrice * $discountMultiplier;
+        $originalPrice = $this->calculateTotalPrice();
+        $discountAmount = $originalPrice * ($discountPercent / 100);
+        $discountedPrice = $originalPrice - $discountAmount;
         
-        $this->total_price = $discountedPrice;
-        $this->save();
-        
-        // Log the discount application
-        activity()
-            ->performedOn($this)
-            ->withProperties([
-                'original_price' => $originalPrice,
-                'discount_percent' => $discountPercent,
-                'discounted_price' => $discountedPrice,
-                'reason' => $reason,
-            ])
-            ->log('Discount applied to booking');
+        $this->update([
+            'total_price' => $discountedPrice,
+            'notes' => $this->notes . "\nDiscount applied: {$discountPercent}% " . ($reason ? "($reason)" : ""),
+        ]);
         
         return $this;
     }
-
+    
     /**
-     * Initialize traits at runtime
+     * Initialize traits for the model.
      */
     protected function initializeTraits()
     {
-        $traitClass = 'CorvMC\Finance\Traits\HasPayments';
-        
-        // Check if the trait exists and if it's not already used by this class
-        if (trait_exists($traitClass) && !in_array($traitClass, class_uses_recursive($this))) {
-            // We can't dynamically use traits at runtime, so we'll just check if it exists
-            // The trait should be properly included in the class definition if needed
+        // Check if the HasPayments trait exists in the Finance module
+        if (trait_exists('CorvMC\Finance\Concerns\HasPayments')) {
+            // The trait exists, so we can use it
+            // No need to do anything special here
         }
-    }
-
-    /**
-     * Create a payment for this booking
-     * 
-     * @param array $attributes Additional payment attributes
-     * @return mixed The payment model or null if Finance module is not available
-     */
-    public function createPayment(array $attributes = [])
-    {
-        if (!class_exists('CorvMC\Finance\Models\Payment')) {
-            return null;
-        }
-
-        $paymentClass = 'CorvMC\Finance\Models\Payment';
-        
-        // Get the room's product
-        $product = $this->room->product;
-        if (!$product) {
-            // Try to sync the product first
-            $product = $this->room->syncProduct();
-            if (!$product) {
-                return null;
-            }
-        }
-        
-        $paymentData = array_merge([
-            'user_id' => $this->user_id,
-            'amount' => $this->calculateTotalPrice(),
-            'status' => 'pending',
-            'description' => "Booking #{$this->id} for {$this->room->name}",
-            'due_date' => $this->start_time,
-        ], $attributes);
-
-        // Create the payment
-        $payment = $paymentClass::create($paymentData);
-        
-        // If we have the HasPayments trait, associate the payment
-        if (method_exists($this, 'payments')) {
-            $this->payments()->attach($payment->id);
-        }
-        
-        return $payment;
     }
 } 

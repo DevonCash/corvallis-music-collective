@@ -19,6 +19,9 @@ return new class extends Migration
             $table->integer('capacity');
             $table->decimal('hourly_rate', 8, 2);
             $table->boolean('is_active')->default(true);
+            $table->integer('size_sqft')->nullable();
+            $table->json('amenities')->nullable();
+            $table->foreignId('product_id')->nullable();
             $table->json('photos')->nullable();
             $table->json('specifications')->nullable();
             $table->timestamps();

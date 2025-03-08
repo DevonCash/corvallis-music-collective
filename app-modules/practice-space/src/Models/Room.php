@@ -121,6 +121,63 @@ class Room extends Model
     }
 
     /**
+     * Sync the room's hourly rate with the product price.
+     * 
+     * @return self
+     */
+    public function syncWithProduct(): self
+    {
+        if (!class_exists('CorvMC\Finance\Models\Product') || !$this->product_id) {
+            return $this;
+        }
+
+        $product = $this->product;
+        if ($product && $this->hourly_rate != $product->price) {
+            $this->update(['hourly_rate' => $product->price]);
+        }
+
+        return $this;
+    }
+
+    /**
+     * Update the product price based on the room's hourly rate.
+     * 
+     * @return mixed The product model or null if Finance module is not available
+     */
+    public function updateProductPrice()
+    {
+        if (!class_exists('CorvMC\Finance\Models\Product') || !$this->product_id) {
+            return null;
+        }
+
+        $product = $this->product;
+        if ($product && $product->price != $this->hourly_rate) {
+            $product->update(['price' => $this->hourly_rate]);
+        }
+
+        return $product;
+    }
+
+    /**
+     * Deactivate the associated product.
+     * 
+     * @return mixed The product model or null if Finance module is not available
+     */
+    public function deactivateProduct()
+    {
+        if (!class_exists('CorvMC\Finance\Models\Product') || !$this->product_id) {
+            return null;
+        }
+
+        $product = $this->product;
+        if ($product && $product->is_active) {
+            $product->update(['is_active' => false]);
+        }
+
+        return $product;
+    }
+
+    /**
      * Create a new factory instance for the model.
      */
     protected static function newFactory()
