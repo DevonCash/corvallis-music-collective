@@ -212,7 +212,7 @@ class CreateBookingAction
                 try {
                     // Create the booking using the service
                     $startDateTime = Carbon::createFromFormat('Y-m-d H:i', $data['booking_date'] . ' ' . $data['booking_time'], $data['timezone']);
-                    $endDateTime = $startDateTime->copy()->addHours($data['duration_hours']);
+                    $endDateTime = $startDateTime->copy()->addHours(floatVal($data['duration_hours']));
                     $booking =  new Booking([
                         'room_id' => $data['room_id'],
                         'user_id' => Auth::id(),
@@ -224,7 +224,7 @@ class CreateBookingAction
                     $booking->save();
 
                     Notification::make()
-                        ->title($booking->room->name . 'booked for ' . $booking->start_time->format('Y-m-d g:i a'))
+                        ->title($booking->room->name . ' booked for ' . $booking->start_time->format('Y-m-d g:i a'))
                         ->success()
                         ->send();
                 } catch (\Exception $e) {

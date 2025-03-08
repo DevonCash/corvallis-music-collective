@@ -78,6 +78,7 @@ class BookingPolicy implements Arrayable, JsonSerializable, CastsAttributes
 
     /**
      * Create a BookingPolicy instance from an array
+     * Keys must be in snake_case format
      *
      * @param array|null $data
      * @return static

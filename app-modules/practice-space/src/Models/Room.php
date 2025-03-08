@@ -373,15 +373,18 @@ class Room extends Model
         // Respect the policy's min and max durations
         $minDuration = $policy->minBookingDurationHours;
 
+        // Determine the increment based on includeHalfHour flag
+        $increment = $includeHalfHour ? 0.5 : 1.0;
+
         // Start from the minimum duration
-        for ($duration = $minDuration; $duration <= $maxDuration; $duration += 0.5) {
+        for ($duration = $minDuration; $duration <= $maxDuration; $duration += $increment) {
             // Format the duration label
             if ($duration < 1) {
-                $options[$duration] = (string) floor($duration * 60) . " mins";
+                $options[(string)$duration] = (string) floor($duration * 60) . " mins";
             } elseif ($duration == 1) {
-                $options[$duration] = '1 hour';
+                $options[(string)$duration] = '1 hour';
             } else {
-                $options[$duration] = $duration . ' hours';
+                $options[(string)$duration] = $duration . ' hours';
             }
         }
 

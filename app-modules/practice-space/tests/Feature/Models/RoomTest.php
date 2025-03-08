@@ -347,9 +347,6 @@ class RoomTest extends TestCase
     /** @test */
     public function it_respects_minimum_advance_booking_hours_for_time_slots()
     {
-        // Skip this test as the implementation seems to be different from what we expected
-        $this->markTestSkipped('Skipping until we understand the actual implementation of minimum advance booking hours');
-        
         // Set the current time to a known value
         Carbon::setTestNow(Carbon::today()->setHour(9)->setMinute(0));
 
@@ -481,9 +478,6 @@ class RoomTest extends TestCase
     /** @test */
     public function it_can_update_booking_policy()
     {
-        // Skip this test until we can debug the issue with the booking policy mutator
-        $this->markTestSkipped('Skipping until we can debug the issue with the booking policy mutator');
-        
         // Get the original policy
         $originalPolicy = $this->room->getBookingPolicyAttribute();
         
@@ -522,9 +516,6 @@ class RoomTest extends TestCase
     /** @test */
     public function it_can_reset_booking_policy()
     {
-        // Skip this test until we can debug the issue with the booking policy mutator
-        $this->markTestSkipped('Skipping until we can debug the issue with the booking policy mutator');
-        
         // Get the original policy from the category
         $category = $this->room->category;
         $categoryPolicy = $category->default_booking_policy;
@@ -635,8 +626,8 @@ class RoomTest extends TestCase
         // Check that there are durations available
         $this->assertNotEmpty($durations);
         
-        // Check that the durations are keyed by the duration in hours
-        $this->assertArrayHasKey($this->room->getMinBookingDuration(), $durations);
+        // Check that the durations are keyed by the duration in hours (as a string)
+        $this->assertArrayHasKey((string)$this->room->getMinBookingDuration(), $durations);
         
         // Reset the test time
         Carbon::setTestNow();
