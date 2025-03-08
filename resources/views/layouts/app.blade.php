@@ -17,7 +17,7 @@
       src="https://widgets.givebutter.com/latest.umd.cjs?acct=jSnvpGVlVaDNar62&p=other"
     ></script>
 
-    @vite('resources/css/app.css', 'resources/js/app.js')
+    @vite(['resources/css/app.css', 'resources/js/app.js'])
 
     <title>{{$title ?? "Corvallis Music Collective"}}</title>
   </head>
