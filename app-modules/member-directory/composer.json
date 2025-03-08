@@ -1,0 +1,24 @@
+{
+	"name": "corvmc/member-directory",
+	"description": "",
+	"type": "library",
+	"version": "1.0",
+	"license": "proprietary",
+	"require": {},
+	"autoload": {
+		"psr-4": {
+			"CorvMC\\MemberDirectory\\": "src/",
+			"CorvMC\\MemberDirectory\\Tests\\": "tests/",
+			"CorvMC\\MemberDirectory\\Database\\Factories\\": "database/factories/",
+			"CorvMC\\MemberDirectory\\Database\\Seeders\\": "database/seeders/"
+		}
+	},
+	"minimum-stability": "stable",
+	"extra": {
+		"laravel": {
+			"providers": [
+				"CorvMC\\MemberDirectory\\Providers\\MemberDirectoryServiceProvider"
+			]
+		}
+	}
+}

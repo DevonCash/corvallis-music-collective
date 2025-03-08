@@ -1,0 +1,24 @@
+{
+	"name": "corvmc/community-calendar",
+	"description": "",
+	"type": "library",
+	"version": "1.0",
+	"license": "proprietary",
+	"require": {},
+	"autoload": {
+		"psr-4": {
+			"CorvMC\\CommunityCalendar\\": "src/",
+			"CorvMC\\CommunityCalendar\\Tests\\": "tests/",
+			"CorvMC\\CommunityCalendar\\Database\\Factories\\": "database/factories/",
+			"CorvMC\\CommunityCalendar\\Database\\Seeders\\": "database/seeders/"
+		}
+	},
+	"minimum-stability": "stable",
+	"extra": {
+		"laravel": {
+			"providers": [
+				"CorvMC\\CommunityCalendar\\Providers\\CommunityCalendarServiceProvider"
+			]
+		}
+	}
+}

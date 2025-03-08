@@ -1,0 +1,24 @@
+{
+	"name": "corvmc/productions",
+	"description": "",
+	"type": "library",
+	"version": "1.0",
+	"license": "proprietary",
+	"require": {},
+	"autoload": {
+		"psr-4": {
+			"CorvMC\\Productions\\": "src/",
+			"CorvMC\\Productions\\Tests\\": "tests/",
+			"CorvMC\\Productions\\Database\\Factories\\": "database/factories/",
+			"CorvMC\\Productions\\Database\\Seeders\\": "database/seeders/"
+		}
+	},
+	"minimum-stability": "stable",
+	"extra": {
+		"laravel": {
+			"providers": [
+				"CorvMC\\Productions\\Providers\\ProductionsServiceProvider"
+			]
+		}
+	}
+}

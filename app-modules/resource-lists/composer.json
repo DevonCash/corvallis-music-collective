@@ -1,0 +1,24 @@
+{
+	"name": "corvmc/resource-lists",
+	"description": "",
+	"type": "library",
+	"version": "1.0",
+	"license": "proprietary",
+	"require": {},
+	"autoload": {
+		"psr-4": {
+			"CorvMC\\ResourceLists\\": "src/",
+			"CorvMC\\ResourceLists\\Tests\\": "tests/",
+			"CorvMC\\ResourceLists\\Database\\Factories\\": "database/factories/",
+			"CorvMC\\ResourceLists\\Database\\Seeders\\": "database/seeders/"
+		}
+	},
+	"minimum-stability": "stable",
+	"extra": {
+		"laravel": {
+			"providers": [
+				"CorvMC\\ResourceLists\\Providers\\ResourceListsServiceProvider"
+			]
+		}
+	}
+}

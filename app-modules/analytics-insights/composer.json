@@ -1,0 +1,24 @@
+{
+	"name": "corvmc/analytics-insights",
+	"description": "",
+	"type": "library",
+	"version": "1.0",
+	"license": "proprietary",
+	"require": {},
+	"autoload": {
+		"psr-4": {
+			"CorvMC\\AnalyticsInsights\\": "src/",
+			"CorvMC\\AnalyticsInsights\\Tests\\": "tests/",
+			"CorvMC\\AnalyticsInsights\\Database\\Factories\\": "database/factories/",
+			"CorvMC\\AnalyticsInsights\\Database\\Seeders\\": "database/seeders/"
+		}
+	},
+	"minimum-stability": "stable",
+	"extra": {
+		"laravel": {
+			"providers": [
+				"CorvMC\\AnalyticsInsights\\Providers\\AnalyticsInsightsServiceProvider"
+			]
+		}
+	}
+}

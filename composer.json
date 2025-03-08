@@ -12,12 +12,28 @@
         "php": "^8.2",
         "alpineio/model-states-for-filament": "dev-main",
         "awcodes/filament-table-repeater": "^3.1",
+        "corvmc/analytics-insights": "*",
+        "corvmc/band-profiles": "*",
+        "corvmc/community-calendar": "*",
+        "corvmc/finance": "*",
+        "corvmc/gear-inventory": "*",
+        "corvmc/member-directory": "*",
+        "corvmc/practice-space": "*",
+        "corvmc/productions": "*",
+        "corvmc/publications": "*",
+        "corvmc/resource-lists": "*",
+        "corvmc/sponsorship": "*",
+        "corvmc/state-management": "*",
+        "corvmc/volunteer-management": "*",
         "filament/filament": "^3.2",
+        "internachi/modular": "^2.3",
+        "lab404/laravel-impersonate": "*",
         "laravel/cashier": "^15.6",
         "laravel/folio": "^1.1",
         "laravel/framework": "^11.31",
         "laravel/tinker": "^2.9",
         "rmsramos/activitylog": "^1.0",
+        "saade/filament-fullcalendar": "^3.0",
         "snellingio/folio-markdown": "^1.0@beta",
         "spatie/laravel-model-states": "^2.10",
         "spatie/laravel-permission": "^6.15",
@@ -78,6 +94,13 @@
         {
             "type": "vcs",
             "url": "https://github.com/alpineio/model-states-for-filament"
+        },
+        {
+            "type": "path",
+            "url": "app-modules/*",
+            "options": {
+                "symlink": true
+            }
         }
     ],
     "config": {

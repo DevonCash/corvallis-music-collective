@@ -1,0 +1,24 @@
+{
+	"name": "corvmc/volunteer-management",
+	"description": "",
+	"type": "library",
+	"version": "1.0",
+	"license": "proprietary",
+	"require": {},
+	"autoload": {
+		"psr-4": {
+			"CorvMC\\VolunteerManagement\\": "src/",
+			"CorvMC\\VolunteerManagement\\Tests\\": "tests/",
+			"CorvMC\\VolunteerManagement\\Database\\Factories\\": "database/factories/",
+			"CorvMC\\VolunteerManagement\\Database\\Seeders\\": "database/seeders/"
+		}
+	},
+	"minimum-stability": "stable",
+	"extra": {
+		"laravel": {
+			"providers": [
+				"CorvMC\\VolunteerManagement\\Providers\\VolunteerManagementServiceProvider"
+			]
+		}
+	}
+}

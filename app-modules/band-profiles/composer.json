@@ -1,0 +1,24 @@
+{
+	"name": "corvmc/band-profiles",
+	"description": "",
+	"type": "library",
+	"version": "1.0",
+	"license": "proprietary",
+	"require": {},
+	"autoload": {
+		"psr-4": {
+			"CorvMC\\BandProfiles\\": "src/",
+			"CorvMC\\BandProfiles\\Tests\\": "tests/",
+			"CorvMC\\BandProfiles\\Database\\Factories\\": "database/factories/",
+			"CorvMC\\BandProfiles\\Database\\Seeders\\": "database/seeders/"
+		}
+	},
+	"minimum-stability": "stable",
+	"extra": {
+		"laravel": {
+			"providers": [
+				"CorvMC\\BandProfiles\\Providers\\BandProfilesServiceProvider"
+			]
+		}
+	}
+}

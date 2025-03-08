@@ -1,0 +1,24 @@
+{
+	"name": "corvmc/gear-inventory",
+	"description": "",
+	"type": "library",
+	"version": "1.0",
+	"license": "proprietary",
+	"require": {},
+	"autoload": {
+		"psr-4": {
+			"CorvMC\\GearInventory\\": "src/",
+			"CorvMC\\GearInventory\\Tests\\": "tests/",
+			"CorvMC\\GearInventory\\Database\\Factories\\": "database/factories/",
+			"CorvMC\\GearInventory\\Database\\Seeders\\": "database/seeders/"
+		}
+	},
+	"minimum-stability": "stable",
+	"extra": {
+		"laravel": {
+			"providers": [
+				"CorvMC\\GearInventory\\Providers\\GearInventoryServiceProvider"
+			]
+		}
+	}
+}

@@ -35,4 +35,14 @@
   height: 1.75em;
   background: var(--stripe);
 }
+.fi-ta-actions {
+  @apply justify-end;
+}
 
+.fi-fo-wizard-header{
+  @apply flex flex-col sm:flex-row;
+}
+
+.fi-fo-wizard-header-step{
+  flex: 1;
+}

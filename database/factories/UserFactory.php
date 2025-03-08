@@ -7,7 +7,7 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 
 /**
- * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Modules\User\Models\User>
+ * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\User>
  */
 class UserFactory extends Factory
 {
@@ -16,7 +16,7 @@ class UserFactory extends Factory
      */
     protected static ?string $password;
 
-    protected $model = \App\Modules\User\Models\User::class;
+    protected $model = \App\Models\User::class;
 
     /**
      * Define the model's default state.

@@ -1,0 +1,25 @@
+{
+	"name": "corvmc/practice-space",
+	"description": "Practice Space module for managing rehearsal spaces and bookings",
+	"type": "laravel-module",
+	"require": {
+		"php": "^8.1"
+	},
+	"autoload": {
+		"psr-4": {
+			"CorvMC\\PracticeSpace\\": "src/",
+			"CorvMC\\PracticeSpace\\Tests\\": "tests/",
+			"CorvMC\\PracticeSpace\\Database\\Factories\\": "database/factories/",
+			"CorvMC\\PracticeSpace\\Database\\Seeders\\": "database/seeders/"
+		}
+	},
+	"extra": {
+		"laravel": {
+			"providers": [
+				"CorvMC\\PracticeSpace\\PracticeSpaceServiceProvider"
+			]
+		}
+	},
+	"minimum-stability": "dev",
+	"prefer-stable": true
+}

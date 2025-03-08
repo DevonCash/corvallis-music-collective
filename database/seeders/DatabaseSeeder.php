@@ -16,8 +16,8 @@ use App\Modules\PracticeSpace\Models\States\BookingState\Confirmed;
 use App\Modules\PracticeSpace\Models\States\BookingState\Completed;
 use App\Modules\PracticeSpace\Models\States\BookingState\Cancelled;
 use App\Modules\PracticeSpace\Models\States\BookingState\Scheduled;
-use App\Modules\User\Models\User;
 use Illuminate\Database\Seeder;
+use App\Models\User;
 use Carbon\Carbon;
 
 class DatabaseSeeder extends Seeder

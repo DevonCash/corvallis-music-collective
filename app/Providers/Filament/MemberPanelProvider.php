@@ -2,8 +2,9 @@
 
 namespace App\Providers\Filament;
 
-use App\Modules\PracticeSpace\Filament\PracticeSpacePluginProvider;
+use CorvMC\PracticeSpace\Filament\PracticeSpacePluginProvider;
 use Filament\Http\Middleware\Authenticate;
+use App\Models\User;
 use Filament\Http\Middleware\AuthenticateSession;
 use Filament\Http\Middleware\DisableBladeIconComponents;
 use Filament\Http\Middleware\DispatchServingFilamentEvent;
@@ -18,9 +19,11 @@ use Illuminate\Foundation\Http\Middleware\VerifyCsrfToken;
 use Illuminate\Routing\Middleware\SubstituteBindings;
 use Illuminate\Session\Middleware\StartSession;
 use Illuminate\View\Middleware\ShareErrorsFromSession;
-use App\Modules\Payments\Filament\PaymentsPluginProvider;
+use Filament\Navigation\NavigationItem;
 use Rmsramos\Activitylog\ActivitylogPlugin;
-
+use Saade\FilamentFullCalendar\FilamentFullCalendarPlugin;
+use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Auth;
 class MemberPanelProvider extends PanelProvider
 {
     public function panel(Panel $panel): Panel
@@ -33,17 +36,19 @@ class MemberPanelProvider extends PanelProvider
             ->colors([
                 'primary' => Color::Amber,
             ])
+            ->sidebarWidth('15rem')
             ->discoverResources(in: app_path('Filament/Resources'), for: 'App\\Filament\\Resources')
             ->discoverPages(in: app_path('Filament/Pages'), for: 'App\\Filament\\Pages')
+            ->discoverWidgets(in: app_path('Filament/Widgets'), for: 'App\\Filament\\Widgets')
             ->pages([
                 Pages\Dashboard::class,
             ])
             ->plugins([
-                PracticeSpacePluginProvider::make(),
-                PaymentsPluginProvider::make(),
                 ActivitylogPlugin::make()
+                    ->navigationItem(false),
+                FilamentFullCalendarPlugin::make(),
+                PracticeSpacePluginProvider::make()
             ])
-            ->discoverWidgets(in: app_path('Filament/Widgets'), for: 'App\\Filament\\Widgets')
             ->widgets([
                 Widgets\AccountWidget::class,
                 Widgets\FilamentInfoWidget::class,
@@ -61,6 +66,11 @@ class MemberPanelProvider extends PanelProvider
             ])
             ->authMiddleware([
                 Authenticate::class,
+            ])
+            ->navigationItems([
+                NavigationItem::make('Membership')
+                ->url(fn() => 'https://billing.stripe.com/p/login/28oaFS9Xoahu1ygaEE?prefilled_email=' . urlencode( User::find(Auth::id())->email), true)
+                ->icon('heroicon-o-credit-card')
             ])
             ->viteTheme('resources/css/app.css');
     }
