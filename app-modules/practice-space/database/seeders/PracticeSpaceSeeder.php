@@ -6,13 +6,12 @@ use Illuminate\Database\Seeder;
 use App\Models\User;
 use CorvMC\PracticeSpace\Models\RoomCategory;
 use CorvMC\PracticeSpace\Models\Room;
-use CorvMC\PracticeSpace\Models\BookingPolicy;
 use CorvMC\PracticeSpace\Models\Booking;
-use CorvMC\PracticeSpace\Models\BookingPolicyOverride;
 use CorvMC\PracticeSpace\Models\RoomEquipment;
 use CorvMC\PracticeSpace\Models\MaintenanceSchedule;
 use CorvMC\PracticeSpace\Models\RoomFavorite;
 use CorvMC\PracticeSpace\Models\WaitlistEntry;
+use CorvMC\PracticeSpace\ValueObjects\BookingPolicy;
 use Carbon\Carbon;
 
 class PracticeSpaceSeeder extends Seeder
@@ -30,111 +29,89 @@ class PracticeSpaceSeeder extends Seeder
             User::factory()->count(10)->create();
         }
 
-        // Create room categories
-        $this->command->info('Creating room categories...');
+        // Create room categories with default booking policies
+        $this->command->info('Creating room categories with booking policies...');
         $categories = [
             [
                 'name' => 'Standard Practice Room',
                 'description' => 'Basic practice rooms suitable for individual practice or small ensembles.',
                 'is_active' => true,
+                'default_booking_policy' => [
+                    'opening_time' => '08:00',
+                    'closing_time' => '22:00',
+                    'max_booking_duration_hours' => 3.0,
+                    'min_booking_duration_hours' => 1.0,
+                    'max_advance_booking_days' => 14,
+                    'min_advance_booking_hours' => 2.0,
+                    'cancellation_hours' => 24,
+                    'max_bookings_per_week' => 5
+                ]
             ],
             [
                 'name' => 'Recording Studio',
                 'description' => 'Professional recording studios with sound isolation and equipment.',
                 'is_active' => true,
+                'default_booking_policy' => [
+                    'opening_time' => '09:00',
+                    'closing_time' => '23:00',
+                    'max_booking_duration_hours' => 8.0,
+                    'min_booking_duration_hours' => 2.0,
+                    'max_advance_booking_days' => 30,
+                    'min_advance_booking_hours' => 48.0,
+                    'cancellation_hours' => 72,
+                    'max_bookings_per_week' => 3
+                ]
             ],
             [
                 'name' => 'Rehearsal Hall',
                 'description' => 'Large spaces for full band rehearsals and performances.',
                 'is_active' => true,
+                'default_booking_policy' => [
+                    'opening_time' => '08:00',
+                    'closing_time' => '22:00',
+                    'max_booking_duration_hours' => 6.0,
+                    'min_booking_duration_hours' => 2.0,
+                    'max_advance_booking_days' => 21,
+                    'min_advance_booking_hours' => 24.0,
+                    'cancellation_hours' => 48,
+                    'max_bookings_per_week' => 3
+                ]
             ],
             [
                 'name' => 'Teaching Studio',
                 'description' => 'Rooms designed for music lessons and teaching.',
                 'is_active' => true,
+                'default_booking_policy' => [
+                    'opening_time' => '08:00',
+                    'closing_time' => '21:00',
+                    'max_booking_duration_hours' => 4.0,
+                    'min_booking_duration_hours' => 0.5,
+                    'max_advance_booking_days' => 60,
+                    'min_advance_booking_hours' => 1.0,
+                    'cancellation_hours' => 12,
+                    'max_bookings_per_week' => 10
+                ]
             ],
             [
                 'name' => 'Percussion Room',
                 'description' => 'Specialized rooms for percussion practice with additional sound isolation.',
                 'is_active' => true,
+                'default_booking_policy' => [
+                    'opening_time' => '08:00',
+                    'closing_time' => '22:00',
+                    'max_booking_duration_hours' => 4.0,
+                    'min_booking_duration_hours' => 1.0,
+                    'max_advance_booking_days' => 14,
+                    'min_advance_booking_hours' => 4.0,
+                    'cancellation_hours' => 24,
+                    'max_bookings_per_week' => 4
+                ]
             ],
         ];
 
         $categoryModels = [];
         foreach ($categories as $category) {
             $categoryModels[] = RoomCategory::create($category);
-        }
-
-        // Create booking policies for each category
-        $this->command->info('Creating booking policies...');
-        foreach ($categoryModels as $index => $category) {
-            $policyData = [
-                'room_category_id' => $category->id,
-                'name' => $category->name . ' Policy',
-                'description' => 'Booking policy for ' . $category->name,
-                'is_active' => true,
-            ];
-
-            // Different policies based on room type
-            switch ($index) {
-                case 0: // Standard Practice Room
-                    $policyData = array_merge($policyData, [
-                        'max_booking_duration_hours' => 3,
-                        'min_booking_duration_hours' => 1,
-                        'max_advance_booking_days' => 14,
-                        'min_advance_booking_hours' => 2,
-                        'cancellation_policy' => 'Cancel at least 24 hours in advance for a full refund.',
-                        'cancellation_hours' => 24,
-                        'max_bookings_per_week' => 5,
-                    ]);
-                    break;
-                case 1: // Recording Studio
-                    $policyData = array_merge($policyData, [
-                        'max_booking_duration_hours' => 8,
-                        'min_booking_duration_hours' => 2,
-                        'max_advance_booking_days' => 30,
-                        'min_advance_booking_hours' => 48,
-                        'cancellation_policy' => 'Cancel at least 72 hours in advance for a full refund.',
-                        'cancellation_hours' => 72,
-                        'max_bookings_per_week' => 3,
-                    ]);
-                    break;
-                case 2: // Rehearsal Hall
-                    $policyData = array_merge($policyData, [
-                        'max_booking_duration_hours' => 6,
-                        'min_booking_duration_hours' => 2,
-                        'max_advance_booking_days' => 21,
-                        'min_advance_booking_hours' => 24,
-                        'cancellation_policy' => 'Cancel at least 48 hours in advance for a full refund.',
-                        'cancellation_hours' => 48,
-                        'max_bookings_per_week' => 3,
-                    ]);
-                    break;
-                case 3: // Teaching Studio
-                    $policyData = array_merge($policyData, [
-                        'max_booking_duration_hours' => 4,
-                        'min_booking_duration_hours' => 0.5,
-                        'max_advance_booking_days' => 60,
-                        'min_advance_booking_hours' => 1,
-                        'cancellation_policy' => 'Cancel at least 12 hours in advance for a full refund.',
-                        'cancellation_hours' => 12,
-                        'max_bookings_per_week' => 10,
-                    ]);
-                    break;
-                case 4: // Percussion Room
-                    $policyData = array_merge($policyData, [
-                        'max_booking_duration_hours' => 4,
-                        'min_booking_duration_hours' => 1,
-                        'max_advance_booking_days' => 14,
-                        'min_advance_booking_hours' => 4,
-                        'cancellation_policy' => 'Cancel at least 24 hours in advance for a full refund.',
-                        'cancellation_hours' => 24,
-                        'max_bookings_per_week' => 4,
-                    ]);
-                    break;
-            }
-
-            BookingPolicy::create($policyData);
         }
 
         // Create rooms for each category
@@ -306,129 +283,31 @@ class PracticeSpaceSeeder extends Seeder
             MaintenanceSchedule::create($maintenance);
         }
 
-        // Create bookings
+        // Create some bookings
         $this->command->info('Creating bookings...');
-        $users = User::all();
+        $users = User::take(5)->get();
+        $rooms = Room::get();
         
-        // Ensure we have at least 2 users for the seeder
-        if ($users->count() < 2) {
-            $this->command->info('Creating additional users for seeding...');
-            $usersToCreate = 2 - $users->count();
-            $newUsers = User::factory()->count($usersToCreate)->create();
-            $users = $users->merge($newUsers);
-        }
-        
-        // Create a mix of bookings with different statuses
-        foreach ($roomModels as $room) {
-            foreach ($users as $index => $user) {
-                // Create a scheduled booking in the future
-                $startTime = Carbon::now()->addDays(rand(1, 14))->setHour(rand(9, 20))->setMinute(0);
-                $endTime = (clone $startTime)->addHours(rand(1, 3));
+        foreach ($users as $user) {
+            // Create 2 bookings for each user
+            for ($i = 0; $i < 2; $i++) {
+                $randomRoom = $rooms->random();
+                $startDate = Carbon::now()->addDays(rand(1, 30))->setHour(rand(9, 20))->setMinute(0)->setSecond(0);
+                $endDate = $startDate->copy()->addHours(rand(1, 3));
                 
                 Booking::create([
-                    'room_id' => $room->id,
+                    'room_id' => $randomRoom->id,
                     'user_id' => $user->id,
-                    'start_time' => $startTime,
-                    'end_time' => $endTime,
-                    'notes' => 'Regular practice session',
-                    'status' => 'reserved',
+                    'start_time' => $startDate,
+                    'end_time' => $endDate,
                     'state' => 'scheduled',
-                    'total_price' => $room->hourly_rate * $startTime->diffInHours($endTime),
-                    'payment_status' => 'pending',
+                    'notes' => 'Booking for testing',
+                    'total_price' => $randomRoom->hourly_rate * $startDate->diffInHours($endDate),
                 ]);
-                
-                // Create a completed booking in the past
-                $startTime = Carbon::now()->subDays(rand(1, 30))->setHour(rand(9, 20))->setMinute(0);
-                $endTime = (clone $startTime)->addHours(rand(1, 3));
-                
-                Booking::create([
-                    'room_id' => $room->id,
-                    'user_id' => $user->id,
-                    'start_time' => $startTime,
-                    'end_time' => $endTime,
-                    'notes' => 'Past practice session',
-                    'status' => 'completed',
-                    'state' => 'completed',
-                    'check_in_time' => (clone $startTime)->addMinutes(rand(-15, 15)),
-                    'check_out_time' => (clone $endTime)->addMinutes(rand(-15, 15)),
-                    'total_price' => $room->hourly_rate * $startTime->diffInHours($endTime),
-                    'payment_status' => 'paid',
-                ]);
-                
-                // Add some variety with other booking states
-                if ($index % 5 == 0) {
-                    // Cancelled booking
-                    $startTime = Carbon::now()->addDays(rand(5, 20))->setHour(rand(9, 20))->setMinute(0);
-                    $endTime = (clone $startTime)->addHours(rand(1, 3));
-                    
-                    Booking::create([
-                        'room_id' => $room->id,
-                        'user_id' => $user->id,
-                        'start_time' => $startTime,
-                        'end_time' => $endTime,
-                        'notes' => 'Cancelled session',
-                        'status' => 'cancelled',
-                        'state' => 'cancelled',
-                        'total_price' => $room->hourly_rate * $startTime->diffInHours($endTime),
-                        'payment_status' => 'refunded',
-                    ]);
-                } else if ($index % 5 == 1) {
-                    // No-show booking
-                    $startTime = Carbon::now()->subDays(rand(1, 10))->setHour(rand(9, 20))->setMinute(0);
-                    $endTime = (clone $startTime)->addHours(rand(1, 3));
-                    
-                    Booking::create([
-                        'room_id' => $room->id,
-                        'user_id' => $user->id,
-                        'start_time' => $startTime,
-                        'end_time' => $endTime,
-                        'notes' => 'No-show session',
-                        'status' => 'no_show',
-                        'state' => 'no_show',
-                        'total_price' => $room->hourly_rate * $startTime->diffInHours($endTime),
-                        'payment_status' => 'charged',
-                    ]);
-                }
             }
         }
-
-        // Create policy overrides for some users
-        $this->command->info('Creating policy overrides...');
-        $policies = BookingPolicy::all();
         
-        foreach ($policies as $index => $policy) {
-            if ($index % 2 == 0) {
-                // Create override for first user
-                BookingPolicyOverride::updateOrCreate(
-                    [
-                        'booking_policy_id' => $policy->id,
-                        'user_id' => $users[0]->id,
-                    ],
-                    [
-                        'overrides' => [
-                            'max_booking_duration_hours' => $policy->max_booking_duration_hours + 2,
-                            'max_bookings_per_week' => $policy->max_bookings_per_week + 3,
-                        ],
-                    ]
-                );
-            } else {
-                // Create override for second user
-                BookingPolicyOverride::updateOrCreate(
-                    [
-                        'booking_policy_id' => $policy->id,
-                        'user_id' => $users[1]->id,
-                    ],
-                    [
-                        'overrides' => [
-                            'min_advance_booking_hours' => 0,
-                            'cancellation_hours' => (int)($policy->cancellation_hours / 2),
-                        ],
-                    ]
-                );
-            }
-        }
-
-        // Create room favorites
+        // Create some room favorites
         $this->command->info('Creating room favorites...');
         foreach ($users as $index => $user) {
             // Each user favorites 2 random rooms

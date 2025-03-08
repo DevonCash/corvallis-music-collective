@@ -1,6 +1,7 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use CorvMC\PracticeSpace\Filament\Pages\UserBookings;
 
 /*
 |--------------------------------------------------------------------------
@@ -13,6 +14,8 @@ use Illuminate\Support\Facades\Route;
 |
 */
 
-// Route::middleware(['web', 'auth'])->prefix('practice-space')->group(function () {
-//     // Define your routes here
-// }); 
+Route::middleware(['web', 'auth'])->prefix('practice-space')->group(function () {
+    Route::get('/my-bookings', function () {
+        return redirect()->to(UserBookings::getUrl());
+    })->name('practice-space.my-bookings');
+}); 

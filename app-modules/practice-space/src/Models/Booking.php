@@ -16,7 +16,6 @@ use CorvMC\PracticeSpace\Models\States\BookingState;
 use CorvMC\StateManagement\Casts\State;
 use Spatie\Activitylog\LogOptions;
 use Spatie\Activitylog\Traits\LogsActivity;
-use Illuminate\Support\Facades\DB;
 use CorvMC\Finance\Concerns\HasPayments;
 
 class Booking extends Model
@@ -143,7 +142,7 @@ class Booking extends Model
      */
     public function getBookingPolicy()
     {
-        return $this->room->category->bookingPolicy;
+        return $this->room->booking_policy ?? new \CorvMC\PracticeSpace\ValueObjects\BookingPolicy();
     }
 
     /**
@@ -195,11 +194,11 @@ class Booking extends Model
         
         $maxDuration = $override && isset($override['max_booking_duration_hours']) 
             ? $override['max_booking_duration_hours'] 
-            : $policy->max_booking_duration_hours;
+            : $policy->maxBookingDurationHours;
             
         $minDuration = $override && isset($override['min_booking_duration_hours']) 
             ? $override['min_booking_duration_hours'] 
-            : $policy->min_booking_duration_hours;
+            : $policy->minBookingDurationHours;
         
         return $duration <= $maxDuration && $duration >= $minDuration;
     }
@@ -215,11 +214,11 @@ class Booking extends Model
         
         $minHours = $override && isset($override['min_advance_booking_hours']) 
             ? $override['min_advance_booking_hours'] 
-            : $policy->min_advance_booking_hours;
+            : $policy->minAdvanceBookingHours;
             
         $maxDays = $override && isset($override['max_advance_booking_days']) 
             ? $override['max_advance_booking_days'] 
-            : $policy->max_advance_booking_days;
+            : $policy->maxAdvanceBookingDays;
         
         return $hoursUntilBooking >= $minHours && $daysUntilBooking <= $maxDays;
     }
@@ -231,7 +230,7 @@ class Booking extends Model
     {
         $maxBookingsPerWeek = $override && isset($override['max_bookings_per_week']) 
             ? $override['max_bookings_per_week'] 
-            : $policy->max_bookings_per_week;
+            : $policy->maxBookingsPerWeek;
         
         // Get the start and end of the current week
         $weekStart = Carbon::now()->startOfWeek();
@@ -261,18 +260,18 @@ class Booking extends Model
         $now = Carbon::now();
         $hoursUntilBooking = $now->diffInMinutes($this->start_time, false) / 60;
         
-        return $hoursUntilBooking >= $policy->cancellation_hours;
+        return $hoursUntilBooking >= $policy->cancellationHours;
     }
 
     /**
-     * Calculate the total price for this booking
+     * Calculate the total price for this booking in cents
      * 
-     * @return float
+     * @return int
      */
-    public function calculateTotalPrice(): float
+    public function calculateTotalPriceInCents(): int
     {
         if ($this->total_price) {
-            return (float) $this->total_price;
+            return (int) round($this->total_price * 100);
         }
         
         if (!$this->room) {
@@ -280,9 +279,20 @@ class Booking extends Model
         }
         
         $hours = $this->getDurationInHours();
-        $hourlyRate = $this->room->hourly_rate ?? 0;
+        $hourlyRateInCents = (int) round($this->room->hourly_rate * 100);
         
-        return $hours * $hourlyRate;
+        // Calculate total in cents to avoid floating point issues
+        return (int) round($hours * $hourlyRateInCents);
+    }
+    
+    /**
+     * Calculate the total price for this booking
+     * 
+     * @return float
+     */
+    public function calculateTotalPrice(): float
+    {
+        return $this->calculateTotalPriceInCents() / 100;
     }
     
     /**
@@ -298,9 +308,13 @@ class Booking extends Model
             return $this;
         }
         
-        $originalPrice = $this->calculateTotalPrice();
-        $discountAmount = $originalPrice * ($discountPercent / 100);
-        $discountedPrice = $originalPrice - $discountAmount;
+        // Calculate in cents to avoid floating point issues
+        $originalPriceInCents = $this->calculateTotalPriceInCents();
+        $discountAmountInCents = (int) round($originalPriceInCents * ($discountPercent / 100));
+        $discountedPriceInCents = $originalPriceInCents - $discountAmountInCents;
+        
+        // Convert back to dollars for storage
+        $discountedPrice = $discountedPriceInCents / 100;
         
         $this->update([
             'total_price' => $discountedPrice,

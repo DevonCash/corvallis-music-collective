@@ -5,8 +5,9 @@ namespace CorvMC\PracticeSpace\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Database\Eloquent\Relations\HasOne;
 use CorvMC\PracticeSpace\Database\Factories\RoomCategoryFactory;
+use CorvMC\PracticeSpace\Casts\BookingPolicyCast;
+use CorvMC\PracticeSpace\ValueObjects\BookingPolicy;
 
 class RoomCategory extends Model
 {
@@ -22,6 +23,7 @@ class RoomCategory extends Model
 
     protected $casts = [
         'is_active' => 'boolean',
+        'default_booking_policy' => BookingPolicyCast::class,
     ];
 
     /**
@@ -30,14 +32,6 @@ class RoomCategory extends Model
     public function rooms(): HasMany
     {
         return $this->hasMany(Room::class);
-    }
-
-    /**
-     * Get the booking policy for this category.
-     */
-    public function bookingPolicy(): HasOne
-    {
-        return $this->hasOne(BookingPolicy::class);
     }
 
     /**

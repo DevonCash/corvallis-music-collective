@@ -222,9 +222,9 @@ class PaymentIntegrationTest extends TestCase
     /** @test */
     public function booking_total_price_is_calculated_from_room_hourly_rate()
     {
-        // Create a booking without specifying the total price
+        // Create a booking for 3 hours
         $startTime = now()->addDay()->setHour(10);
-        $endTime = now()->addDay()->setHour(13); // 3 hours
+        $endTime = now()->addDay()->setHour(13);
         
         $booking = Booking::factory()->create([
             'user_id' => $this->testUser->id,
@@ -234,34 +234,50 @@ class PaymentIntegrationTest extends TestCase
             'state' => 'scheduled',
         ]);
         
-        // Calculate expected price (hourly rate * hours)
-        $expectedPrice = $this->room->hourly_rate * 3;
+        // Calculate expected price in cents (hourly rate * hours * 100)
+        $expectedPriceInCents = (int)round($this->room->hourly_rate * 3 * 100);
         
-        // Assert that the total price was calculated correctly
-        // Convert both to float to avoid string vs float comparison issues
-        $this->assertEquals((float)$expectedPrice, (float)$booking->total_price);
+        // Get the calculated price in cents
+        $calculatedPriceInCents = $booking->calculateTotalPriceInCents();
+        
+        // Assert that the total price in cents is exactly correct (no floating point issues)
+        $this->assertEquals($expectedPriceInCents, $calculatedPriceInCents);
+        
+        // Also test the float-based method for backward compatibility
+        $this->assertEqualsWithDelta($this->room->hourly_rate * 3, $booking->calculateTotalPrice(), 0.01);
     }
 
     /** @test */
     public function booking_can_apply_discount()
     {
-        // Create a booking
+        // Create a booking with a fixed price
+        $originalPrice = 75.00; // $75.00
         $booking = Booking::factory()->create([
             'user_id' => $this->testUser->id,
             'room_id' => $this->room->id,
             'start_time' => now()->addDay()->setHour(10),
             'end_time' => now()->addDay()->setHour(13), // 3 hours
-            'total_price' => 75.00, // Assuming $25/hour
+            'total_price' => $originalPrice,
             'state' => 'scheduled',
         ]);
         
+        // Calculate expected discounted price in cents
+        $discountPercent = 20;
+        $originalPriceInCents = (int)round($originalPrice * 100); // 7500 cents
+        $discountAmountInCents = (int)round($originalPriceInCents * ($discountPercent / 100)); // 1500 cents
+        $expectedDiscountedPriceInCents = $originalPriceInCents - $discountAmountInCents; // 6000 cents
+        $expectedDiscountedPrice = $expectedDiscountedPriceInCents / 100; // $60.00
+        
         // Apply a discount
-        $booking->applyDiscount(20, 'Member discount');
+        $booking->applyDiscount($discountPercent, 'Member discount');
         
         // Refresh the booking
         $booking->refresh();
         
-        // Assert that the discount was applied
-        $this->assertEquals(60.00, $booking->total_price); // 75 - 20% = 60
+        // Assert that the discount was applied correctly
+        $this->assertEquals($expectedDiscountedPrice, $booking->total_price);
+        
+        // Also verify the cents calculation
+        $this->assertEquals($expectedDiscountedPriceInCents, (int)round($booking->total_price * 100));
     }
 } 
