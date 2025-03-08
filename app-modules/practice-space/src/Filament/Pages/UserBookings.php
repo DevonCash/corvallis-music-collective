@@ -21,6 +21,7 @@ use Filament\Tables\Concerns\InteractsWithTable;
 use Filament\Tables\Contracts\HasTable;
 use Filament\Forms\Components\Wizard\Step;
 use CorvMC\PracticeSpace\Filament\Actions\CreateBookingAction;
+use CorvMC\PracticeSpace\Models\States\BookingState;
 
 class UserBookings extends Page implements HasTable
 {
@@ -46,7 +47,6 @@ class UserBookings extends Page implements HasTable
             ->query(
                 Booking::query()
                     ->where('user_id', Auth::id())
-                    ->orderBy('start_time', 'desc')
             )
             ->columns([
                 Tables\Columns\TextColumn::make('room.name')
@@ -54,12 +54,14 @@ class UserBookings extends Page implements HasTable
                     ->searchable()
                     ->sortable(),
                 Tables\Columns\TextColumn::make('start_time')
-                    ->label('Start Time')
-                    ->dateTime()
+                    ->label('Date')
+                    ->date()
+                    ->description(fn (Booking $record) => $record->start_time->diffForHumans(now(), true))
                     ->sortable(),
-                Tables\Columns\TextColumn::make('end_time')
-                    ->label('End Time')
-                    ->dateTime()
+                Tables\Columns\TextColumn::make('time')
+                    ->label('Reservation Time')
+                    ->getStateUsing(fn (Booking $record) => $record->start_time->format('g:i a') . ' - ' . $record->end_time->format('g:i a'))
+                    ->description(fn (Booking $record) => $record->start_time->diffForHumans($record->end_time, true))
                     ->sortable(),
                 Tables\Columns\TextColumn::make('total_price')
                     ->label('Price')
@@ -68,15 +70,10 @@ class UserBookings extends Page implements HasTable
                 Tables\Columns\TextColumn::make('state')
                     ->label('Status')
                     ->badge()
-                    ->color(fn (string $state): string => match ($state) {
-                        'reserved' => 'warning',
-                        'confirmed' => 'success',
-                        'checked_in' => 'success',
-                        'completed' => 'success',
-                        'cancelled' => 'danger',
-                        default => 'gray',
-                    }),
+                    ->getStateUsing(fn (Booking $record) => $record->state->getLabel())
+                    ->color(fn (Booking $record) => $record->state->getColor()),
             ])
+            ->defaultSort('start_time')
             ->filters([
                 Tables\Filters\SelectFilter::make('state')
                     ->label('Status')
@@ -95,27 +92,7 @@ class UserBookings extends Page implements HasTable
                     ->query(fn (Builder $query): Builder => $query->where('end_time', '<', now())),
             ])
             ->actions([
-                Tables\Actions\ViewAction::make()
-                    ->modalHeading('Booking Details')
-                    ->modalDescription(fn (Booking $record): string => "Booking for {$record->room->name}")
-                    ->modalContent(fn (Booking $record): string => view('practice-space::filament.booking-details', ['booking' => $record])->render()),
-                Tables\Actions\Action::make('cancel')
-                    ->label('Cancel')
-                    ->color('danger')
-                    ->icon('heroicon-o-x-circle')
-                    ->requiresConfirmation()
-                    ->visible(fn (Booking $record): bool => 
-                        $record->state === 'reserved' || $record->state === 'confirmed'
-                    )
-                    ->action(function (Booking $record): void {
-                        $record->state = 'cancelled';
-                        $record->save();
-                        
-                        Notification::make()
-                            ->title('Booking cancelled successfully')
-                            ->success()
-                            ->send();
-                    }),
+                ...BookingState::getTableActions()
             ])
             ->bulkActions([])
             ->emptyStateHeading('No bookings yet')

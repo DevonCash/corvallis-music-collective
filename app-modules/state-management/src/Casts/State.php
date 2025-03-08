@@ -46,7 +46,7 @@ class State implements CastsAttributes
         }
         
         // Return the state name
-        return $states[$value];
+        return new $states[$value]($model);
     }
     
     /**

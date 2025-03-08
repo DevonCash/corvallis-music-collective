@@ -178,6 +178,16 @@ class BookingService
         $startDateTime = $times['start_datetime'];
         $endDateTime = $times['end_datetime'];
         
+        // Get the room and its booking policy
+        $room = $this->getRoomById($data['room_id']);
+        if (!$room) {
+            $result['is_valid'] = false;
+            $result['error_message'] = 'Room not found.';
+            return $result;
+        }
+        
+        $policy = $room->getBookingPolicy();
+        
         // Validate that start time is on the half hour
         if (!$this->isTimeOnHalfHour($startDateTime)) {
             $result['is_valid'] = false;
@@ -190,6 +200,72 @@ class BookingService
             $result['is_valid'] = false;
             $result['error_message'] = 'The selected room is not available for the chosen time slot.';
             return $result;
+        }
+        
+        // Check if booking duration is within policy limits
+        $durationHours = (float) $data['duration_hours'];
+        if ($durationHours < $policy->minBookingDurationHours) {
+            $result['is_valid'] = false;
+            $result['error_message'] = "Bookings for this room must be at least {$policy->minBookingDurationHours} hours.";
+            return $result;
+        }
+        
+        if ($durationHours > $policy->maxBookingDurationHours) {
+            $result['is_valid'] = false;
+            $result['error_message'] = "Bookings for this room cannot exceed {$policy->maxBookingDurationHours} hours.";
+            return $result;
+        }
+        
+        // Check if booking is within operating hours
+        $operatingHours = $policy->getOperatingHours($data['booking_date']);
+        if ($startDateTime->lt($operatingHours['opening'])) {
+            $result['is_valid'] = false;
+            $result['error_message'] = "Bookings for this room cannot start before {$policy->openingTime}.";
+            return $result;
+        }
+        
+        if ($endDateTime->gt($operatingHours['closing'])) {
+            $result['is_valid'] = false;
+            $result['error_message'] = "Bookings for this room must end by {$policy->closingTime}.";
+            return $result;
+        }
+        
+        // Check if booking is within allowed advance booking window
+        $now = Carbon::now();
+        $maxAdvanceDate = $now->copy()->addDays($policy->maxAdvanceBookingDays);
+        if ($startDateTime->startOfDay()->gt($maxAdvanceDate->startOfDay())) {
+            $result['is_valid'] = false;
+            $result['error_message'] = "Bookings can only be made up to {$policy->maxAdvanceBookingDays} days in advance.";
+            return $result;
+        }
+        
+        // Check if booking meets minimum advance booking time
+        $minAdvanceTime = $now->copy()->addHours($policy->minAdvanceBookingHours);
+        if ($startDateTime->lt($minAdvanceTime)) {
+            $result['is_valid'] = false;
+            $result['error_message'] = "Bookings must be made at least {$policy->minAdvanceBookingHours} hours in advance.";
+            return $result;
+        }
+        
+        // Check if user has exceeded max bookings per week
+        if ($policy->maxBookingsPerWeek > 0) {
+            $userId = Auth::id();
+            $weekStart = Carbon::now()->startOfWeek();
+            $weekEnd = Carbon::now()->endOfWeek();
+            
+            $userBookingsThisWeek = Booking::where('user_id', $userId)
+                ->where('state', '!=', 'cancelled')
+                ->where(function ($query) use ($weekStart, $weekEnd) {
+                    $query->whereBetween('start_time', [$weekStart, $weekEnd])
+                        ->orWhereBetween('end_time', [$weekStart, $weekEnd]);
+                })
+                ->count();
+            
+            if ($userBookingsThisWeek >= $policy->maxBookingsPerWeek) {
+                $result['is_valid'] = false;
+                $result['error_message'] = "You have reached the maximum of {$policy->maxBookingsPerWeek} bookings per week.";
+                return $result;
+            }
         }
         
         // Add calculated times to result

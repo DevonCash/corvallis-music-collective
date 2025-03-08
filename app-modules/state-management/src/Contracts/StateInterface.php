@@ -52,7 +52,7 @@ interface StateInterface
     /**
      * Get Filament actions for transitioning from this state.
      */
-    public static function getActions(Model $model): array;
+    public static function getActions(): array;
     
     /**
      * Get the form schema for transitioning to this state.

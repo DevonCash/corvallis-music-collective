@@ -13,54 +13,10 @@ use Illuminate\Database\Eloquent\Model;
  */
 class ScheduledState extends BookingState
 {
-    /**
-     * The name of the state.
-     */
-    public static string $name = 'scheduled';
-    
-    /**
-     * Get the name of the state.
-     */
-    public static function getName(): string
-    {
-        return static::$name;
-    }
-    
-    /**
-     * Get the display name of the state.
-     */
-    public static function getLabel(): string
-    {
-        return 'Scheduled';
-    }
-    
-    /**
-     * Get the color for Filament UI.
-     */
-    public static function getColor(): string
-    {
-        return 'warning';
-    }
-    
-    /**
-     * Get the icon for Filament UI.
-     */
-    public static function getIcon(): string
-    {
-        return 'heroicon-o-clock';
-    }
-    
-    /**
-     * Get the allowed transitions from this state.
-     */
-    public static function getAllowedTransitions(): array
-    {
-        return [
-            ConfirmedState::class,
-            CancelledState::class,
-        ];
-    }
-    
+    public static string $label = 'Scheduled';
+    public static string $icon = 'heroicon-o-clock';
+    public static string $color = 'warning';
+    public static array $allowedTransitions = [ConfirmedState::class, CancelledState::class];
     /**
      * Get the form schema for transitioning to this state.
      */

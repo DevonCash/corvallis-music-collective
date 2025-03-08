@@ -27,12 +27,12 @@ abstract class BookingState extends AbstractState
      * This is used for validation and casting.
      */
     protected static array $states = [
-        'scheduled' => BookingState\ScheduledState::class,
-        'confirmed' => BookingState\ConfirmedState::class,
-        'checked_in' => BookingState\CheckedInState::class,
-        'completed' => BookingState\CompletedState::class,
-        'cancelled' => BookingState\CancelledState::class,
-        'no_show' => BookingState\NoShowState::class,
+        BookingState\ScheduledState::class,
+        BookingState\ConfirmedState::class,
+        BookingState\CheckedInState::class,
+        BookingState\CompletedState::class,
+        BookingState\CancelledState::class,
+        BookingState\NoShowState::class,
     ];
     
     /**

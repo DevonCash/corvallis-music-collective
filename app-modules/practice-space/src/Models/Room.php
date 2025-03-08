@@ -226,6 +226,41 @@ class Room extends Model
         $openingTime = $operatingHours['opening'];
         $closingTime = $operatingHours['closing'];
         
+        // Get the booking policy
+        $policy = $this->getBookingPolicy();
+        
+        // If no duration is specified, use the minimum booking duration from the policy
+        $minDuration = $policy->minBookingDurationHours;
+        $effectiveDuration = $duration !== null ? max($duration, $minDuration) : $minDuration;
+        
+        // Check if the date is today and apply minimum advance booking hours
+        $now = \Carbon\Carbon::now();
+        $bookingDate = \Carbon\Carbon::parse($date);
+        $isToday = $now->isSameDay($bookingDate);
+        
+        // If booking is for today, adjust the opening time based on minimum advance booking hours
+        if ($isToday && $policy->minAdvanceBookingHours > 0) {
+            $minAdvanceTime = $now->copy()->addHours($policy->minAdvanceBookingHours);
+            
+            // If the minimum advance time is after the opening time, use it instead
+            if ($minAdvanceTime->gt($openingTime)) {
+                $openingTime = $minAdvanceTime;
+                
+                // Round up to the next half hour if needed
+                $minutes = (int) $openingTime->format('i');
+                if ($minutes > 0 && $minutes < 30) {
+                    $openingTime->setTime($openingTime->hour, 30);
+                } else if ($minutes > 30) {
+                    $openingTime->setTime($openingTime->hour + 1, 0);
+                }
+            }
+            
+            // If the adjusted opening time is after closing time, return no available slots
+            if ($openingTime->gte($closingTime)) {
+                return [];
+            }
+        }
+        
         // Get all bookings for this room on this date
         $bookings = $this->bookings()
             ->where('state', '!=', 'cancelled')
@@ -260,35 +295,30 @@ class Room extends Model
             });
             
             if (!$isTimeSlotBooked) {
-                // If duration is specified, check if there's enough time until the next booking
-                if ($duration !== null) {
-                    $endTimeSlot = $currentTime->copy()->addMinutes($duration * 60);
+                // Check if there's enough time for at least the minimum booking duration
+                $endTimeSlot = $currentTime->copy()->addMinutes($effectiveDuration * 60);
+                
+                // Check if the end time exceeds closing time
+                if ($endTimeSlot > $closingTime) {
+                    $currentTime->addMinutes(30);
+                    continue;
+                }
+                
+                // Find any booking that would conflict with this duration
+                $conflictingBooking = $bookings->first(function ($booking) use ($currentTime, $endTimeSlot) {
+                    // Check if booking starts during our time slot
+                    $bookingStartsDuringSlot = $booking->start_time->between($currentTime, $endTimeSlot);
                     
-                    // Check if the end time exceeds closing time
-                    if ($endTimeSlot > $closingTime) {
-                        $currentTime->addMinutes(30);
-                        continue;
-                    }
+                    // Check if our time slot starts during booking
+                    $slotStartsDuringBooking = $currentTime->between(
+                        $booking->start_time, 
+                        $booking->end_time
+                    );
                     
-                    // Find any booking that would conflict with this duration
-                    $conflictingBooking = $bookings->first(function ($booking) use ($currentTime, $endTimeSlot) {
-                        // Check if booking starts during our time slot
-                        $bookingStartsDuringSlot = $booking->start_time->between($currentTime, $endTimeSlot);
-                        
-                        // Check if our time slot starts during booking
-                        $slotStartsDuringBooking = $currentTime->between(
-                            $booking->start_time, 
-                            $booking->end_time
-                        );
-                        
-                        return $bookingStartsDuringSlot || $slotStartsDuringBooking;
-                    });
-                    
-                    if (!$conflictingBooking) {
-                        $timeSlots[$timeKey] = $displayTime;
-                    }
-                } else {
-                    // If no duration specified, just add the time slot
+                    return $bookingStartsDuringSlot || $slotStartsDuringBooking;
+                });
+                
+                if (!$conflictingBooking) {
                     $timeSlots[$timeKey] = $displayTime;
                 }
             }

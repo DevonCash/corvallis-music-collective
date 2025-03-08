@@ -11,7 +11,14 @@ use Illuminate\Database\Eloquent\Model;
 abstract class AbstractState implements StateInterface
 {
   // list of all states, numerically indexed
+  protected Model $model;
+    protected static ?string $verb = null;
+    protected static string $label;
+    protected static string $icon = 'heroicon-o-check-circle';
+    protected static string $color = 'gray';
+    protected static array $allowedTransitions = [];
     protected static array $states = [];
+    protected static array $children = [];
 
     // Return list of all states indexed by name
     public static function getStates(): array
@@ -27,9 +34,39 @@ abstract class AbstractState implements StateInterface
     /**
      * Create a new state instance.
      */
-    public function __construct(protected Model $model)
-    {}
+    public function __construct(Model $model)
+    {
+        $this->model = $model;
+
+        $parent = get_parent_class(static::class);
+    }
+
+    public static function addChild(string $child)
+    {
+        static::$children[] = $child;
+    }
     
+
+    public static function getName(): string
+    {
+        return static::class;
+    }
+
+    public static function getLabel(): string
+    {
+        return static::$label;
+    }
+
+    public static function getIcon(): string
+    {
+        return static::$icon;
+    }
+
+    public static function getColor(): string
+    {
+        return static::$color;
+    }
+
     /**
      * Get the form schema for transitioning to this state.
      * 
@@ -41,6 +78,10 @@ abstract class AbstractState implements StateInterface
         return [];
     }
     
+    public static function getAllowedTransitions(): array
+    {
+        return static::$allowedTransitions;
+    }
     /**
      * Check if this state can transition to another state.
      */
@@ -51,6 +92,13 @@ abstract class AbstractState implements StateInterface
         
         return in_array($stateClass, static::getAllowedTransitions());
     }
+    
+
+    public static function getVerb(): ?string
+    {
+        return static::$verb;
+    }
+
     
     /**
      * Transition a model from this state to another state.
@@ -64,44 +112,62 @@ abstract class AbstractState implements StateInterface
         }
         // Update the model state
         $model->state = $stateClass::getName();
+        dd($model);
         $model->save();
         
         return $model;
     }
     
-    public static function getAction(): Action
+    public static function getAction(string $stateColumn = 'state'): Action
     {
         $form = static::getForm();
         return Action::make('transition_to_' . static::getName())
-            ->label(static::getLabel())
+            ->visible(fn(Model $record) => $record->{$stateColumn}->canTransitionTo(static::class))
+            ->label(static::getVerb() ?? 'Mark as ' . static::getLabel())
             ->icon(static::getIcon())
             ->color(static::getColor())
             ->form($form);
     }
 
-    public static function getTableAction(): \Filament\Tables\Actions\Action
+    public static function getTableAction(string $stateColumn = 'state'): \Filament\Tables\Actions\Action
     {
         $form = static::getForm();
         return \Filament\Tables\Actions\Action::make('transition_to_' . static::getName())
-            ->label(static::getLabel())
+            ->visible(fn(Model $record) => $record->{$stateColumn}->canTransitionTo(static::class))
+            ->label(static::getVerb() ?? 'Mark as ' . static::getLabel())
             ->icon(static::getIcon())
             ->color(static::getColor())
-            ->form($form);
+            ->form($form)
+            ->after(function (Model $record, array $data) {
+                static::transitionTo($record->state, static::class, $data);
+            });
     }
 
     /**
      * Get Filament actions for transitioning from this state.
      */
-    public static function getActions(Model $model): array
+    public static function getActions(string $stateColumn = 'state'): array
     {
         $actions = [];
         
-        foreach (static::getAllowedTransitions() as $stateClass) {
-            $actions[] = $stateClass::getAction();
+        foreach (static::$states as $stateClass) {
+            $actions[] = $stateClass::getAction($stateColumn);
         }
         
         return $actions;
     }
+
+    public static function getTableActions(string $stateColumn = 'state'): array
+    {
+        $actions = [];
+        
+        foreach (static::$states as $stateClass) {
+            $actions[] = $stateClass::getTableAction($stateColumn);
+        }
+        
+        return $actions;
+    }
+
     
     /**
      * Create a Filament infolist section for this state.

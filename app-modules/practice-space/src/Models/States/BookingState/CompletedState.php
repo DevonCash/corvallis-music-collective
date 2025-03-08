@@ -13,51 +13,11 @@ use Illuminate\Database\Eloquent\Model;
  */
 class CompletedState extends BookingState
 {
-    /**
-     * The name of the state.
-     */
-    public static string $name = 'completed';
-    
-    /**
-     * Get the name of the state.
-     */
-    public static function getName(): string
-    {
-        return static::$name;
-    }
-    
-    /**
-     * Get the display name of the state.
-     */
-    public static function getLabel(): string
-    {
-        return 'Completed';
-    }
-    
-    /**
-     * Get the color for Filament UI.
-     */
-    public static function getColor(): string
-    {
-        return 'success';
-    }
-    
-    /**
-     * Get the icon for Filament UI.
-     */
-    public static function getIcon(): string
-    {
-        return 'heroicon-o-check-badge';
-    }
-    
-    /**
-     * Get the allowed transitions from this state.
-     */
-    public static function getAllowedTransitions(): array
-    {
-        return [];
-    }
-    
+    public static string $label = 'Completed';
+    public static string $icon = 'heroicon-o-check-badge';
+    public static string $color = 'success';
+    public static array $allowedTransitions = [];
+
     /**
      * Get the form schema for transitioning to this state.
      */

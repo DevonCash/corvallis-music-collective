@@ -13,51 +13,11 @@ use Illuminate\Database\Eloquent\Model;
  */
 class NoShowState extends BookingState
 {
-    /**
-     * The name of the state.
-     */
-    public static string $name = 'no_show';
-    
-    /**
-     * Get the name of the state.
-     */
-    public static function getName(): string
-    {
-        return static::$name;
-    }
-    
-    /**
-     * Get the display name of the state.
-     */
-    public static function getLabel(): string
-    {
-        return 'No Show';
-    }
-    
-    /**
-     * Get the color for Filament UI.
-     */
-    public static function getColor(): string
-    {
-        return 'gray';
-    }
-    
-    /**
-     * Get the icon for Filament UI.
-     */
-    public static function getIcon(): string
-    {
-        return 'heroicon-o-user-minus';
-    }
-    
-    /**
-     * Get the allowed transitions from this state.
-     */
-    public static function getAllowedTransitions(): array
-    {
-        return [];
-    }
-    
+    public static string $label = 'No Show';
+    public static string $icon = 'heroicon-o-user-minus';
+    public static string $color = 'danger';
+    public static array $allowedTransitions = [];
+
     /**
      * Get the form schema for transitioning to this state.
      */

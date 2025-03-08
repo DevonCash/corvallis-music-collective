@@ -13,54 +13,11 @@ use Illuminate\Database\Eloquent\Model;
  */
 class ConfirmedState extends BookingState
 {
-    /**
-     * The name of the state.
-     */
-    public static string $name = 'confirmed';
-    
-    /**
-     * Get the name of the state.
-     */
-    public static function getName(): string
-    {
-        return static::$name;
-    }
-    
-    /**
-     * Get the display name of the state.
-     */
-    public static function getLabel(): string
-    {
-        return 'Confirmed';
-    }
-    
-    /**
-     * Get the color for Filament UI.
-     */
-    public static function getColor(): string
-    {
-        return 'success';
-    }
-    
-    /**
-     * Get the icon for Filament UI.
-     */
-    public static function getIcon(): string
-    {
-        return 'heroicon-o-check-circle';
-    }
-    
-    /**
-     * Get the allowed transitions from this state.
-     */
-    public static function getAllowedTransitions(): array
-    {
-        return [
-            CheckedInState::class,
-            CancelledState::class,
-            NoShowState::class,
-        ];
-    }
+    public static string $label = 'Confirmed';
+    public static ?string $verb = 'Confirm';
+    public static string $icon = 'heroicon-o-check-circle';
+    public static string $color = 'success';
+    public static array $allowedTransitions = [CheckedInState::class, CancelledState::class, NoShowState::class];
     
     /**
      * Get the form schema for transitioning to this state.

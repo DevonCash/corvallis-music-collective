@@ -27,6 +27,7 @@ class CreateBookingAction
     protected static function renderBookingSummary(Booking $booking, BookingService $bookingService): HtmlString
     {
         $room = $bookingService->getRoomById($booking->room_id);
+        $policy = $room->getBookingPolicy();
         
         $html = view('practice-space::filament.forms.booking-summary', [
             'room' => $room,
@@ -36,6 +37,10 @@ class CreateBookingAction
             'duration_hours' => $booking->end_time->diffInHours($booking->start_time),
             'hourly_rate' => $room->hourly_rate,
             'total_price' => $booking->total_price,
+            'room_policy' => $policy,
+            'room_description' => $room->description,
+            'room_capacity' => $room->capacity,
+            'room_specifications' => $room->specifications,
         ])->render();
         
         return new HtmlString($html);
@@ -48,6 +53,7 @@ class CreateBookingAction
         return Action::make('create_booking')
             ->label('Book a Room')
             ->color('primary')
+            ->model(Booking::class)
             ->modalHeading('Schedule a Practice Room')
             ->modalDescription('Book a practice room for your rehearsal or practice session')
             ->steps([
@@ -59,12 +65,58 @@ class CreateBookingAction
                             ->schema([
                                 Forms\Components\Select::make('room_id')
                                     ->label('Room')
-                                    ->options(function () use ($bookingService) {
-                                        // Get all active rooms
-                                        return $bookingService->getRoomOptions();
+                                    ->visible(fn() => Room::count() > 1)
+                                    ->default(Room::first()->id)
+                                    ->relationship('room', 'name', function ($query) {
+                                        // Only show active rooms
+                                        return $query->where('is_active', true);
                                     })
+                                    ->getOptionLabelFromRecordUsing(function (Room $record) {
+                                        // Format the room option to show more details
+                                        $policy = $record->getBookingPolicy();
+                                        
+                                        // Format price - show without cents if it's a whole dollar amount
+                                        $hourlyRate = $record->hourly_rate;
+                                        $formattedPrice = floor($hourlyRate) == $hourlyRate 
+                                            ? '$' . number_format($hourlyRate, 0) 
+                                            : '$' . number_format($hourlyRate, 2);
+                                        
+                                        // Format duration - show "30 mins" instead of "0.5hr"
+                                        $minDuration = $policy->minBookingDurationHours;
+                                        $formattedDuration = $minDuration == 0.5 
+                                            ? '30 mins' 
+                                            : $minDuration . 'hr';
+                                        
+                                        // Create a two-row display with HTML formatting and icons
+                                        // Matching the style in the screenshot more closely
+                                        return "
+                                            <div class='flex flex-col py-1'>
+                                                <span class='font-medium text-gray-900'>{$record->name}</span>
+                                                <div class='text-sm text-gray-500 flex items-center gap-2 mt-1'>
+                                                    <span>{$formattedPrice}/hr</span>
+                                                    <span class='flex items-center'>
+                                                        <svg class='w-4 h-4 mr-1 text-gray-400' xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'>
+                                                            <circle cx='12' cy='12' r='10'></circle>
+                                                            <polyline points='12 6 12 12 16 14'></polyline>
+                                                        </svg>
+                                                        {$formattedDuration}
+                                                    </span>
+                                                    <span class='flex items-center'>
+                                                        <svg class='w-4 h-4 mr-1 text-gray-400' xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'>
+                                                            <path d='M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2'></path>
+                                                            <circle cx='12' cy='7' r='4'></circle>
+                                                        </svg>
+                                                        {$record->capacity}
+                                                    </span>
+                                                </div>
+                                                " . ($record->description ? "<div class='text-xs text-gray-400 mt-1 truncate max-w-md'>{$record->description}</div>" : "") . "
+                                            </div>
+                                        ";
+                                    })
+                                    ->allowHtml()
+                                    ->searchable(['name', 'description'])
+                                    ->preload()
                                     ->required()
-                                    ->searchable()
                                     ->live()
                                     ->afterStateUpdated(function ($state, Forms\Set $set, Forms\Get $get) {
                                         // When room changes, clear time and duration to force reselection
@@ -76,8 +128,52 @@ class CreateBookingAction
                                     ->required()
                                     ->label('Date')
                                     ->timezone('America/Los_Angeles')
-                                    ->minDate(now())
+                                    ->minDate(function (Forms\Get $get) use ($bookingService) {
+                                        // If no room is selected, use today as the minimum date
+                                        if (!$get('room_id')) {
+                                            return now();
+                                        }
+                                        
+                                        // Get the room from the selected record
+                                        $roomId = $get('room_id');
+                                        $room = Room::find($roomId);
+                                        if (!$room) {
+                                            return now();
+                                        }
+                                        
+                                        // Get the minimum advance booking hours from the room's policy
+                                        $policy = $room->getBookingPolicy();
+                                        
+                                        // If the minimum lead time is less than 24 hours, we need to handle it specially
+                                        if ($policy->minAdvanceBookingHours < 24) {
+                                            // For same-day bookings, we'll still allow today as the minimum date
+                                            // The time validation will handle restricting the available time slots
+                                            return now();
+                                        } else {
+                                            // For lead times of 24+ hours, add the appropriate number of days
+                                            $daysToAdd = ceil($policy->minAdvanceBookingHours / 24);
+                                            return now()->addDays($daysToAdd);
+                                        }
+                                    })
+                                    ->maxDate(function (Forms\Get $get) use ($bookingService) {
+                                        // If no room is selected, use a default max date (e.g., 90 days from now)
+                                        if (!$get('room_id')) {
+                                            return now()->addDays(90);
+                                        }
+                                        
+                                        // Get the room from the selected record
+                                        $roomId = $get('room_id');
+                                        $room = Room::find($roomId);
+                                        if (!$room) {
+                                            return now()->addDays(90);
+                                        }
+                                        
+                                        // Get the max advance booking days from the room's policy
+                                        $policy = $room->getBookingPolicy();
+                                        return now()->addDays($policy->maxAdvanceBookingDays);
+                                    })
                                     ->live()
+                                    ->disabled(fn (Forms\Get $get)=> $get('room_id') === null)
                                     ->afterStateUpdated(function ($state, Forms\Set $set, Forms\Get $get) {
                                         // When date changes, clear time and duration to force reselection
                                         $set('booking_time', null);
@@ -97,18 +193,31 @@ class CreateBookingAction
                                     ->required()
                                     ->label('Start Time')
                                     ->live()
+                                    ->disabled(fn (Forms\Get $get)=> $get('room_id') === null)
+
                                     ->options(function (Forms\Get $get) use ($bookingService) {
                                         // If no room or date is selected, show all half-hour options
                                         if (!$get('room_id') || !$get('booking_date')) {
                                             return self::generateTimeOptions();
                                         }
                                         
+                                        // Get the room from the selected record
+                                        $roomId = $get('room_id');
+                                        $room = Room::find($roomId);
+                                        if (!$room) {
+                                            return self::generateTimeOptions();
+                                        }
+                                        
+                                        // Get the minimum booking duration from the room's policy
+                                        $policy = $room->getBookingPolicy();
+                                        $minDuration = $policy->minBookingDurationHours;
+                                        
+                                        // Use the room's booking policy for time slots
                                         // Get available time slots for this room and date
-                                        // Use a default duration of 0.5 hour to show all possible start times
                                         return $bookingService->getAvailableTimeSlots(
-                                            $get('room_id'),
+                                            $roomId,
                                             $get('booking_date'),
-                                            0.5 // Use 0.5 hour to show all possible start times
+                                            $minDuration // Use the minimum booking duration from the policy
                                         );
                                     })
                                     ->afterStateUpdated(function ($state, Forms\Set $set, Forms\Get $get) {
@@ -130,6 +239,8 @@ class CreateBookingAction
                                     ->required()
                                     ->label('Duration')
                                     ->live()
+                                    ->disabled(fn (Forms\Get $get)=> $get('room_id') === null)
+
                                     ->options(function (Forms\Get $get) use ($bookingService) {
                                         // Default duration options with half-hour increments
                                         $defaultOptions = [
@@ -157,9 +268,19 @@ class CreateBookingAction
                                         }
                                         
                                         try {
+                                            // Get the room from the selected record
+                                            $roomId = $get('room_id');
+                                            $room = Room::find($roomId);
+                                            if (!$room) {
+                                                return $defaultOptions;
+                                            }
+                                            
+                                            $policy = $room->getBookingPolicy();
+                                            
                                             // Get available durations for this room, date, and time
+                                            // This will respect the room's booking policy
                                             $availableDurations = $bookingService->getAvailableDurations(
-                                                $get('room_id'),
+                                                $roomId,
                                                 $get('booking_date'),
                                                 $get('booking_time'),
                                                 true // Include half-hour increments
@@ -207,14 +328,11 @@ class CreateBookingAction
                                                     'duration_hours' => $get('duration_hours'),
                                                 ];
                                                 
-                                                // Calculate booking times
-                                                $times = $bookingService->calculateBookingTimes($formData);
-                                                $startDateTime = $times['start_datetime'];
-                                                $endDateTime = $times['end_datetime'];
+                                                // Use the BookingService to validate the booking data
+                                                $validationResult = $bookingService->validateBookingData($formData);
                                                 
-                                                // Check if room is available
-                                                if (!$bookingService->isRoomAvailable($formData['room_id'], $startDateTime, $endDateTime)) {
-                                                    $fail('The selected room is not available for the chosen time slot. Please select a different time or room.');
+                                                if (!$validationResult['is_valid']) {
+                                                    $fail($validationResult['error_message']);
                                                 }
                                             };
                                         }
