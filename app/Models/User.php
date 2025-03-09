@@ -3,6 +3,7 @@
 namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
+use Filament\Models\Contracts\FilamentUser;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
@@ -12,7 +13,7 @@ use Lab404\Impersonate\Models\Impersonate;
 use Illuminate\Support\Str;
 use Stripe\StripeClient;
 
-class User extends Authenticatable
+class User extends Authenticatable implements FilamentUser
 {
     /** @use HasFactory<\Database\Factories\UserFactory> */
     use HasFactory, Notifiable, HasRoles, Impersonate;
@@ -69,7 +70,7 @@ class User extends Authenticatable
 
             // Create a new customer
             $customer = $stripe->customers->create([
-                'email' => $this->email,    
+                'email' => $this->email,
             ]);
             return $customer->id;
         });
@@ -105,5 +106,10 @@ class User extends Authenticatable
         $ttl = $calculateTTL($subscription);
         Cache::put("user_{$this->id}_membership", $subscription, $ttl);
         return $subscription;
+    }
+
+    public function canAccessPanel(\Filament\Panel $panel): bool
+    {
+        return true;
     }
 }
