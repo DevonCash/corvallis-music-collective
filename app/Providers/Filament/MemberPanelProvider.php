@@ -41,6 +41,7 @@ class MemberPanelProvider extends PanelProvider
             ->brandName('Corvallis Music Collective')
             ->brandLogo(fn() => view('filament.brand'))
             ->brandLogoHeight('4rem')
+            ->favicon(asset('favicon.svg'))
             ->colors([
                 'primary' => Color::Amber,
             ])
@@ -81,7 +82,7 @@ class MemberPanelProvider extends PanelProvider
                     /** @var \App\Models\User $user */
                     $user = Auth::user();
                     return 'https://billing.stripe.com/p/login/28oaFS9Xoahu1ygaEE?prefilled_email=' . urlencode($user->email);
-                }, true) 
+                }, true)
                 ->icon('heroicon-o-credit-card')
             ])
             ->databaseNotifications()
