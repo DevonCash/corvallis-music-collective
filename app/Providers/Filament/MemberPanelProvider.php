@@ -42,6 +42,7 @@ class MemberPanelProvider extends PanelProvider
             ->brandLogo(fn() => view('filament.brand'))
             ->brandLogoHeight('4rem')
             ->favicon(asset('favicon.svg'))
+            ->font('Lexend')
             ->colors([
                 'primary' => Color::Amber,
             ])
