@@ -1,4 +1,4 @@
-@props(['room', 'booking_date', 'booking_time', 'end_time', 'duration_hours', 'hourly_rate', 'total_price'])
+@props(['booking'])
 <div class="overflow-hidden rounded-lg w-full">
     <table class="w-full divide-y divide-gray-200 dark:divide-gray-700">
         <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
@@ -21,13 +21,13 @@
             </tr>
             <tr class="bg-white dark:bg-gray-800">
                 <td class="px-4 py-3 text-sm text-gray-900 dark:text-gray-100">
-                    {{ $room->name }}
+                    {{ $booking->room->name }}
                 </td>
                 <td class="px-4 py-3 text-sm text-gray-900 dark:text-gray-100">
-                    {{ $room->capacity }} people
+                    {{ $booking->room->capacity }} people
                 </td>
                 <td class="px-4 py-3 text-sm text-gray-900 dark:text-gray-100 text-right">
-                    ${{ number_format($hourly_rate, 2) }}
+                    ${{ number_format($booking->room->hourly_rate, 2) }}
                 </td>
             </tr>
             
@@ -50,18 +50,14 @@
             </tr>
             <tr class="bg-white dark:bg-gray-800">
                 <td class="px-4 py-3 text-sm text-gray-900 dark:text-gray-100">
-                    {{ \Carbon\Carbon::parse($booking_date)->format('M d, Y') }}
+                    {{ $booking->start_time->format('M d, Y') }}
                 </td>
                 <td class="px-4 py-3 text-sm text-gray-900 dark:text-gray-100">
-                    {{ \Carbon\Carbon::parse($booking_time)->format('g:i A') }} - 
-                    @if(isset($end_time))
-                        {{ \Carbon\Carbon::parse($end_time)->format('g:i A') }}
-                    @else
-                        {{ \Carbon\Carbon::parse($booking_time)->addHours($duration_hours)->format('g:i A') }}
-                    @endif
+                    {{ $booking->start_time->format('g:i A') }} - 
+                    {{ $booking->end_time->format('g:i A') }}
                 </td>
                 <td class="px-4 py-3 text-sm text-gray-900 dark:text-gray-100 text-right">
-                    {{ $duration_hours }} {{ (int)$duration_hours === 1 ? 'hour' : 'hours' }}
+                    {{ $booking->duration }} {{ (int)$booking->duration === 1 ? 'hour' : 'hours' }}
                 </td>
             </tr>
             
@@ -70,10 +66,10 @@
                     Total
                 </td>
                 <td class="px-4 py-3 text-sm text-gray-900 dark:text-gray-100">
-                    ${{ number_format($hourly_rate, 2) }} × {{ $duration_hours }} {{ (int)$duration_hours === 1 ? 'hour' : 'hours' }}
+                    ${{ number_format($booking->room->hourly_rate, 2) }} × {{ $booking->duration }} {{ $booking->duration == 1 ? 'hour' : 'hours' }}
                 </td>
                 <td class="px-4 py-3 text-sm text-gray-900 dark:text-white text-right">
-                    ${{ number_format($total_price ?? ($hourly_rate * $duration_hours), 2) }}
+                    ${{ number_format($booking->room->hourly_rate * $booking->duration, 2) }}
                 </td>
             </tr>
         </tbody>

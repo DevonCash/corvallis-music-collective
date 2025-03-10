@@ -2,10 +2,14 @@
 
 namespace CorvMC\PracticeSpace\Filament\Resources;
 
+use CorvMC\PracticeSpace\Filament\Forms\Components\BookingPolicyForm;
 use CorvMC\PracticeSpace\Filament\Resources\RoomCategoryResource\Pages;
 use CorvMC\PracticeSpace\Filament\Resources\RoomCategoryResource\RelationManagers;
 use CorvMC\PracticeSpace\Models\RoomCategory;
 use Filament\Forms;
+use Filament\Forms\Components\Grid;
+use Filament\Forms\Components\Tabs;
+use Filament\Forms\Components\Tabs\Tab;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables;
@@ -33,14 +37,48 @@ class RoomCategoryResource extends Resource
     {
         return $form
             ->schema([
-                Forms\Components\TextInput::make('name')
-                    ->required()
-                    ->maxLength(255),
-                Forms\Components\Textarea::make('description')
-                    ->maxLength(65535),
-                Forms\Components\Toggle::make('is_active')
-                    ->label('Active')
-                    ->default(true),
+                Tabs::make('Room Category')
+                    ->tabs([
+                        Tab::make('Details')
+                            ->icon('heroicon-o-information-circle')
+                            ->schema([
+                                Forms\Components\Section::make('Category Information')
+                                    ->description('Enter the basic details about this room category')
+                                    ->schema([
+                                        Grid::make()
+                                            ->schema([
+                                                Forms\Components\TextInput::make('name')
+                                                    ->required()
+                                                    ->maxLength(255)
+                                                    ->columnSpan(['md' => 4]),
+                                                
+                                                Forms\Components\Toggle::make('is_active')
+                                                    ->label('Active')
+                                                    ->default(true)
+                                                    ->columnSpan(['md' => 2]),
+                                                
+                                                Forms\Components\Textarea::make('description')
+                                                    ->maxLength(65535)
+                                                    ->rows(4)
+                                                    ->placeholder('Describe this category of rooms and their common features')
+                                                    ->columnSpan(['md' => 6]),
+                                            ])
+                                            ->columns(6),
+                                    ]),
+                            ]),
+                        
+                        Tab::make('Booking Policy')
+                            ->icon('heroicon-o-clock')
+                            ->schema([
+                                Forms\Components\Section::make('Default Booking Policy')
+                                    ->description('Set the default booking policy for all rooms in this category. Individual rooms can override these settings if needed.')
+                                    ->schema([
+                                        BookingPolicyForm::make(),
+                                    ]),
+                            ]),
+                    ])
+                    ->persistTabInQueryString()
+                    ->columnSpanFull()
             ]);
     }
 

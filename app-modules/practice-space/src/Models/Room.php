@@ -30,6 +30,7 @@ class Room extends Model
         'photos',
         'specifications',
         'booking_policy',
+        'use_custom_policy',
     ];
 
     protected $casts = [
@@ -41,6 +42,7 @@ class Room extends Model
         'size_sqft' => 'integer',
         'amenities' => 'array',
         'booking_policy' => \CorvMC\PracticeSpace\ValueObjects\BookingPolicy::class,
+        'use_custom_policy' => 'boolean',
     ];
 
     /**
@@ -237,13 +239,13 @@ class Room extends Model
      */
     public function getBookingPolicyAttribute(): BookingPolicy
     {
-        // First check if this room has a specific booking policy
-        if (isset($this->attributes['booking_policy']) && $this->attributes['booking_policy']) {
+        // First check if this room has a specific booking policy and use_custom_policy is true
+        if ($this->use_custom_policy && isset($this->attributes['booking_policy']) && $this->attributes['booking_policy']) {
             // Use the cast to convert the JSON to a BookingPolicy object
             return $this->castAttribute('booking_policy', $this->attributes['booking_policy']);
         }
         
-        // If no room-specific policy, fall back to the category's default policy
+        // If no room-specific policy or use_custom_policy is false, fall back to the category's default policy
         if ($this->category && $this->category->default_booking_policy) {
             return $this->category->default_booking_policy;
         }

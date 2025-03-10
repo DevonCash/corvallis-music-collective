@@ -330,15 +330,8 @@ class Booking extends Model
         return $this;
     }
     
-    /**
-     * Initialize traits for the model.
-     */
-    protected function initializeTraits()
+    public function getDurationAttribute(): float
     {
-        // Check if the HasPayments trait exists in the Finance module
-        if (trait_exists('CorvMC\Finance\Concerns\HasPayments')) {
-            // The trait exists, so we can use it
-            // No need to do anything special here
-        }
+        return $this->start_time->diffInHours($this->end_time);
     }
 } 

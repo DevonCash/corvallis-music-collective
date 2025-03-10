@@ -18,6 +18,7 @@ class RoomCategory extends Model
         'name',
         'description',
         'is_active',
+        'default_booking_policy',
     ];
 
     protected $casts = [
@@ -30,7 +31,35 @@ class RoomCategory extends Model
      */
     public function rooms(): HasMany
     {
-        return $this->hasMany(Room::class);
+        return $this->hasMany(Room::class, 'room_category_id');
+    }
+
+    /**
+     * Set the default booking policy for this category
+     * 
+     * @param BookingPolicy|array|null $value
+     * @return void
+     */
+    public function setDefaultBookingPolicyAttribute($value): void
+    {
+        // If null is provided, use a default policy
+        if ($value === null) {
+            $this->attributes['default_booking_policy'] = json_encode(new BookingPolicy());
+            return;
+        }
+        
+        // If an array is provided, convert it to a BookingPolicy instance
+        if (is_array($value)) {
+            $value = BookingPolicy::fromArray($value);
+        }
+        
+        // Ensure the value is a BookingPolicy instance
+        if (!$value instanceof BookingPolicy) {
+            throw new \InvalidArgumentException('The default booking policy must be a BookingPolicy instance, an array, or null.');
+        }
+        
+        // Store the policy as JSON
+        $this->attributes['default_booking_policy'] = json_encode($value);
     }
 
     /**

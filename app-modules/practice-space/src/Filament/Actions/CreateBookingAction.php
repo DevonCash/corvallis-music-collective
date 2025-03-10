@@ -11,7 +11,6 @@ use Illuminate\Support\Facades\Auth;
 use CorvMC\PracticeSpace\Models\Booking;
 use CorvMC\PracticeSpace\Models\Room;
 use Filament\Forms\Components\Wizard\Step;
-use CorvMC\PracticeSpace\Services\BookingService;
 use Illuminate\Support\HtmlString;
 use Closure;
 use Filament\Forms\Components\Hidden;
@@ -23,35 +22,17 @@ class CreateBookingAction
      * Render booking summary HTML using a booking instance
      *
      * @param Booking $booking
-     * @param BookingService $bookingService
      * @return HtmlString
      */
-    protected static function renderBookingSummary(Booking $booking, BookingService $bookingService): HtmlString
+    protected static function renderBookingSummary(Booking $booking): HtmlString
     {
-        $room = $bookingService->getRoomById($booking->room_id);
-        $policy = $room->booking_policy;
-
-        $html = view('practice-space::filament.forms.booking-summary', [
-            'room' => $room,
-            'booking_date' => $booking->start_time->format('Y-m-d'),
-            'booking_time' => $booking->start_time->format('H:i'),
-            'end_time' => $booking->end_time->format('H:i'),
-            'duration_hours' => $booking->end_time->diffInHours($booking->start_time),
-            'hourly_rate' => $room->hourly_rate,
-            'total_price' => $booking->total_price,
-            'room_policy' => $policy,
-            'room_description' => $room->description,
-            'room_capacity' => $room->capacity,
-            'room_specifications' => $room->specifications,
-        ])->render();
-
-        return new HtmlString($html);
+        return new HtmlString(view('practice-space::filament.forms.booking-summary', [
+            'booking' => $booking,
+        ])->render());
     }
 
     public static function make(): Action
     {
-        $bookingService = new BookingService();
-
         return Action::make('create_booking')
             ->label('Book a Room')
             ->color('primary')
@@ -115,13 +96,13 @@ class CreateBookingAction
                             ->required()
                             ->label('Date')
                             ->disabled(fn(Forms\Get $get) => $get('room_id') === null)
-                            ->minDate(function (Forms\Get $get) use ($bookingService) {
+                            ->minDate(function (Forms\Get $get) {
                                 if (!$get('room_id')) return now();
 
                                 $room = Room::find($get('room_id'));
                                 return $room->getMinimumBookingDate();
                             })
-                            ->maxDate(function (Forms\Get $get) use ($bookingService) {
+                            ->maxDate(function (Forms\Get $get) {
                                 if (!$get('room_id')) return now()->addDays(90);
 
                                 $room = Room::find($get('room_id'));
@@ -174,8 +155,8 @@ class CreateBookingAction
                         Forms\Components\Section::make('Booking Summary')
                             ->schema([
                                 Forms\Components\Placeholder::make('room_details')
-                                    ->label('Room Details')
-                                    ->content(function (Forms\Get $get) use ($bookingService) {
+                                    ->hiddenLabel()
+                                    ->content(function (Forms\Get $get) {
                                         // If we don't have all the required data, show a message
                                         if (!$get('room_id') || !$get('booking_date') || !$get('booking_time') || !$get('duration_hours')) {
                                             return 'Please select a room and time on the previous step.';
@@ -183,19 +164,19 @@ class CreateBookingAction
 
                                         try {
                                             // Collect form data
-                                            $formData = [
+                                            $start_time = Carbon::createFromFormat('Y-m-d H:i', $get('booking_date') . ' ' . $get('booking_time'), $get('timezone'));
+                                            $end_time = $start_time->copy()->addHours(floatVal($get('duration_hours')));
+                                            $booking = new Booking([
                                                 'room_id' => $get('room_id'),
-                                                'booking_date' => $get('booking_date'),
-                                                'booking_time' => $get('booking_time'),
-                                                'end_time' => $get('end_time'),
-                                                'duration_hours' => $get('duration_hours'),
-                                            ];
+                                                'start_time' => $start_time,
+                                                'end_time' => $end_time,
+                                                'user_id' => $get('user_id'),
+                                                'notes' => $get('notes') ?? null,
+                                            ]);
 
-                                            // Create a booking instance without saving
-                                            $booking = $bookingService->createBookingInstance($formData);
-
-                                            // Render the summary
-                                            return self::renderBookingSummary($booking, $bookingService);
+                                            return new HtmlString(view('practice-space::filament.forms.booking-summary', [
+                                                'booking' => $booking,
+                                            ])->render());
                                         } catch (\Exception $e) {
                                             // If there's an error, show a message
                                             return new HtmlString('<div class="text-danger-500">' . $e->getMessage() . '</div>');
@@ -208,9 +189,9 @@ class CreateBookingAction
                             ]),
                     ]),
             ])
-            ->action(function (array $data) use ($bookingService): void {
+            ->action(function (array $data): void {
                 try {
-                    // Create the booking using the service
+                    // Create the booking directly
                     $startDateTime = Carbon::createFromFormat('Y-m-d H:i', $data['booking_date'] . ' ' . $data['booking_time'], $data['timezone']);
                     $endDateTime = $startDateTime->copy()->addHours(floatVal($data['duration_hours']));
                     $booking =  new Booking([
