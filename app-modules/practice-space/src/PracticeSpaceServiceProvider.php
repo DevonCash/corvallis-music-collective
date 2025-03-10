@@ -6,7 +6,10 @@ use CorvMC\PracticeSpace\Console\Commands\SendBookingConfirmationRequests;
 use CorvMC\PracticeSpace\Console\Commands\SendBookingReminders;
 use CorvMC\PracticeSpace\Console\Commands\SendConfirmationReminders;
 use CorvMC\PracticeSpace\Console\Commands\ProcessExpiredConfirmations;
+use CorvMC\PracticeSpace\Livewire\RoomAvailabilityCalendar;
+use CorvMC\PracticeSpace\Livewire\CustomRoomAvailabilityCalendar;
 use Illuminate\Support\ServiceProvider;
+use Livewire\Livewire;
 
 class PracticeSpaceServiceProvider extends ServiceProvider
 {
@@ -34,6 +37,10 @@ class PracticeSpaceServiceProvider extends ServiceProvider
         
         // Load translations
         $this->loadTranslationsFrom(__DIR__ . '/../resources/lang', 'practice-space');
+        
+        // Register Livewire components
+        Livewire::component('room-availability-calendar', RoomAvailabilityCalendar::class);
+        Livewire::component('custom-room-availability-calendar', CustomRoomAvailabilityCalendar::class);
         
         // Register commands
         if ($this->app->runningInConsole()) {
