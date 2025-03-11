@@ -12,6 +12,10 @@ use Illuminate\Support\Facades\Auth;
 use Livewire\Component;
 use CorvMC\PracticeSpace\Models\Room;
 use CorvMC\PracticeSpace\Models\Booking;
+use CorvMC\PracticeSpace\Filament\Actions\CreateBookingAction;
+use Filament\Notifications\Notification;
+use Livewire\Attributes\On;
+use Illuminate\Support\Facades\Blade;
 
 class CustomRoomAvailabilityCalendar extends Component implements HasForms
 {
@@ -20,255 +24,294 @@ class CustomRoomAvailabilityCalendar extends Component implements HasForms
     public ?string $selectedRoom = null;
     public Carbon $startDate;
     public Carbon $endDate;
-    public string $view = 'week';
+    public string $view = 'week'; // Default to week view only
     public array $bookings = [];
     public array $rooms = [];
     public array $timeSlots = [];
     public array $bookingMap = [];
+    public ?array $currentRoomDetails = null;
     
     public function mount(): void
     {
+        // Set default room if none selected
+        if (!$this->selectedRoom) {
+            $firstRoom = Room::where('is_active', true)->first();
+            if ($firstRoom) {
+                $this->selectedRoom = $firstRoom->id;
+            }
+        }
+        
         $this->startDate = Carbon::now()->startOfWeek();
         $this->endDate = Carbon::now()->endOfWeek();
         $this->initializeRooms();
         $this->loadBookings();
-        $this->generateTimeSlots();
-        $this->generateBookingMap();
+        $this->loadCurrentRoomDetails();
     }
     
     public function form(Form $form): Form
     {
         return $form
-            ->columns(2)
             ->schema([
                 Select::make('selectedRoom')
-                    ->label('Filter by Room')
-                    ->options(Room::where('is_active', true)->pluck('name', 'id'))
-                    ->placeholder('All Rooms')
+                    ->label('Select a Practice Room')
+                    ->options(function () {
+                        // Get all active rooms
+                        return Room::where('is_active', true)
+                            ->get()
+                            ->mapWithKeys(function ($room) {
+                                // Format price - show without cents if it's a whole dollar amount
+                                $hourlyRate = $room->hourly_rate;
+                                $formattedPrice = floor($hourlyRate) == $hourlyRate
+                                    ? '$' . number_format($hourlyRate, 0)
+                                    : '$' . number_format($hourlyRate, 2);
+                                
+                                // Create a formatted label with HTML
+                                $label = Blade::render("
+                                    <div class='flex flex-col py-1'>
+                                        <div class='text-sm flex items-center gap-2'>
+                                            <span class='font-medium text-gray-900'>{$room->name}</span>
+                                            <span class='text-gray-500'>{$formattedPrice}/hr</span>
+                                            <span class='flex items-center text-gray-500'>
+                                                <x-filament::icon icon='heroicon-o-users' class='w-4 h-4 text-gray-400 mr-1' />
+                                                {$room->capacity}
+                                            </span>
+                                        </div>
+                                        " . ($room->description ? "<div class='text-xs text-gray-400 mt-1 truncate max-w-md'>{$room->description}</div>" : "") . "
+                                    </div>
+                                ");
+                                
+                                return [$room->id => $label];
+                            })
+                            ->toArray();
+                    })
+                    ->allowHtml()
+                    ->searchable()
+                    ->preload()
+                    ->required()
+                    ->selectablePlaceholder(false)
                     ->live()
                     ->afterStateUpdated(function () {
+                        $this->loadCurrentRoomDetails();
                         $this->loadBookings();
-                        $this->generateBookingMap();
-                    }),
-                Select::make('view')
-                    ->label('View')
-                    ->options([
-                        'day' => 'Day',
-                        'week' => 'Week',
-                    ])
-                    ->default('week')
-                    ->live()
-                    ->afterStateUpdated(function () {
-                        $this->updateDateRange();
-                        $this->loadBookings();
-                        $this->generateBookingMap();
                     }),
             ]);
     }
     
     public function previousPeriod(): void
     {
-        if ($this->view === 'day') {
-            $this->startDate = $this->startDate->subDay();
-            $this->endDate = $this->endDate->subDay();
-        } else {
-            $this->startDate = $this->startDate->subWeek();
-            $this->endDate = $this->endDate->subWeek();
-        }
+        // Always use week view
+        $this->startDate = $this->startDate->subWeek();
+        $this->endDate = $this->endDate->subWeek();
         
         $this->loadBookings();
-        $this->generateBookingMap();
     }
     
     public function nextPeriod(): void
     {
-        if ($this->view === 'day') {
-            $this->startDate = $this->startDate->addDay();
-            $this->endDate = $this->endDate->addDay();
-        } else {
-            $this->startDate = $this->startDate->addWeek();
-            $this->endDate = $this->endDate->addWeek();
-        }
+        // Always use week view
+        $this->startDate = $this->startDate->addWeek();
+        $this->endDate = $this->endDate->addWeek();
         
         $this->loadBookings();
-        $this->generateBookingMap();
     }
     
     public function today(): void
     {
         $this->updateDateRange();
         $this->loadBookings();
-        $this->generateBookingMap();
     }
     
     private function updateDateRange(): void
     {
-        if ($this->view === 'day') {
-            $this->startDate = Carbon::now()->startOfDay();
-            $this->endDate = Carbon::now()->endOfDay();
+        // Always use week view
+        $this->startDate = Carbon::now()->startOfWeek();
+        $this->endDate = Carbon::now()->endOfWeek();
+    }
+    
+    private function loadCurrentRoomDetails(): void
+    {
+        if ($this->selectedRoom) {
+            $room = Room::find($this->selectedRoom);
+            if ($room) {
+                // Format price - show without cents if it's a whole dollar amount
+                $hourlyRate = $room->hourly_rate;
+                $formattedPrice = floor($hourlyRate) == $hourlyRate
+                    ? '$' . number_format($hourlyRate, 0)
+                    : '$' . number_format($hourlyRate, 2);
+                
+                $this->currentRoomDetails = [
+                    'id' => $room->id,
+                    'name' => $room->name,
+                    'hourly_rate' => $hourlyRate,
+                    'formatted_price' => $formattedPrice,
+                    'capacity' => $room->capacity,
+                    'description' => $room->description,
+                ];
+            } else {
+                $this->currentRoomDetails = null;
+            }
         } else {
-            $this->startDate = Carbon::now()->startOfWeek();
-            $this->endDate = Carbon::now()->endOfWeek();
+            $this->currentRoomDetails = null;
         }
     }
     
     private function initializeRooms(): void
     {
-        $query = Room::query()->where('is_active', true);
-        
+        // Only load the selected room
         if ($this->selectedRoom) {
-            $query->where('id', $this->selectedRoom);
+            $room = Room::find($this->selectedRoom);
+            if ($room) {
+                $this->rooms = [
+                    [
+                        'id' => $room->id,
+                        'name' => $room->name,
+                    ]
+                ];
+            } else {
+                $this->rooms = [];
+            }
+        } else {
+            $this->rooms = [];
         }
-        
-        $this->rooms = $query->get()->map(function ($room) {
-            return [
-                'id' => $room->id,
-                'name' => $room->name,
-            ];
-        })->toArray();
     }
     
-    private function loadBookings(): void
+    private function loadBookings()
     {
         $this->initializeRooms();
+        
+        // Only load bookings if a room is selected
+        if (!$this->selectedRoom) {
+            $this->bookings = [];
+            return;
+        }
+        
+        $room = Room::find($this->selectedRoom);
+        if (!$room) {
+            $this->bookings = [];
+            return;
+        }
+        
+        $bookingPolicy = $room->booking_policy;
         
         $query = Booking::query()
             ->where('state', '!=', 'cancelled')
             ->whereBetween('start_time', [$this->startDate, $this->endDate])
+            ->where('room_id', $this->selectedRoom)
             ->with(['room', 'user']);
+        
+        $this->bookings = $query
+        ->get()
+        ->map(function ($booking) use ($bookingPolicy) {
+            $bookingDate = $booking->start_time->format('Y-m-d');
+            $openingTime = $bookingPolicy->getOpeningTime($bookingDate);
             
-        if ($this->selectedRoom) {
-            $query->where('room_id', $this->selectedRoom);
-        }
-        
-        $bookings = $query->get();
-        $currentUserId = Auth::id();
-        
-        $this->bookings = $bookings->map(function (Booking $booking) use ($currentUserId) {
-            $isCurrentUserBooking = $booking->user_id === $currentUserId;
-            $startsOnHalfHour = $booking->start_time->minute >= 15 && $booking->start_time->minute < 45;
+            // Calculate date index (which day in the week)
+            $dateIndex = (int) floor($this->startDate->diffInDays($booking->start_time));
+            
+            // Calculate time index (which slot in the day)
+            // This is the number of 30-minute slots from opening time
+            $timeIndex = (int) ceil($openingTime->diffInMinutes($booking->start_time) / 30);
+            
+            // Calculate number of slots this booking spans
+            $slots = (int) ceil($booking->start_time->diffInMinutes($booking->end_time) / 30);
             
             return [
                 'id' => $booking->id,
-                'room_id' => $booking->room_id,
-                'room_name' => $booking->room->name,
-                'start_time' => $booking->start_time,
-                'end_time' => $booking->end_time,
-                'title' => $isCurrentUserBooking ? $booking->user->name : 'Booked',
-                'is_current_user' => $isCurrentUserBooking,
+                'title' => $booking->user->name ,
                 'time_range' => $booking->start_time->format('g:ia') . ' - ' . $booking->end_time->format('g:ia'),
-                'date' => $booking->start_time->format('Y-m-d'),
-                'start_hour' => (int) $booking->start_time->format('G'),
-                'start_minute' => (int) $booking->start_time->format('i'),
-                'end_hour' => (int) $booking->end_time->format('G'),
-                'end_minute' => (int) $booking->end_time->format('i'),
-                'duration_slots' => $this->calculateDurationSlots($booking->start_time, $booking->end_time),
-                'starts_on_half_hour' => $startsOnHalfHour,
+                'room_name' => $booking->room->name,
+                'is_current_user' => Auth::id() === $booking->user_id,
+                'date_index' => $dateIndex,
+                'time_index' => $timeIndex,
+                'slots' => $slots,
             ];
-        })->toArray();
-        
-        $this->generateTimeSlots();
+        })
+        ->toArray(); 
     }
     
-    private function calculateDurationSlots(Carbon $startTime, Carbon $endTime): int
+    /**
+     * Generate cell data for the calendar grid
+     * 
+     * @return array
+     */
+    public function generateCellData(): array
     {
-        // Calculate how many 1-hour slots this booking spans
-        $startHour = $startTime->hour;
-        $endHour = $endTime->hour;
+        $cellData = [];
         
-        // If end time has minutes, add an extra hour
-        if ($endTime->minute > 0) {
-            $endHour += 1;
+        // If no room is selected, return empty data
+        if (!$this->selectedRoom) {
+            return $cellData;
         }
         
-        return max(1, $endHour - $startHour);
-    }
-    
-    private function generateTimeSlots(): void
-    {
-        $this->timeSlots = [];
-        
-        // Generate time slots from 8am to 10pm on the hour
-        for ($hour = 8; $hour <= 22; $hour++) {
-            $time = sprintf('%02d:00', $hour);
-            $displayTime = Carbon::createFromFormat('H:i', $time)->format('g:ia');
-            
-            $this->timeSlots[] = [
-                'time' => $time,
-                'display_time' => $displayTime,
-                'hour' => $hour,
-                'minute' => 0,
-                'slot_index' => $hour - 8,
-            ];
+        // Get the selected room and its booking policy
+        $room = Room::find($this->selectedRoom);
+        if (!$room) {
+            return $cellData;
         }
-    }
-    
-    private function generateBookingMap(): void
-    {
-        $this->bookingMap = [];
-        $dates = $this->getDates();
         
-        foreach ($dates as $date) {
-            $dateKey = $date['date'];
-            $this->bookingMap[$dateKey] = [];
+        $bookingPolicy = $room->booking_policy;
+        
+        // Always use 7 days (week view)
+        $days = 7;
+        for ($day = 0; $day < $days; $day++) {
+            $date = $this->startDate->copy()->addDays($day);
+            $dateKey = $date->format('Y-m-d');
             
-            foreach ($this->rooms as $room) {
-                $roomId = $room['id'];
-                $this->bookingMap[$dateKey][$roomId] = [];
+            // Get operating hours for this date from the booking policy
+            $openingTime = $bookingPolicy->getOpeningTime($dateKey);
+            $closingTime = $bookingPolicy->getClosingTime($dateKey);
+            
+            // Calculate the number of half-hour slots
+            $totalMinutes = $openingTime->diffInMinutes($closingTime);
+            $slots = ceil($totalMinutes / 30);
+            
+            // Generate data for each half-hour slot
+            for ($slotIndex = 0; $slotIndex < $slots; $slotIndex++) {
+                $dateTime = $openingTime->copy()->addMinutes($slotIndex * 30);
                 
-                // Initialize all slots to null (no booking)
-                foreach ($this->timeSlots as $timeSlot) {
-                    $slotIndex = $timeSlot['slot_index'];
-                    $this->bookingMap[$dateKey][$roomId][$slotIndex] = null;
+                // Skip if we've passed the closing time
+                if ($dateTime >= $closingTime) {
+                    continue;
                 }
                 
-                // Fill in bookings
-                foreach ($this->bookings as $booking) {
-                    if ($booking['room_id'] == $roomId && $booking['date'] == $dateKey) {
-                        $startSlot = $booking['start_hour'] - 8;
-                        $endSlot = $startSlot + $booking['duration_slots'];
-                        
-                        // Mark all slots covered by this booking
-                        for ($slot = $startSlot; $slot < $endSlot && $slot < count($this->timeSlots); $slot++) {
-                            $this->bookingMap[$dateKey][$roomId][$slot] = [
-                                'booking' => $booking,
-                                'is_start' => ($slot == $startSlot),
-                                'span' => $booking['duration_slots'],
-                            ];
-                        }
-                    }
-                }
-            }
-        }
-    }
-    
-    public function getDates(): array
-    {
-        $dates = [];
-        $period = CarbonPeriod::create($this->startDate, $this->endDate);
-        
-        foreach ($period as $date) {
-            if ($this->view === 'week' || $date->isSameDay($this->startDate)) {
-                $dates[] = [
-                    'date' => $date->format('Y-m-d'),
-                    'display_date' => $date->format('D n/j'),
-                    'is_today' => $date->isToday(),
+                $cellData[$day][$slotIndex] = [
+                    'date' => $dateKey,
+                    'time' => $dateTime->format('H:i'),
+                    'slot_index' => $slotIndex,
+                    'booking_id' => null,
+                    'is_current_user_booking' => false,
                 ];
             }
         }
+
+        // Mark booked cells
+        foreach ($this->bookings as $booking) {
+            // Mark all slots within the booking's time range as booked
+            for ($i = 0; $i < $booking['slots']; $i++) {
+                if (isset($cellData[$booking['date_index']][$booking['time_index'] + $i])) {
+                    $cellData[$booking['date_index']][$booking['time_index'] + $i]['booking_id'] = $booking['id'];
+                    $cellData[$booking['date_index']][$booking['time_index'] + $i]['is_current_user_booking'] = $booking['is_current_user'];
+                }
+            }
+        }
         
-        return $dates;
-    }
-    
-    public function getBookingForSlot($date, $roomId, $slotIndex): ?array
-    {
-        return $this->bookingMap[$date][$roomId][$slotIndex] ?? null;
+        return $cellData;
     }
     
     public function render()
     {
+        $bookingPolicy = null;
+        if ($this->selectedRoom) {
+            $room = Room::find($this->selectedRoom);
+            if ($room) {
+                $bookingPolicy = $room->booking_policy;
+            }
+        }
+        
         return view('practice-space::livewire.custom-room-availability-calendar', [
-            'dates' => $this->getDates(),
+            'cellData' => $this->generateCellData(),
+            'currentRoomDetails' => $this->currentRoomDetails,
+            'bookingPolicy' => $bookingPolicy,
         ]);
     }
 } 

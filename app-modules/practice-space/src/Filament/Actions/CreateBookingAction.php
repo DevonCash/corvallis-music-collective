@@ -4,7 +4,6 @@ namespace CorvMC\PracticeSpace\Filament\Actions;
 
 use Carbon\Carbon;
 use Filament\Forms;
-use Filament\Forms\Form;
 use Filament\Notifications\Notification;
 use Filament\Actions\Action;
 use Illuminate\Support\Facades\Auth;
@@ -15,6 +14,7 @@ use Illuminate\Support\HtmlString;
 use Closure;
 use Filament\Forms\Components\Hidden;
 use Illuminate\Support\Facades\Blade;
+use Livewire\Attributes\On;
 
 class CreateBookingAction
 {
@@ -54,7 +54,9 @@ class CreateBookingAction
                         Forms\Components\Select::make('room_id')
                             ->label('Room')
                             ->visible(fn() => Room::count() > 1)
-                            ->default(Room::first()->id)
+                            ->default(function () {
+                                return Room::first()->id;
+                            })
                             ->relationship('room', 'name')
                             ->getOptionLabelFromRecordUsing(function (Room $record) {
                                 // Format the room option to show more details
