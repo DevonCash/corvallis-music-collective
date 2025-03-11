@@ -133,8 +133,24 @@ class CreateBookingAction
                                 $room = Room::find($get('room_id'));
                                 $startTime = Carbon::createFromFormat('Y-m-d', $get('booking_date'), $get('timezone'))->startOfDay();
                                 return $room->getAvailableTimeSlots($startTime);
-                            })->afterStateUpdated(function (Forms\Set $set) {
-                                $set('duration_hours', null); // Clear duration
+                            })->afterStateUpdated(function (Forms\Set $set, Forms\Get $get) {
+                                // Instead of clearing duration, set it to the first available option
+                                if (!$get('room_id') || !$get('booking_date') || !$get('booking_time')) {
+                                    $set('duration_hours', null);
+                                    return;
+                                }
+                                
+                                $room = Room::find($get('room_id'));
+                                $startTime = Carbon::createFromFormat('Y-m-d H:i', $get('booking_date') . ' ' . $get('booking_time'), $get('timezone'));
+                                $availableDurations = $room->getAvailableDurations($startTime, true);
+                                
+                                if (!empty($availableDurations)) {
+                                    // Get the first available duration option (first key in the array)
+                                    $firstDuration = array_key_first($availableDurations);
+                                    $set('duration_hours', $firstDuration);
+                                } else {
+                                    $set('duration_hours', null);
+                                }
                             }),
                         Forms\Components\Select::make('duration_hours')
                             ->required()

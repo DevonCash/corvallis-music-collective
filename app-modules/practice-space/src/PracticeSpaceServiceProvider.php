@@ -6,10 +6,14 @@ use CorvMC\PracticeSpace\Console\Commands\SendBookingConfirmationRequests;
 use CorvMC\PracticeSpace\Console\Commands\SendBookingReminders;
 use CorvMC\PracticeSpace\Console\Commands\SendConfirmationReminders;
 use CorvMC\PracticeSpace\Console\Commands\ProcessExpiredConfirmations;
+use CorvMC\PracticeSpace\Console\Commands\RecalculateBookingPrices;
 use CorvMC\PracticeSpace\Livewire\RoomAvailabilityCalendar;
 use CorvMC\PracticeSpace\Livewire\CustomRoomAvailabilityCalendar;
 use Illuminate\Support\ServiceProvider;
 use Livewire\Livewire;
+use Laravel\Cashier\Events\WebhookReceived;
+use Illuminate\Support\Facades\Event;
+use CorvMC\PracticeSpace\Listeners\StripeSubscriptionUpdatedListener;
 
 class PracticeSpaceServiceProvider extends ServiceProvider
 {
@@ -42,6 +46,12 @@ class PracticeSpaceServiceProvider extends ServiceProvider
         Livewire::component('room-availability-calendar', RoomAvailabilityCalendar::class);
         Livewire::component('custom-room-availability-calendar', CustomRoomAvailabilityCalendar::class);
         
+        // Register event listeners
+        Event::listen(
+            WebhookReceived::class,
+            StripeSubscriptionUpdatedListener::class
+        );
+        
         // Register commands
         if ($this->app->runningInConsole()) {
             $this->commands([
@@ -49,6 +59,7 @@ class PracticeSpaceServiceProvider extends ServiceProvider
                 SendBookingReminders::class,
                 SendConfirmationReminders::class,
                 ProcessExpiredConfirmations::class,
+                RecalculateBookingPrices::class,
             ]);
             
             // Publish views

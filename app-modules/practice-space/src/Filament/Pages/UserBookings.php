@@ -14,6 +14,9 @@ use CorvMC\PracticeSpace\Filament\Actions\CreateBookingAction;
 use CorvMC\PracticeSpace\Models\States\BookingState;
 use CorvMC\StateManagement\Filament\Actions\TransitionTableActions;
 use Livewire\Attributes\On;
+use CorvMC\PracticeSpace\Models\States\BookingState\{ConfirmedState, ScheduledState, CheckedInState};
+use CorvMC\PracticeSpace\Models\Room;
+use Carbon\Carbon;
 
 class UserBookings extends Page implements HasTable
 {
@@ -22,7 +25,7 @@ class UserBookings extends Page implements HasTable
     protected static ?string $navigationIcon = 'heroicon-o-calendar-days';
     protected static ?string $navigationLabel = 'Practice Space';
     // protected static ?string $navigationGroup = 'Practice Space';
-    protected static ?string $title = 'My Practice Space Bookings';
+    protected static ?string $title = 'Practice Space';
     protected static ?string $slug = 'practice-space/my-bookings';
     protected static ?int $navigationSort = 1;
     
@@ -39,11 +42,13 @@ class UserBookings extends Page implements HasTable
             ->query(
                 Booking::query()
                     ->where('user_id', Auth::id())
+                    ->where('start_time', '>=', now())
+                    ->whereIn('state', [ConfirmedState::$name, ScheduledState::$name, CheckedInState::$name])
+                    ->orderBy('start_time', 'asc')
             )
             ->columns([
                 Tables\Columns\TextColumn::make('room.name')
                     ->label('Room')
-                    ->searchable()
                     ->sortable(),
                 Tables\Columns\TextColumn::make('start_time')
                     ->label('Date')
@@ -66,23 +71,6 @@ class UserBookings extends Page implements HasTable
                     ->color(fn (Booking $record) => $record->state->getColor()),
             ])
             ->defaultSort('start_time')
-            ->filters([
-                Tables\Filters\SelectFilter::make('state')
-                    ->label('Status')
-                    ->options([
-                        'reserved' => 'Reserved',
-                        'confirmed' => 'Confirmed',
-                        'checked_in' => 'Checked In',
-                        'completed' => 'Completed',
-                        'cancelled' => 'Cancelled',
-                    ]),
-                Tables\Filters\Filter::make('upcoming')
-                    ->label('Upcoming Bookings')
-                    ->query(fn (Builder $query): Builder => $query->where('start_time', '>=', now())),
-                Tables\Filters\Filter::make('past')
-                    ->label('Past Bookings')
-                    ->query(fn (Builder $query): Builder => $query->where('end_time', '<', now())),
-            ])
             ->actions(
                 [...TransitionTableActions::make(BookingState::class)]
             )
@@ -108,6 +96,19 @@ class UserBookings extends Page implements HasTable
         'booking_time' => $time,
         'room_id' => $room_id
     ]);
+    
+    // Get the first available duration and set it
+    $room = Room::find($room_id);
+    if ($room) {
+        $startTime = Carbon::createFromFormat('Y-m-d H:i', $date . ' ' . $time);
+        $availableDurations = $room->getAvailableDurations($startTime, true);
+        
+        if (!empty($availableDurations)) {
+            // Get the first available duration option (first key in the array)
+            $firstDuration = array_key_first($availableDurations);
+            $this->mountedActionsData[$index]['duration_hours'] = $firstDuration;
+        }
+    }
     
     // Force a form refresh
     $this->resetValidation();

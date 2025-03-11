@@ -108,6 +108,77 @@ class User extends Authenticatable implements FilamentUser
         return $subscription;
     }
 
+    /**
+     * Get the user's membership tier (Radio, CD, or Vinyl)
+     * 
+     * @return string
+     */
+    public function getMembershipTierAttribute(): string
+    {
+        $membership = $this->membership;
+        
+        if (!$membership) {
+            return 'Radio'; // Default tier for users without a paid subscription
+        }
+        
+        // Get the subscription items to determine the product
+        $items = $membership->items->data ?? [];
+        if (empty($items)) {
+            return 'Radio';
+        }
+        
+        // Check each item to determine the tier
+        foreach ($items as $item) {
+            $productId = $item->price->product ?? null;
+            $priceId = $item->price->id ?? null;
+            
+            // Check for Vinyl tier first (higher tier)
+            if ($this->isVinylTierProduct($productId, $priceId)) {
+                return 'Vinyl';
+            }
+            
+            // Then check for CD tier
+            if ($this->isCDTierProduct($productId, $priceId)) {
+                return 'CD';
+            }
+        }
+        
+        // Default to Radio tier if no paid subscription is found
+        return 'Radio';
+    }
+    
+    /**
+     * Check if the product ID or price ID corresponds to CD Tier
+     * 
+     * @param string|null $productId
+     * @param string|null $priceId
+     * @return bool
+     */
+    protected function isCDTierProduct(?string $productId, ?string $priceId): bool
+    {
+        // Replace these with your actual product/price IDs for CD Tier
+        $cdTierProductIds = ['prod_cd_tier', 'prod_cd_monthly', 'prod_cd_yearly'];
+        $cdTierPriceIds = ['price_cd_monthly', 'price_cd_yearly'];
+        
+        return in_array($productId, $cdTierProductIds) || in_array($priceId, $cdTierPriceIds);
+    }
+    
+    /**
+     * Check if the product ID or price ID corresponds to Vinyl Tier
+     * 
+     * @param string|null $productId
+     * @param string|null $priceId
+     * @return bool
+     */
+    protected function isVinylTierProduct(?string $productId, ?string $priceId): bool
+    {
+        // Replace these with your actual product/price IDs for Vinyl Tier
+        $vinylTierProductIds = ['prod_vinyl_tier', 'prod_vinyl_monthly', 'prod_vinyl_yearly'];
+        $vinylTierPriceIds = ['price_vinyl_monthly', 'price_vinyl_yearly'];
+        
+        return in_array($productId, $vinylTierProductIds) || in_array($priceId, $vinylTierPriceIds);
+    }
+
     public function canAccessPanel(\Filament\Panel $panel): bool
     {
         return true;

@@ -18,6 +18,7 @@ use Spatie\Activitylog\LogOptions;
 use Spatie\Activitylog\Traits\LogsActivity;
 use CorvMC\Finance\Concerns\HasPayments;
 use CorvMC\PracticeSpace\Traits\LogsNotifications;
+use Illuminate\Support\Facades\Log;
 
 class Booking extends Model
 {
@@ -72,6 +73,11 @@ class Booking extends Model
                     $hours = $booking->start_time->diffInHours($booking->end_time);
                     $booking->total_price = $room->hourly_rate * $hours;
                 }
+            }
+            
+            // Apply membership discount if applicable
+            if ($booking->user_id) {
+                $booking->applyMembershipDiscount();
             }
         });
     }
@@ -333,5 +339,69 @@ class Booking extends Model
     public function getDurationAttribute(): float
     {
         return $this->start_time->diffInHours($this->end_time);
+    }
+
+    /**
+     * Apply discount based on user's membership tier
+     * 
+     * @param \App\Models\User|null $userOverride Optional user object to use instead of looking up by ID
+     * @return self
+     */
+    public function applyMembershipDiscount(?User $userOverride = null): self
+    {
+        // Skip if no user or no total price
+        if (!$this->user_id || empty($this->total_price)) {
+            return $this;
+        }
+        
+        try {
+            $user = $userOverride ?? User::find($this->user_id);
+            
+            if (!$user) {
+                return $this;
+            }
+            
+            // Apply discount based on membership tier
+            switch ($user->membership_tier) {
+                case 'CD':
+                    $this->applyDiscount(25, 'CD Tier Membership');
+                    break;
+                case 'Vinyl':
+                    $this->applyDiscount(50, 'Vinyl Tier Membership');
+                    break;
+                default:
+                    // No discount for Radio tier
+                    break;
+            }
+        } catch (\Exception $e) {
+            // Log the error but don't break the booking process
+            \Illuminate\Support\Facades\Log::error('Error applying membership discount: ' . $e->getMessage());
+        }
+        
+        return $this;
+    }
+
+    /**
+     * Recalculate the price with membership discount for an existing booking
+     * This is useful when a user upgrades their membership after making a booking
+     * 
+     * @param \App\Models\User|null $userOverride Optional user object to use instead of looking up by ID
+     * @return self
+     */
+    public function recalculatePrice(?User $userOverride = null): self
+    {
+        // Reset to original price based on room rate and duration
+        if ($this->room_id) {
+            $hours = $this->getDurationAttribute();
+            $this->total_price = $this->room->hourly_rate * $hours;
+            
+            // Apply membership discount
+            $this->applyMembershipDiscount($userOverride);
+            
+            // Save the changes
+            $this->save();
+        }
+        
+        return $this;
     }
 } 
