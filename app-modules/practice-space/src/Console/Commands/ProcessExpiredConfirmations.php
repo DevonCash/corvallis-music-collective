@@ -2,12 +2,9 @@
 
 namespace CorvMC\PracticeSpace\Console\Commands;
 
-use App\Models\User;
 use Carbon\Carbon;
 use CorvMC\PracticeSpace\Models\Booking;
-use CorvMC\PracticeSpace\Models\States\BookingState\CancelledState;
 use CorvMC\PracticeSpace\Models\States\BookingState\ScheduledState;
-use CorvMC\PracticeSpace\Notifications\BookingCancelledDueToNoConfirmationNotification;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Log;
 
@@ -26,7 +23,7 @@ class ProcessExpiredConfirmations extends Command
      *
      * @var string
      */
-    protected $description = 'Process bookings with expired confirmation deadlines';
+    protected $description = 'Cancel bookings that have not been confirmed by the deadline';
 
     /**
      * Execute the console command.
@@ -35,29 +32,27 @@ class ProcessExpiredConfirmations extends Command
     {
         $isDryRun = $this->option('dry-run');
         
-        $this->info("Finding bookings with expired confirmation deadlines...");
+        $this->info("Finding scheduled bookings with expired confirmation deadlines...");
         
         // Find bookings that:
         // 1. Are in the Scheduled state
-        // 2. Have a confirmation request sent
-        // 3. Have a confirmation deadline that has passed
-        // 4. Have not been cancelled yet
+        // 2. Have a confirmation deadline that has passed
+        // 3. Have not been cancelled yet
         
         $bookings = Booking::query()
             ->where('state', ScheduledState::$name)
-            ->whereNotNull('confirmation_requested_at')
             ->whereNotNull('confirmation_deadline')
-            ->where('confirmation_deadline', '<', Carbon::now())
+            ->where('confirmation_deadline', '<', now())
+            ->whereNull('cancelled_at')
             ->get();
         
         $this->info("Found {$bookings->count()} bookings with expired confirmation deadlines.");
         
         if ($isDryRun) {
-            $this->warn("DRY RUN: No changes will be made.");
+            $this->warn("DRY RUN: No bookings will be cancelled.");
             
             foreach ($bookings as $booking) {
-                $user = User::find($booking->user_id);
-                $this->info("Would cancel booking #{$booking->id} for {$user->email} due to expired confirmation deadline");
+                $this->info("Would cancel booking #{$booking->id} for user #{$booking->user_id}");
             }
             
             return;
@@ -67,33 +62,16 @@ class ProcessExpiredConfirmations extends Command
         $bar->start();
         
         foreach ($bookings as $booking) {
-            $user = User::find($booking->user_id);
-            
             try {
-                // Transition to cancelled state
-                $booking->state = CancelledState::$name;
+                // Cancel the booking
+                $booking->cancel('Automatically cancelled due to missed confirmation deadline');
                 
-                // Update cancellation reason and timestamp
-                $booking->update([
-                    'cancellation_reason' => 'Automatically cancelled due to no confirmation',
-                    'cancelled_at' => now(),
-                ]);
-                
-                // Send notification
-                $user->notify(new BookingCancelledDueToNoConfirmationNotification($booking));
-                
-                // Log the notification in the activity log
-                $booking->logNotificationSent(BookingCancelledDueToNoConfirmationNotification::class, [
-                    'cancellation_reason' => 'Automatically cancelled due to no confirmation',
-                    'confirmation_deadline' => $booking->confirmation_deadline,
-                ]);
-                
-                Log::info("Cancelled booking #{$booking->id} for user {$user->id} due to expired confirmation deadline");
+                Log::info("Automatically cancelled booking #{$booking->id} for user #{$booking->user_id} due to missed confirmation deadline");
             } catch (\Exception $e) {
-                $this->error("Failed to process expired confirmation for booking #{$booking->id}: {$e->getMessage()}");
-                Log::error("Failed to process expired confirmation: {$e->getMessage()}", [
+                $this->error("Failed to cancel booking #{$booking->id}: {$e->getMessage()}");
+                Log::error("Failed to cancel booking: {$e->getMessage()}", [
                     'booking_id' => $booking->id,
-                    'user_id' => $user->id,
+                    'user_id' => $booking->user_id,
                     'exception' => $e,
                 ]);
             }
@@ -103,6 +81,6 @@ class ProcessExpiredConfirmations extends Command
         
         $bar->finish();
         $this->newLine();
-        $this->info("Expired confirmations processed successfully!");
+        $this->info("Expired booking confirmations processed successfully!");
     }
 } 

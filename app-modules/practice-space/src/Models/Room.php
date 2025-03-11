@@ -155,13 +155,14 @@ class Room extends Model
 
         // If booking is for today, adjust the opening time based on minimum advance booking hours
         if ($isToday && $this->booking_policy->minAdvanceBookingHours > 0) {
+            // Calculate the minimum advance time by adding the required hours to the current time
             $minAdvanceTime = $now->copy()->addHours($this->booking_policy->minAdvanceBookingHours);
 
             // If the minimum advance time is after the opening time, use it instead
             if ($minAdvanceTime->gt($openingTime)) {
                 $openingTime = $minAdvanceTime;
 
-                // Round up to the next half hour if needed
+                // Round up to the next half hour
                 $minutes = (int) $openingTime->format('i');
                 if ($minutes > 0 && $minutes < 30) {
                     $openingTime->setTime($openingTime->hour, 30);

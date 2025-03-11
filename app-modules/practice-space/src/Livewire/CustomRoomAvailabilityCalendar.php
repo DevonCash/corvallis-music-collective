@@ -403,6 +403,14 @@ class CustomRoomAvailabilityCalendar extends Component implements HasForms
                 }
                 
                 $lastBookingSlot = $booking['time_index'] + $booking['slots'] - 1;
+                
+                // Mark cells that don't have enough time after this booking
+                // This is needed to ensure minimum booking duration is respected between bookings
+                for ($i = $lastBookingSlot + 1; $i < $lastBookingSlot + $minSlotsNeeded; $i++) {
+                    if (isset($cellData[$dateIndex][$i]) && !$cellData[$dateIndex][$i]['booking_id']) {
+                        $cellData[$dateIndex][$i]['invalid_duration'] = true;
+                    }
+                }
             }
             
             // Check for slots too close to closing time

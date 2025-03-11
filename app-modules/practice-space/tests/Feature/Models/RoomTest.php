@@ -361,10 +361,20 @@ class RoomTest extends TestCase
             'cancellation_hours' => 24,
             'max_bookings_per_week' => 5
         ];
+        $this->room->use_custom_policy = true; // Ensure custom policy is used
         $this->room->save();
+        
+        // Reload the room to ensure we have the latest data
+        $this->room = $this->room->fresh();
 
         // Get available time slots for today
         $timeSlots = $this->room->getAvailableTimeSlots(Carbon::today());
+
+        // Debug output
+        echo "Current time: " . Carbon::now()->format('Y-m-d H:i:s') . "\n";
+        echo "Min advance booking hours: " . $this->room->booking_policy->minAdvanceBookingHours . "\n";
+        echo "Expected earliest time: " . Carbon::now()->addHours($this->room->booking_policy->minAdvanceBookingHours)->format('Y-m-d H:i:s') . "\n";
+        echo "Available time slots: " . implode(', ', array_keys($timeSlots)) . "\n";
 
         // Check that there are time slots available
         $this->assertIsArray($timeSlots);
@@ -378,6 +388,9 @@ class RoomTest extends TestCase
         // Convert to minutes since midnight for easier comparison
         $earliestTimeInMinutes = $earliestHour * 60 + $earliestMinute;
         $minAdvanceTimeInMinutes = (9 + 3) * 60; // 9:00 + 3 hours = 12:00
+        
+        echo "Earliest time slot: $earliestTimeSlot ($earliestTimeInMinutes minutes)\n";
+        echo "Min advance time: 12:00 ($minAdvanceTimeInMinutes minutes)\n";
         
         // The earliest time slot should be at or after the minimum advance time
         // But we'll allow a small tolerance (30 minutes) to account for implementation differences

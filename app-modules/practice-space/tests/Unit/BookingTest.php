@@ -52,6 +52,13 @@ class BookingTest extends TestCase
             'total_price',
             'payment_status',
             'state',
+            'confirmation_requested_at',
+            'confirmation_deadline',
+            'confirmed_at',
+            'cancelled_at',
+            'cancellation_reason',
+            'no_show_notes',
+            'payment_completed',
         ];
 
         $booking = new Booking();
@@ -68,6 +75,11 @@ class BookingTest extends TestCase
             'check_in_time' => 'datetime',
             'check_out_time' => 'datetime',
             'total_price' => 'decimal:2',
+            'confirmation_requested_at' => 'datetime',
+            'confirmation_deadline' => 'datetime',
+            'confirmed_at' => 'datetime',
+            'cancelled_at' => 'datetime',
+            'payment_completed' => 'boolean',
         ];
 
         $booking = new Booking();

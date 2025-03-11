@@ -17,9 +17,7 @@ class SendBookingConfirmationRequests extends Command
      *
      * @var string
      */
-    protected $signature = 'practice-space:send-confirmation-requests 
-                            {--hours=48 : Hours before booking to send confirmation request}
-                            {--window=24 : Hours users have to confirm their booking}
+    protected $signature = 'practice-space:send-confirmation-requests
                             {--dry-run : Run without sending actual notifications}';
 
     /**
@@ -27,33 +25,35 @@ class SendBookingConfirmationRequests extends Command
      *
      * @var string
      */
-    protected $description = 'Send confirmation requests to users with upcoming bookings';
+    protected $description = 'Send confirmation requests to users with bookings that have entered the confirmation window';
 
     /**
      * Execute the console command.
      */
     public function handle()
     {
-        $hoursBeforeBooking = $this->option('hours');
-        $confirmationWindow = $this->option('window');
         $isDryRun = $this->option('dry-run');
         
-        $this->info("Finding bookings that need confirmation requests...");
+        $this->info("Finding bookings that have entered the confirmation window...");
         
         // Find bookings that:
         // 1. Are in the Scheduled state
-        // 2. Start in approximately $hoursBeforeBooking hours
-        // 3. Haven't had a confirmation request sent yet
-        
-        $targetStartTime = Carbon::now()->addHours($hoursBeforeBooking);
-        $startTimeMin = $targetStartTime->copy()->subHours(1);
-        $startTimeMax = $targetStartTime->copy()->addHours(1);
+        // 2. Have a confirmation_requested_at date that is today or in the past
+        // 3. Have not been confirmed yet
+        // 4. Have not been cancelled
+        // 5. Have not had a confirmation request sent yet
         
         $bookings = Booking::query()
             ->where('state', ScheduledState::$name)
-            ->whereBetween('start_time', [$startTimeMin, $startTimeMax])
-            ->whereNull('confirmation_requested_at') // Assuming this column exists or would be added
-            ->get();
+            ->whereNotNull('confirmation_requested_at')
+            ->where('confirmation_requested_at', '<=', now())
+            ->whereNull('confirmed_at')
+            ->whereNull('cancelled_at')
+            ->get()
+            ->filter(function ($booking) {
+                // Check if this notification has already been sent using the activity log
+                return !$booking->hasNotificationBeenSent(BookingConfirmationRequestNotification::class);
+            });
         
         $this->info("Found {$bookings->count()} bookings that need confirmation requests.");
         
@@ -76,18 +76,11 @@ class SendBookingConfirmationRequests extends Command
             
             try {
                 // Send the notification
-                $user->notify(new BookingConfirmationRequestNotification($booking, $confirmationWindow));
-                
-                // Update the booking to record that a confirmation request was sent
-                $booking->update([
-                    'confirmation_requested_at' => now(),
-                    'confirmation_deadline' => now()->addHours($confirmationWindow),
-                ]);
+                $user->notify(new BookingConfirmationRequestNotification($booking));
                 
                 // Log the notification in the activity log
                 $booking->logNotificationSent(BookingConfirmationRequestNotification::class, [
-                    'confirmation_window_hours' => $confirmationWindow,
-                    'confirmation_deadline' => now()->addHours($confirmationWindow),
+                    'confirmation_deadline' => $booking->confirmation_deadline,
                 ]);
                 
                 Log::info("Sent booking confirmation request to user {$user->id} for booking {$booking->id}");
@@ -105,6 +98,6 @@ class SendBookingConfirmationRequests extends Command
         
         $bar->finish();
         $this->newLine();
-        $this->info("Confirmation requests sent successfully!");
+        $this->info("Booking confirmation requests sent successfully!");
     }
 } 

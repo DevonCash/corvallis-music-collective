@@ -133,4 +133,61 @@ class BookingPolicyTest extends TestCase
         $this->expectException(\InvalidArgumentException::class);
         new BookingPolicy(openingTime: 'invalid');
     }
+    
+    /** @test */
+    public function it_validates_confirmation_window_settings()
+    {
+        // Valid confirmation window settings
+        $validPolicy = new BookingPolicy(
+            confirmationWindowDays: 3,
+            autoConfirmationDeadlineDays: 1
+        );
+        $this->assertEquals(3, $validPolicy->confirmationWindowDays);
+        $this->assertEquals(1, $validPolicy->autoConfirmationDeadlineDays);
+        
+        // Invalid: negative confirmation window days
+        $this->expectException(\InvalidArgumentException::class);
+        $invalidPolicy1 = new BookingPolicy(
+            confirmationWindowDays: -1,
+            autoConfirmationDeadlineDays: 1
+        );
+        
+        // Invalid: negative auto-confirmation deadline days
+        $this->expectException(\InvalidArgumentException::class);
+        $invalidPolicy2 = new BookingPolicy(
+            confirmationWindowDays: 3,
+            autoConfirmationDeadlineDays: -1
+        );
+        
+        // Invalid: auto-confirmation deadline >= confirmation window
+        $this->expectException(\InvalidArgumentException::class);
+        $invalidPolicy3 = new BookingPolicy(
+            confirmationWindowDays: 3,
+            autoConfirmationDeadlineDays: 3
+        );
+    }
+
+    /** @test */
+    public function it_includes_confirmation_window_settings_in_array_representation()
+    {
+        $policy = new BookingPolicy(
+            openingTime: '09:00',
+            closingTime: '21:00',
+            maxBookingDurationHours: 4.0,
+            minBookingDurationHours: 1.0,
+            maxAdvanceBookingDays: 60,
+            minAdvanceBookingHours: 2.0,
+            cancellationHours: 48,
+            maxBookingsPerWeek: 3,
+            confirmationWindowDays: 5,
+            autoConfirmationDeadlineDays: 2
+        );
+        
+        $array = $policy->toArray();
+        
+        $this->assertArrayHasKey('confirmation_window_days', $array);
+        $this->assertArrayHasKey('auto_confirmation_deadline_days', $array);
+        $this->assertEquals(5, $array['confirmation_window_days']);
+        $this->assertEquals(2, $array['auto_confirmation_deadline_days']);
+    }
 } 

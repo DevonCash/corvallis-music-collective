@@ -148,8 +148,8 @@ class BookingPolicyTest extends TestCase
         // Get the start of the week to ensure all bookings are in the same week
         $weekStart = Carbon::now()->startOfWeek();
         
-        // Create 3 bookings for the user this week (at the limit)
-        for ($i = 0; $i < 3; $i++) {
+        // Create 5 bookings for the user this week (at the limit)
+        for ($i = 0; $i < 5; $i++) {
             Booking::factory()->create([
                 'room_id' => $this->room->id,
                 'user_id' => $this->testUser->id,
@@ -159,17 +159,17 @@ class BookingPolicyTest extends TestCase
             ]);
         }
         
-        // Try to create a 4th booking in the same week
-        $fourthBooking = new Booking([
+        // Try to create a 6th booking in the same week
+        $sixthBooking = new Booking([
             'room_id' => $this->room->id,
             'user_id' => $this->testUser->id,
-            'start_time' => $weekStart->copy()->addDays(3)->setHour(14), // Same week, different time
-            'end_time' => $weekStart->copy()->addDays(3)->setHour(16),
+            'start_time' => $weekStart->copy()->addDays(6)->setHour(14), // Same week, different time
+            'end_time' => $weekStart->copy()->addDays(6)->setHour(16),
             'state' => 'scheduled',
         ]);
         
         // Should fail validation due to weekly limit
-        $this->assertFalse($fourthBooking->validateAgainstPolicy());
+        $this->assertFalse($sixthBooking->validateAgainstPolicy());
     }
 
     /** @test */

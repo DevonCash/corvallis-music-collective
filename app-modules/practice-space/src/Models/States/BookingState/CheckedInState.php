@@ -9,7 +9,8 @@ use Illuminate\Database\Eloquent\Model;
 /**
  * CheckedIn State
  * 
- * This state represents a booking where the user has checked in.
+ * This state represents a booking where the user has been checked in by staff.
+ * Staff can mark the booking as completed when the member is finished.
  */
 class CheckedInState extends BookingState
 {
@@ -28,12 +29,26 @@ class CheckedInState extends BookingState
             Forms\Components\Textarea::make('notes')
                 ->label('Check-in Notes')
                 ->placeholder('Add any notes about this check-in')
-                ->required(),
+                ->required(false),
                 
             Forms\Components\DateTimePicker::make('check_in_time')
                 ->label('Check-in Time')
                 ->default(now())
                 ->required(),
+                
+            Forms\Components\Toggle::make('payment_completed')
+                ->label('Payment Completed')
+                ->helperText('Mark if the member has paid for this booking')
+                ->default(false),
         ];
+    }
+    
+    /**
+     * Check if the booking can be completed.
+     */
+    public function canBeCompleted(): bool
+    {
+        // Can be completed any time after check-in
+        return true;
     }
 } 

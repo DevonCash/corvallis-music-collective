@@ -13,79 +13,89 @@ class BookingConfirmationRequestNotification extends Notification implements Sho
 {
     use Queueable;
 
-    protected Booking $booking;
-    protected int $confirmationWindowHours;
+    /**
+     * The booking instance.
+     *
+     * @var \CorvMC\PracticeSpace\Models\Booking
+     */
+    public $booking;
 
     /**
      * Create a new notification instance.
+     *
+     * @param \CorvMC\PracticeSpace\Models\Booking $booking
+     * @return void
      */
-    public function __construct(Booking $booking, int $confirmationWindowHours = 24)
+    public function __construct(Booking $booking)
     {
         $this->booking = $booking;
-        $this->confirmationWindowHours = $confirmationWindowHours;
     }
 
     /**
      * Get the notification's delivery channels.
      *
-     * @return array<int, string>
+     * @param  mixed  $notifiable
+     * @return array
      */
-    public function via(object $notifiable): array
+    public function via($notifiable)
     {
         return ['mail', 'database'];
     }
 
     /**
      * Get the mail representation of the notification.
+     *
+     * @param  mixed  $notifiable
+     * @return \Illuminate\Notifications\Messages\MailMessage
      */
-    public function toMail(object $notifiable): MailMessage
+    public function toMail($notifiable)
     {
+        $confirmationDeadline = $this->booking->confirmation_deadline->format('l, F j, Y \a\t g:i A');
+        $bookingDate = $this->booking->start_time->format('l, F j, Y');
+        $bookingTime = $this->booking->start_time->format('g:i A') . ' - ' . $this->booking->end_time->format('g:i A');
         $roomName = $this->booking->room->name;
-        $startTime = $this->booking->start_time->format('l, F j, Y \a\t g:i A');
-        $endTime = $this->booking->end_time->format('g:i A');
-        $confirmByTime = now()->addHours($this->confirmationWindowHours)->format('l, F j \a\t g:i A');
         
-        // Generate a signed URL for confirmation
-        $confirmUrl = URL::temporarySignedRoute(
-            'practice-space.bookings.confirm',
-            now()->addHours($this->confirmationWindowHours),
-            ['booking' => $this->booking->id]
-        );
+        $confirmUrl = url(route('practice-space.bookings.confirm', [
+            'booking' => $this->booking->id,
+            'token' => hash_hmac('sha256', $this->booking->id . $notifiable->email, config('app.key')),
+        ]));
         
-        // Generate a signed URL for cancellation
-        $cancelUrl = URL::temporarySignedRoute(
-            'practice-space.bookings.cancel',
-            now()->addHours($this->confirmationWindowHours),
-            ['booking' => $this->booking->id]
-        );
-        
+        $cancelUrl = url(route('practice-space.bookings.cancel', [
+            'booking' => $this->booking->id,
+            'token' => hash_hmac('sha256', $this->booking->id . $notifiable->email, config('app.key')),
+        ]));
+
         return (new MailMessage)
-            ->subject("Action Required: Confirm Your Practice Space Booking")
-            ->markdown('practice-space::emails.bookings.confirmation-request', [
-                'userName' => $notifiable->name,
-                'roomName' => $roomName,
-                'startTime' => $startTime,
-                'endTime' => $endTime,
-                'bookingId' => $this->booking->id,
-                'confirmByTime' => $confirmByTime,
-                'confirmUrl' => $confirmUrl,
-                'cancelUrl' => $cancelUrl,
-            ]);
+            ->subject('Please Confirm Your Practice Space Booking')
+            ->greeting('Hello ' . $notifiable->name . ',')
+            ->line('You have a practice space booking coming up that needs your confirmation:')
+            ->line("**Room:** {$roomName}")
+            ->line("**Date:** {$bookingDate}")
+            ->line("**Time:** {$bookingTime}")
+            ->line("**Please confirm by:** {$confirmationDeadline}")
+            ->line('If you do not confirm by the deadline, your booking will be automatically cancelled.')
+            ->action('Confirm Booking', $confirmUrl)
+            ->line('If you no longer need this booking, you can cancel it:')
+            ->action('Cancel Booking', $cancelUrl)
+            ->line('Thank you for using our practice spaces!');
     }
 
     /**
      * Get the array representation of the notification.
      *
-     * @return array<string, mixed>
+     * @param  mixed  $notifiable
+     * @return array
      */
-    public function toArray(object $notifiable): array
+    public function toArray($notifiable)
     {
         return [
             'booking_id' => $this->booking->id,
             'room_id' => $this->booking->room_id,
-            'start_time' => $this->booking->start_time,
-            'end_time' => $this->booking->end_time,
-            'confirmation_deadline' => now()->addHours($this->confirmationWindowHours),
+            'room_name' => $this->booking->room->name,
+            'start_time' => $this->booking->start_time->toIso8601String(),
+            'end_time' => $this->booking->end_time->toIso8601String(),
+            'confirmation_deadline' => $this->booking->confirmation_deadline->toIso8601String(),
+            'type' => 'booking_confirmation_request',
         ];
     }
     
@@ -95,7 +105,7 @@ class BookingConfirmationRequestNotification extends Notification implements Sho
     public function toFilament(object $notifiable): array
     {
         $roomName = $this->booking->room->name;
-        $confirmByTime = now()->addHours($this->confirmationWindowHours)->format('l, F j \a\t g:i A');
+        $confirmByTime = $this->booking->confirmation_deadline->format('l, F j, Y \a\t g:i A');
         
         return [
             'title' => "Action Required: Confirm Booking",
@@ -118,7 +128,7 @@ class BookingConfirmationRequestNotification extends Notification implements Sho
     {
         $roomName = $this->booking->room->name;
         $startTime = $this->booking->start_time->format('l, F j, Y \a\t g:i A');
-        $confirmByTime = now()->addHours($this->confirmationWindowHours)->format('l, F j \a\t g:i A');
+        $confirmByTime = $this->booking->confirmation_deadline->format('l, F j, Y \a\t g:i A');
         
         return [
             'title' => "Action Required: Confirm Your Booking",

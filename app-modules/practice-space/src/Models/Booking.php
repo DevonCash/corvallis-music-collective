@@ -46,6 +46,8 @@ class Booking extends Model
         'confirmed_at',
         'cancelled_at',
         'cancellation_reason',
+        'no_show_notes',
+        'payment_completed',
     ];
 
     protected $casts = [
@@ -56,6 +58,11 @@ class Booking extends Model
         'check_out_time' => 'datetime',
         'total_price' => 'decimal:2',
         'state' => State::class.':'.BookingState::class,
+        'confirmation_requested_at' => 'datetime',
+        'confirmation_deadline' => 'datetime',
+        'confirmed_at' => 'datetime',
+        'cancelled_at' => 'datetime',
+        'payment_completed' => 'boolean',
     ];
 
     /**
@@ -79,6 +86,9 @@ class Booking extends Model
             if ($booking->user_id) {
                 $booking->applyMembershipDiscount();
             }
+            
+            // Set confirmation window based on booking policy
+            $booking->setConfirmationWindow();
         });
     }
 
@@ -401,6 +411,178 @@ class Booking extends Model
             // Save the changes
             $this->save();
         }
+        
+        return $this;
+    }
+
+    /**
+     * Set the confirmation window based on the booking policy.
+     */
+    public function setConfirmationWindow(): self
+    {
+        $policy = $this->getBookingPolicy();
+        
+        if (!$policy || !$this->start_time) {
+            return $this;
+        }
+        
+        // Calculate when confirmation should be requested
+        $confirmationWindowStart = $this->start_time->copy()->subDays($policy->confirmationWindowDays);
+        
+        // Only set if it's in the future
+        if ($confirmationWindowStart->isFuture()) {
+            $this->confirmation_requested_at = $confirmationWindowStart;
+        } else {
+            // If the window has already started, set it to now
+            $this->confirmation_requested_at = now();
+        }
+        
+        // Calculate the confirmation deadline
+        $this->confirmation_deadline = $this->start_time->copy()->subDays($policy->autoConfirmationDeadlineDays);
+        
+        return $this;
+    }
+    
+    /**
+     * Check if the booking is within the confirmation window.
+     */
+    public function isInConfirmationWindow(): bool
+    {
+        if (!$this->confirmation_requested_at || !$this->confirmation_deadline) {
+            return false;
+        }
+        
+        $now = now();
+        return $now->isAfter($this->confirmation_requested_at) && $now->isBefore($this->confirmation_deadline);
+    }
+    
+    /**
+     * Check if the booking confirmation deadline has passed.
+     */
+    public function isConfirmationDeadlinePassed(): bool
+    {
+        if (!$this->confirmation_deadline) {
+            return false;
+        }
+        
+        return now()->isAfter($this->confirmation_deadline);
+    }
+    
+    /**
+     * Check if the booking can be marked as a no-show.
+     */
+    public function canBeMarkedAsNoShow(): bool
+    {
+        if (!$this->start_time) {
+            return false;
+        }
+        
+        // Can be marked as no-show 15 minutes after the booking starts
+        $noShowTime = $this->start_time->copy()->addMinutes(15);
+        
+        // For testing purposes, use Carbon::now() instead of now() to allow mocking
+        return Carbon::now()->isAfter($noShowTime) && $this->state instanceof BookingState\ConfirmedState;
+    }
+    
+    /**
+     * Confirm the booking.
+     */
+    public function confirm(?string $notes = null): self
+    {
+        if (!$this->state instanceof BookingState\ScheduledState) {
+            throw new \InvalidArgumentException('Only scheduled bookings can be confirmed.');
+        }
+        
+        // Check if the booking can be confirmed
+        $this->state->canBeConfirmed();
+        
+        $this->confirmed_at = now();
+        if ($notes) {
+            $this->notes = $notes;
+        }
+        
+        $this->state = new BookingState\ConfirmedState($this);
+        $this->save();
+        
+        return $this;
+    }
+    
+    /**
+     * Check in the booking.
+     */
+    public function checkIn(?string $notes = null, bool $paymentCompleted = false): self
+    {
+        if (!$this->state instanceof BookingState\ConfirmedState) {
+            throw new \InvalidArgumentException('Only confirmed bookings can be checked in.');
+        }
+        
+        $this->check_in_time = now();
+        if ($notes) {
+            $this->notes = $notes;
+        }
+        $this->payment_completed = $paymentCompleted;
+        
+        $this->state = new BookingState\CheckedInState($this);
+        $this->save();
+        
+        return $this;
+    }
+    
+    /**
+     * Complete the booking.
+     */
+    public function complete(?string $notes = null): self
+    {
+        if (!$this->state instanceof BookingState\CheckedInState) {
+            throw new \InvalidArgumentException('Only checked-in bookings can be completed.');
+        }
+        
+        $this->check_out_time = now();
+        if ($notes) {
+            $this->notes = $notes;
+        }
+        
+        $this->state = new BookingState\CompletedState($this);
+        $this->save();
+        
+        return $this;
+    }
+    
+    /**
+     * Mark the booking as a no-show.
+     */
+    public function markAsNoShow(string $notes): self
+    {
+        if (!$this->state instanceof BookingState\ConfirmedState) {
+            throw new \InvalidArgumentException('Only confirmed bookings can be marked as no-show.');
+        }
+        
+        if (!$this->canBeMarkedAsNoShow()) {
+            throw new \InvalidArgumentException('Booking cannot be marked as no-show yet.');
+        }
+        
+        $this->no_show_notes = $notes;
+        
+        $this->state = new BookingState\NoShowState($this);
+        $this->save();
+        
+        return $this;
+    }
+    
+    /**
+     * Cancel the booking.
+     */
+    public function cancel(string $reason): self
+    {
+        if (!($this->state instanceof BookingState\ScheduledState || $this->state instanceof BookingState\ConfirmedState)) {
+            throw new \InvalidArgumentException('Only scheduled or confirmed bookings can be cancelled.');
+        }
+        
+        $this->cancelled_at = now();
+        $this->cancellation_reason = $reason;
+        
+        $this->state = new BookingState\CancelledState($this);
+        $this->save();
         
         return $this;
     }

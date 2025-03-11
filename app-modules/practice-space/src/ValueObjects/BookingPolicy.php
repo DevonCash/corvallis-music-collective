@@ -18,6 +18,8 @@ class BookingPolicy implements Arrayable, JsonSerializable, CastsAttributes
      * @param float $minAdvanceBookingHours Minimum hours in advance a booking must be made
      * @param int $cancellationHours Hours before start time when cancellation with refund is allowed
      * @param int $maxBookingsPerWeek Maximum number of bookings a user can make per week
+     * @param int $confirmationWindowDays Days before booking when confirmation is required
+     * @param int $autoConfirmationDeadlineDays Days before booking when unconfirmed bookings are auto-cancelled
      */
     public function __construct(
         public string $openingTime = '08:00',
@@ -27,7 +29,9 @@ class BookingPolicy implements Arrayable, JsonSerializable, CastsAttributes
         public int $maxAdvanceBookingDays = 90,
         public float $minAdvanceBookingHours = 1.0,
         public int $cancellationHours = 24,
-        public int $maxBookingsPerWeek = 5
+        public int $maxBookingsPerWeek = 5,
+        public int $confirmationWindowDays = 3,
+        public int $autoConfirmationDeadlineDays = 1
     ) {
         $this->validate();
     }
@@ -74,6 +78,19 @@ class BookingPolicy implements Arrayable, JsonSerializable, CastsAttributes
         if ($this->maxBookingsPerWeek < 0) {
             throw new \InvalidArgumentException("Maximum bookings per week must be greater than or equal to 0.");
         }
+        
+        // Validate confirmation window values
+        if ($this->confirmationWindowDays < 0) {
+            throw new \InvalidArgumentException("Confirmation window days must be greater than or equal to 0.");
+        }
+        
+        if ($this->autoConfirmationDeadlineDays < 0) {
+            throw new \InvalidArgumentException("Auto-confirmation deadline days must be greater than or equal to 0.");
+        }
+        
+        if ($this->autoConfirmationDeadlineDays >= $this->confirmationWindowDays) {
+            throw new \InvalidArgumentException("Auto-confirmation deadline must be less than the confirmation window.");
+        }
     }
 
     /**
@@ -97,7 +114,9 @@ class BookingPolicy implements Arrayable, JsonSerializable, CastsAttributes
             maxAdvanceBookingDays: (int)($data['max_advance_booking_days'] ?? 90),
             minAdvanceBookingHours: (float)($data['min_advance_booking_hours'] ?? 1.0),
             cancellationHours: (int)($data['cancellation_hours'] ?? 24),
-            maxBookingsPerWeek: (int)($data['max_bookings_per_week'] ?? 5)
+            maxBookingsPerWeek: (int)($data['max_bookings_per_week'] ?? 5),
+            confirmationWindowDays: (int)($data['confirmation_window_days'] ?? 3),
+            autoConfirmationDeadlineDays: (int)($data['auto_confirmation_deadline_days'] ?? 1)
         );
     }
 
@@ -153,6 +172,8 @@ class BookingPolicy implements Arrayable, JsonSerializable, CastsAttributes
             'min_advance_booking_hours' => $this->minAdvanceBookingHours,
             'cancellation_hours' => $this->cancellationHours,
             'max_bookings_per_week' => $this->maxBookingsPerWeek,
+            'confirmation_window_days' => $this->confirmationWindowDays,
+            'auto_confirmation_deadline_days' => $this->autoConfirmationDeadlineDays,
         ];
     }
 
