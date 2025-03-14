@@ -17,6 +17,7 @@ export default {
         './resources/**/*.js',
         './resources/**/*.vue',
         './app-modules/**/*.blade.php',
+        './app-modules/**/Filament/**/*.php',
         './app-modules/**/*.js',
         './resources/**/*.vue',
     ],

@@ -1,0 +1,26 @@
+{
+	"name": "modules/commerce",
+	"description": "",
+	"type": "library",
+	"version": "1.0",
+	"license": "proprietary",
+	"require": {
+		"calebporzio/sushi": "^2.5"
+	},
+	"autoload": {
+		"psr-4": {
+			"CorvMC\\Commerce\\": "src/",
+			"CorvMC\\Commerce\\Tests\\": "tests/",
+			"CorvMC\\Commerce\\Database\\Factories\\": "database/factories/",
+			"CorvMC\\Commerce\\Database\\Seeders\\": "database/seeders/"
+		}
+	},
+	"minimum-stability": "stable",
+	"extra": {
+		"laravel": {
+			"providers": [
+				"CorvMC\\Commerce\\Providers\\CommerceServiceProvider"
+			]
+		}
+	}
+}

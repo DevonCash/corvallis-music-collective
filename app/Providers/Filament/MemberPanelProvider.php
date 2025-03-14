@@ -3,6 +3,7 @@
 namespace App\Providers\Filament;
 
 use CorvMC\PracticeSpace\Filament\PracticeSpacePluginProvider;
+use CorvMC\Commerce\Filament\CommercePluginProvider;
 use Filament\Http\Middleware\Authenticate;
 use App\Models\User;
 use Filament\Http\Middleware\AuthenticateSession;
@@ -57,7 +58,8 @@ class MemberPanelProvider extends PanelProvider
                 ActivitylogPlugin::make()
                     ->navigationItem(false),
                 FilamentFullCalendarPlugin::make(),
-                PracticeSpacePluginProvider::make()
+                PracticeSpacePluginProvider::make(),
+                CommercePluginProvider::make(),
             ])
             ->widgets([
                 Widgets\AccountWidget::class,

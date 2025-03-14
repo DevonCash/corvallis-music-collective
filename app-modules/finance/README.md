@@ -1,20 +1,14 @@
-# Finance Module Proposal
+# Finance Module
 
 ## Overview
 
-The Finance module expands upon the existing Payments module to provide a comprehensive financial management system for the organization. This module enables tracking, managing, and reporting on all financial aspects of the organization, including payments, revenue, expenses, budgeting, and financial planning. By centralizing financial operations, the system creates greater transparency, improves financial decision-making, and ensures sustainable resource management, all while aligning with the organization's non-profit mission and community-focused values.
+The Finance module provides a comprehensive financial management system for the organization's internal operations. This module enables administrators and financial staff to track, manage, and report on all financial aspects of the organization, including revenue, expenses, budgeting, and financial planning. By centralizing financial operations, the system creates greater transparency, improves financial decision-making, and ensures sustainable resource management, all while aligning with the organization's non-profit mission and community-focused values.
 
-## Current Functionality (Payments Module)
+## Scope
 
-The existing Payments module includes:
+The Finance module focuses on back-office financial operations and management, while customer-facing payment processing and commerce features are handled by the Commerce module. This separation allows for specialized focus on organizational financial health and compliance while ensuring a seamless user experience for members and customers.
 
-- **Payment Processing**: Handling payments through Stripe integration
-- **Product Management**: Defining products and their pricing
-- **Subscription Management**: Basic subscription handling
-- **Payment State Tracking**: Monitoring payment statuses
-- **Morphable Relationships**: Connecting payments to various entities (bookings, subscriptions, etc.)
-
-## Enhanced Core Features
+## Core Features
 
 ### 1. Comprehensive Financial Tracking
 
@@ -27,28 +21,15 @@ The existing Payments module includes:
 - **Grant Management**: Track grant applications, awards, and reporting requirements
 - **Financial Forecasting**: Project future financial scenarios based on historical data
 
-### 2. Enhanced Payment Processing
+### 2. Financial Relationships
 
-- **Multiple Payment Methods**: Support for credit cards, ACH transfers, cash, checks, and digital payment platforms
-- **Recurring Payment Management**: Improved handling of subscriptions and recurring donations
-- **Payment Plans**: Allow members to pay in installments for larger fees
-- **Discount Management**: Apply and track discounts and promotional offers
-- **Refund Processing**: Streamlined handling of refunds and credits
-- **Invoice Generation**: Create and manage professional invoices
-- **Receipt Management**: Automated receipts for all transactions
-- **Tax Documentation**: Generate necessary tax documents (e.g., donation receipts)
-
-### 3. Financial Relationships
-
-- **Member Financial Profiles**: Track financial history and status for each member
 - **Organizational Units**: Manage finances for different departments or initiatives
 - **Vendor Management**: Track relationships with service providers and suppliers
 - **Donor Management**: Track and nurture relationships with financial supporters
 - **Sponsorship Tracking**: Monitor financial aspects of sponsorship agreements
 - **Financial Obligations**: Track contractual financial commitments
-- **Credit System Integration**: Connect with the Volunteer Management credit system for redemption
 
-### 4. Budgeting & Planning
+### 3. Budgeting & Planning
 
 - **Budget Creation Tools**: User-friendly interfaces for creating organizational budgets
 - **Budget Allocation**: Distribute funds across departments and projects
@@ -59,7 +40,7 @@ The existing Payments module includes:
 - **Scenario Planning**: Model different financial scenarios for decision-making
 - **Financial Goals**: Set and track progress toward financial objectives
 
-### 5. Financial Reporting & Analytics
+### 4. Financial Reporting & Analytics
 
 - **Standard Financial Reports**: Generate common financial statements and reports
 - **Custom Report Builder**: Create tailored financial reports for specific needs
@@ -70,7 +51,7 @@ The existing Payments module includes:
 - **Audit Support**: Tools and reports to facilitate financial audits
 - **Board Reporting**: Specialized reports for board and leadership review
 
-### 6. Financial Operations
+### 5. Financial Operations
 
 - **Accounts Payable**: Manage bills and payment schedules
 - **Accounts Receivable**: Track expected incoming payments
@@ -81,8 +62,9 @@ The existing Payments module includes:
 - **Document Management**: Store and organize financial documents
 - **Financial Policies**: Document and implement financial procedures and controls
 
-### 7. Integration Features
+### 6. Integration Features
 
+- **Commerce Module Integration**: Receive transaction data from the Commerce module
 - **Member Directory Integration**: Connect financial data to member profiles
 - **Productions Integration**: Financial tracking for events and productions
 - **Practice Space Integration**: Revenue tracking for space rentals
@@ -94,22 +76,17 @@ The existing Payments module includes:
 
 ### Models
 
-#### Existing Models (Enhanced)
-1. **Payment**: Enhanced with additional payment methods and properties
-2. **Product**: Expanded to include more product types and pricing models
-3. **Subscription**: Enhanced subscription management capabilities
-
-#### New Models
-4. **Transaction**: Record of all financial transactions (both income and expenses)
-5. **Budget**: Budget definitions and allocations
-6. **Expense**: Tracking of organizational expenditures
-7. **FinancialAccount**: Different financial accounts (bank accounts, cash, etc.)
-8. **FinancialCategory**: Categories for transactions and budgeting
-9. **Invoice**: Generated invoices for services and products
-10. **Donor**: Information about financial supporters
-11. **Grant**: Tracking of grant applications and awards
-12. **FinancialReport**: Saved financial reports and statements
-13. **FinancialDocument**: Stored financial documents and receipts
+#### Core Financial Models
+1. **Transaction**: Record of all financial transactions (both income and expenses)
+2. **Budget**: Budget definitions and allocations
+3. **Expense**: Tracking of organizational expenditures
+4. **FinancialAccount**: Different financial accounts (bank accounts, cash, etc.)
+5. **FinancialCategory**: Categories for transactions and budgeting
+6. **Invoice**: Generated invoices for services and products
+7. **Donor**: Information about financial supporters
+8. **Grant**: Tracking of grant applications and awards
+9. **FinancialReport**: Saved financial reports and statements
+10. **FinancialDocument**: Stored financial documents and receipts
 
 ### Filament Resources
 
@@ -132,26 +109,9 @@ The existing Payments module includes:
 6. **DonorManagementPage**: Tools for managing donor relationships
 7. **FinancialCalendarPage**: Calendar view of financial events and deadlines
 
-### Integration Points
-
-1. **Member Directory Module**: Connect financial data to member profiles
-2. **Productions Module**: Financial tracking for events
-3. **Practice Space Module**: Revenue tracking for space rentals
-4. **Volunteer Management Module**: Credit redemption and financial recognition
-5. **Gear Inventory Module**: Asset tracking and depreciation
-6. **Analytics Module**: Include financial metrics in organizational analytics
-
 ## Financial Transparency Approach
 
-Rather than restricting financial information based on arbitrary tier limits, the module focuses on appropriate transparency that aligns with the non-profit mission:
-
-### Member-Level Transparency
-
-- **Personal Financial History**: Complete access to one's own financial transactions
-- **Membership Status**: Clear information about current membership status and renewal
-- **Payment Options**: Transparent presentation of payment methods and plans
-- **Fee Structure**: Clear explanation of all fees and what they support
-- **Credit Application**: Transparent process for applying volunteer credits to financial obligations
+The module focuses on appropriate transparency that aligns with the non-profit mission:
 
 ### Organizational Transparency
 
@@ -184,8 +144,8 @@ Rather than restricting financial information based on arbitrary tier limits, th
 ## Implementation Phases
 
 ### Phase 1: Core Financial Tracking
-- Enhance existing payment functionality
-- Implement basic expense tracking
+- Implement transaction management
+- Establish financial accounts structure
 - Create fundamental financial reporting
 
 ### Phase 2: Budgeting & Planning
@@ -199,7 +159,7 @@ Rather than restricting financial information based on arbitrary tier limits, th
 - Create financial analytics capabilities
 
 ### Phase 4: Integration & Optimization
-- Complete integration with all other modules
+- Complete integration with the Commerce module
 - Implement financial optimization tools
 - Develop comprehensive financial dashboard
 
@@ -212,14 +172,9 @@ Rather than restricting financial information based on arbitrary tier limits, th
 
 ### Financial Security
 - Secure handling of sensitive financial information
-- Proper encryption of payment data
+- Proper encryption of financial data
 - Compliance with financial data protection regulations
-
-### Financial Accessibility
-- Ensuring financial processes are accessible to all users
-- Providing multiple payment options for different needs
-- Creating flexible payment plans for those with financial constraints
 
 ## Conclusion
 
-The Finance module transforms the existing Payments module into a comprehensive financial management system that supports the organization's mission and operations. By providing tools for tracking, managing, and reporting on all financial aspects, it creates greater transparency, improves decision-making, and ensures sustainable resource management. This approach aligns with the organization's non-profit mission by focusing on responsible stewardship of community resources while maintaining appropriate transparency and accountability. The result is a financial system that not only handles transactions but truly supports the organization's long-term sustainability and impact. 
+The Finance module provides a comprehensive financial management system that supports the organization's mission and operations. By providing tools for tracking, managing, and reporting on all financial aspects, it creates greater transparency, improves decision-making, and ensures sustainable resource management. This approach aligns with the organization's non-profit mission by focusing on responsible stewardship of community resources while maintaining appropriate transparency and accountability. The Finance module works in tandem with the Commerce module, which handles all customer-facing transactions, to create a complete financial ecosystem for the organization. 
