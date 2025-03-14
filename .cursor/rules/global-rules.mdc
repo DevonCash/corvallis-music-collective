@@ -1,0 +1,22 @@
+---
+description: Global rules for working on this project
+globs:
+alwaysApply: true
+---
+# Corvallis Music Collective
+
+- Tech Stack:
+    - Tailwind CSS / DaisyUI
+    - AlpineJS
+    - Livewire
+    - Filament 3
+    - Laravel 11
+    - PostgreSQL
+- The project is divided into modules, each in the `app-modules` directory.
+- The main app module (in the `app` directory) covers the following features:
+    - User authentication
+    - Laravel Policies
+    - Filament Panel Registration
+    Any other features should be implemented in separate modules.
+- Follow the principles of Test-Driven Development (TDD) when writing code.
+

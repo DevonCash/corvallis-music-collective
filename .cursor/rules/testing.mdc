@@ -1,0 +1,13 @@
+---
+description: Guidelines for writing tests
+globs: **/tests/**
+---
+
+# Test Writing Guidelines
+- Annotate each test with a phpdoc comment in the following format:
+    ```php
+    /**
+     * @test
+     * @covers {List of REQs from the module specification}
+     */
+    ```

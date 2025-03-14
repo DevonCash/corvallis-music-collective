@@ -1,0 +1,28 @@
+---
+description: Specification format rules
+globs: *.spec.md
+---
+
+# Markdown Specification Format
+
+- Use unique IDs for each requirement (REQ-001, REQ-002)
+- Mark mandatory requirements with "shall", optional with "may", recommendations with "should"
+- Avoid ambiguous terms: "adequate", "user-friendly", "etc.", "and/or"
+- Include measurable criteria (5kg, not "lightweight")
+- Separate functional requirements from non-functional requirements
+- Structure hierarchically with consistent indentation
+- Use consistent terminology throughout
+- Include acceptance criteria for each requirement
+- Keep one requirement per statement
+- Format tables with clear headers and units
+- Define all acronyms before use
+- Include version control information
+- Reference related requirements explicitly
+- Mark interfaces clearly with source and destination
+- Flag safety-critical requirements distinctly
+- Include traceability to source documents or stakeholder needs
+- Avoid conjunctions that could create compound requirements
+- Format equations consistently using standard notation
+- Specify environmental conditions for all physical requirements
+- Include tolerance ranges for all measurements
+- Use mermaid diagrams for complex relationships
