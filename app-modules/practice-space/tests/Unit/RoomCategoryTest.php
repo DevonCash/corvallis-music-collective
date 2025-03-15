@@ -10,7 +10,10 @@ class RoomCategoryTest extends TestCase
 {
     use RefreshDatabase;
 
-    /** @test */
+    /**
+     * @test
+     * @covers REQ-002
+     */
     public function it_can_create_a_room_category()
     {
         $category = new RoomCategory([
@@ -24,7 +27,10 @@ class RoomCategoryTest extends TestCase
         $this->assertTrue($category->is_active);
     }
 
-    /** @test */
+    /**
+     * @test
+     * @covers REQ-002
+     */
     public function it_has_correct_fillable_attributes()
     {
         $expectedFillable = [
@@ -37,7 +43,10 @@ class RoomCategoryTest extends TestCase
         $this->assertEquals($expectedFillable, $category->getFillable());
     }
 
-    /** @test */
+    /**
+     * @test
+     * @covers REQ-002
+     */
     public function it_has_correct_casts()
     {
         $expectedCasts = [

@@ -43,4 +43,25 @@ class UserFactory extends Factory
             'email_verified_at' => null,
         ]);
     }
+
+    /**
+     * Set the user as an admin with a @corvmc.org email.
+     */
+    public function admin(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'email' => fake()->unique()->userName() . '@corvmc.org',
+        ]);
+    }
+
+    /**
+     * Set the user as a regular member with a non-corvmc email.
+     */
+    public function member(): static
+    {
+        $domains = ['gmail.com', 'yahoo.com', 'outlook.com', 'hotmail.com'];
+        return $this->state(fn (array $attributes) => [
+            'email' => fake()->unique()->userName() . '@' . fake()->randomElement($domains),
+        ]);
+    }
 }

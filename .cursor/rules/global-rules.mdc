@@ -1,6 +1,6 @@
 ---
 description: Global rules for working on this project
-globs:
+globs: 
 alwaysApply: true
 ---
 # Corvallis Music Collective
@@ -19,4 +19,6 @@ alwaysApply: true
     - Filament Panel Registration
     Any other features should be implemented in separate modules.
 - Follow the principles of Test-Driven Development (TDD) when writing code.
+
+- Use the command `php artisan spec:test-coverage` to check tests against the specification.
 

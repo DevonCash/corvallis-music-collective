@@ -1,0 +1,22 @@
+@import '../../../../vendor/filament/filament/resources/css/base.css';
+@import '../../common.css';
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+@tailwind variants;
+
+@config './tailwind.config.js';
+
+
+.fi-ta-actions {
+  @apply justify-end;
+}
+
+.fi-fo-wizard-header{
+  @apply flex flex-col sm:flex-row;
+}
+
+.fi-fo-wizard-header-step{
+  flex: 1;
+}

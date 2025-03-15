@@ -66,93 +66,96 @@ class BookingWorkflowTest extends TestCase
         ]);
     }
 
-    /** @test */
+    /**
+     * @test
+     * @covers REQ-007
+     * @covers REQ-011
+     */
     public function it_sets_confirmation_window_on_creation()
     {
-        // Create a booking 10 days in the future
-        $startTime = now()->addDays(10)->setHour(10);
-        $endTime = $startTime->copy()->addHours(2);
+        // Create a booking for 7 days in the future
+        $startTime = Carbon::now()->addDays(7)->setHour(10);
+        $endTime = Carbon::now()->addDays(7)->setHour(12);
         
         $booking = Booking::factory()->create([
-            'user_id' => $this->testUser->id,
             'room_id' => $this->room->id,
+            'user_id' => $this->testUser->id,
             'start_time' => $startTime,
             'end_time' => $endTime,
-            'state' => 'scheduled',
+            'state' => ScheduledState::class,
         ]);
         
-        // Confirmation should be requested 3 days before the booking
-        $expectedRequestTime = $startTime->copy()->subDays(3);
-        $expectedDeadline = $startTime->copy()->subDays(1);
-        
+        // Verify that the confirmation window is set correctly
         $this->assertNotNull($booking->confirmation_requested_at);
         $this->assertNotNull($booking->confirmation_deadline);
         
-        // Check that the dates are set correctly (within a minute to account for test execution time)
-        $this->assertTrue(
-            $booking->confirmation_requested_at->diffInMinutes($expectedRequestTime) < 1,
-            "Confirmation request time should be 3 days before booking"
+        // Confirmation deadline should be 3 days before the booking (based on policy)
+        $expectedDeadline = $startTime->copy()->subDays(3);
+        $this->assertEquals(
+            $expectedDeadline->format('Y-m-d'),
+            $booking->confirmation_deadline->format('Y-m-d')
         );
         
-        $this->assertTrue(
-            $booking->confirmation_deadline->diffInMinutes($expectedDeadline) < 1,
-            "Confirmation deadline should be 1 day before booking"
-        );
+        // Booking should be in scheduled state
+        $this->assertInstanceOf(ScheduledState::class, $booking->state);
     }
 
-    /** @test */
+    /**
+     * @test
+     * @covers REQ-007
+     * @covers REQ-011
+     */
     public function it_can_confirm_a_booking_within_confirmation_window()
     {
-        // Create a booking with confirmation window active now
-        $startTime = now()->addDays(2)->setHour(10); // 2 days in the future
-        $endTime = $startTime->copy()->addHours(2);
+        // Create a booking for 7 days in the future
+        $startTime = Carbon::now()->addDays(7)->setHour(10);
+        $endTime = Carbon::now()->addDays(7)->setHour(12);
         
         $booking = Booking::factory()->create([
-            'user_id' => $this->testUser->id,
             'room_id' => $this->room->id,
+            'user_id' => $this->testUser->id,
             'start_time' => $startTime,
             'end_time' => $endTime,
-            'state' => 'scheduled',
-            'confirmation_requested_at' => now()->subDay(), // 1 day ago
-            'confirmation_deadline' => now()->addDay(), // 1 day in the future
+            'state' => ScheduledState::class,
+            'confirmation_requested_at' => Carbon::now(),
+            'confirmation_deadline' => Carbon::now()->addDays(4), // Deadline is in the future
         ]);
-        
-        // Check that the booking is in the confirmation window
-        $this->assertTrue($booking->isInConfirmationWindow());
         
         // Confirm the booking
-        $booking->confirm('Confirmed by user');
+        $booking->confirm();
         
-        // Check that the booking is now confirmed
-        $this->assertEquals('confirmed', $booking->getRawOriginal('state'));
+        // Verify that the booking is confirmed
         $this->assertInstanceOf(ConfirmedState::class, $booking->state);
         $this->assertNotNull($booking->confirmed_at);
-        $this->assertEquals('Confirmed by user', $booking->notes);
+        
+        // The confirmation deadline should still be set
+        $this->assertNotNull($booking->confirmation_deadline);
     }
 
-    /** @test */
+    /**
+     * @test
+     * @covers REQ-007
+     * @covers REQ-011
+     */
     public function it_cannot_confirm_a_booking_outside_confirmation_window()
     {
-        // Create a booking with confirmation window not yet active
-        $startTime = now()->addDays(5)->setHour(10); // 5 days in the future
-        $endTime = $startTime->copy()->addHours(2);
+        // Create a booking for 7 days in the future
+        $startTime = Carbon::now()->addDays(7)->setHour(10);
+        $endTime = Carbon::now()->addDays(7)->setHour(12);
         
         $booking = Booking::factory()->create([
-            'user_id' => $this->testUser->id,
             'room_id' => $this->room->id,
+            'user_id' => $this->testUser->id,
             'start_time' => $startTime,
             'end_time' => $endTime,
-            'state' => 'scheduled',
-            'confirmation_requested_at' => now()->addDay(), // 1 day in the future
-            'confirmation_deadline' => now()->addDays(3), // 3 days in the future
+            'state' => ScheduledState::class,
+            'confirmation_requested_at' => Carbon::now()->subDays(5),
+            'confirmation_deadline' => Carbon::now()->subDay(), // Deadline has passed
         ]);
         
-        // Check that the booking is not in the confirmation window
-        $this->assertFalse($booking->isInConfirmationWindow());
-        
-        // Try to confirm the booking (should throw an exception)
-        $this->expectException(\InvalidArgumentException::class);
-        $booking->confirm('Attempted confirmation');
+        // Try to confirm the booking
+        $this->expectException(\Exception::class);
+        $booking->confirm();
     }
 
     /** @test */

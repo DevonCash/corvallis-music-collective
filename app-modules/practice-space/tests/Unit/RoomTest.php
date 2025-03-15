@@ -10,7 +10,10 @@ class RoomTest extends TestCase
 {
     use RefreshDatabase;
 
-    /** @test */
+    /**
+     * @test
+     * @covers REQ-001
+     */
     public function it_can_create_a_room()
     {
         $room = new Room([
@@ -28,7 +31,10 @@ class RoomTest extends TestCase
         $this->assertTrue($room->is_active);
     }
 
-    /** @test */
+    /**
+     * @test
+     * @covers REQ-001
+     */
     public function it_has_correct_fillable_attributes()
     {
         $expectedFillable = [
@@ -47,7 +53,10 @@ class RoomTest extends TestCase
         $this->assertEquals($expectedFillable, $room->getFillable());
     }
 
-    /** @test */
+    /**
+     * @test
+     * @covers REQ-001
+     */
     public function it_has_correct_casts()
     {
         $expectedCasts = [

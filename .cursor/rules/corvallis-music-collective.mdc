@@ -1,0 +1,76 @@
+---
+description: Designing new features or business logic
+globs: 
+alwaysApply: false
+---
+# Membership Principles for Corvallis Music Collective
+
+## Core Philosophy
+The Corvallis Music Collective is a community-driven non-profit focused on making music creation accessible to everyone. Our membership system reflects this mission by minimizing artificial barriers while ensuring sustainable operations.
+
+## Guiding Principles
+
+### 1. Community Access Over Paywalls
+- **Default to Inclusion**: Core features and resources should be available to all members
+- **Resource-Based Limitations**: Restrictions only where tangible costs or scarcity exists
+- **Community-Centered Design**: Prioritize solutions that strengthen our music community
+
+### 2. Cost-Justified Tiering
+Membership tiers should primarily reflect differences in:
+- **Resource Usage**: Access to physical spaces and equipment (real operational cost)
+- **Resource Consumption**: Features requiring staff time or physical resources
+- **Financial Sustainability**: Services with direct monetary costs to the organization
+- **Replacement Risk**: Access to high-value equipment or resources
+
+### 3. Contribution Recognition
+- **Volunteer Credit System**: Members earn additional access through volunteer hours
+- **Skill Contribution**: Teaching, mentoring, and equipment maintenance as alternative currency
+- **Community Investment**: Long-term members build trust and expanded access privileges
+
+### 4. Equitable Resource Distribution
+- **Need-Based Allocation**: Prioritize access based on project requirements
+- **Skill-Appropriate Access**: Match specialized equipment with demonstrated proficiency
+- **Community Impact**: Consider potential community benefit when allocating limited resources
+
+## Decision Framework
+
+When implementing any feature restriction, consider:
+1. **Is there a real cost?** Does this feature consume finite resources?
+2. **Is there an alternative?** Can we use deposits or time credits instead of tier restrictions?
+3. **Does this support our mission?** Will this approach make music more accessible?
+4. **Is it transparent?** Can we clearly explain this policy to our community?
+
+## Membership Structure Principles
+
+- **Multi-Tiered Approach**: Provide options at different contribution levels
+- **Value at Every Level**: Ensure meaningful benefits at each tier
+- **Cost Alignment**: Tier differences reflect actual resource usage costs
+- **Contribution Recognition**: Higher tiers receive reduced deposits and expanded access
+- **Community Recognition**: Acknowledge those who contribute more to our sustainability
+- **Transparent Pricing**: Clear explanation of how membership fees support our mission
+
+## Volunteer Credit System
+
+- Members can contribute time and expertise to earn credits
+- Credits can offset usage fees, extend borrowing periods, or reduce deposits
+- Leadership roles receive additional credit multipliers
+- System recognizes both financial and time contributions equally
+
+## Success Metrics
+
+- Member retention across all tiers
+- Resource utilization rates
+- Volunteer hour contributions
+- New member acquisition
+- Community diversity metrics
+- Financial sustainability indicators
+
+## LLM Implementation Guidelines
+
+When generating content or policies for the Corvallis Music Collective:
+- Prioritize community access over restriction
+- Suggest resource allocation based on actual costs and constraints
+- Emphasize volunteer contribution as a path to enhanced access
+- Design systems that recognize both financial and time contributions
+- Create transparent, explainable policies tied to real operational needs
+- Focus on building community connections rather than tiered exclusivity

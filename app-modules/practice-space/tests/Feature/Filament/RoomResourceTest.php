@@ -28,7 +28,10 @@ class RoomResourceTest extends TestCase
         ]);
     }
 
-    /** @test */
+    /**
+     * @test
+     * @covers UI-001
+     */
     public function it_can_render_index_page()
     {
         $this->actingAs($this->testUser);
@@ -40,7 +43,10 @@ class RoomResourceTest extends TestCase
             ->assertCanSeeTableRecords($rooms);
     }
 
-    /** @test */
+    /**
+     * @test
+     * @covers UI-002
+     */
     public function it_can_render_create_page()
     {
         $this->actingAs($this->testUser);
@@ -50,7 +56,11 @@ class RoomResourceTest extends TestCase
             ->assertSuccessful();
     }
 
-    /** @test */
+    /**
+     * @test
+     * @covers UI-002
+     * @covers REQ-001
+     */
     public function it_can_create_room()
     {
         $this->actingAs($this->testUser);
@@ -61,117 +71,145 @@ class RoomResourceTest extends TestCase
         Livewire::test(RoomResource\Pages\CreateRoom::class)
             ->fillForm([
                 'name' => 'Test Room',
-                'description' => 'Test Description',
-                'capacity' => 10,
-                'hourly_rate' => 25.00,
-                'is_active' => true,
+                'description' => 'A test practice room',
                 'room_category_id' => $category->id,
-                'amenities' => ['wifi', 'projector'], // Add amenities as an array
+                'capacity' => 5,
+                'hourly_rate' => 20.00,
+                'is_active' => true,
+                'photos' => [],
+                'specifications' => [
+                    'size_sqft' => 200,
+                    'has_windows' => true,
+                    'floor_type' => 'carpet',
+                ],
             ])
             ->call('create')
             ->assertHasNoFormErrors();
 
+        // Check that the room was created in the database
         $this->assertDatabaseHas('practice_space_rooms', [
             'name' => 'Test Room',
-            'description' => 'Test Description',
-            'capacity' => 10,
-            'hourly_rate' => 25.00,
-            'is_active' => 1,
+            'description' => 'A test practice room',
             'room_category_id' => $category->id,
+            'capacity' => 5,
+            'hourly_rate' => 20.00,
+            'is_active' => 1,
         ]);
     }
 
-    /** @test */
+    /**
+     * @test
+     * @covers UI-002
+     */
     public function it_can_render_edit_page()
     {
         $this->actingAs($this->testUser);
 
         $room = Room::factory()->create([
-            'amenities' => json_encode(['wifi', 'projector']),
+            'name' => 'Existing Room',
+            'description' => 'An existing practice room',
+            'capacity' => 4,
+            'hourly_rate' => 15.00,
+            'is_active' => true,
         ]);
 
-        // Use the Livewire test directly with the component class and record ID
+        // Use the Livewire test directly with the component class
         Livewire::test(RoomResource\Pages\EditRoom::class, [
             'record' => $room->id,
         ])
-            ->assertSuccessful()
             ->assertFormSet([
-                'name' => $room->name,
-                'description' => $room->description,
-                'capacity' => $room->capacity,
-                'hourly_rate' => $room->hourly_rate,
-                'is_active' => $room->is_active,
+                'name' => 'Existing Room',
+                'description' => 'An existing practice room',
+                'capacity' => 4,
+                'hourly_rate' => 15.00,
+                'is_active' => true,
             ]);
     }
 
-    /** @test */
+    /**
+     * @test
+     * @covers UI-002
+     * @covers REQ-001
+     */
     public function it_can_update_room()
     {
         $this->actingAs($this->testUser);
 
-        $room = Room::factory()->create([
-            'amenities' => json_encode(['wifi']),
-        ]);
         $category = RoomCategory::factory()->create();
+        $room = Room::factory()->create([
+            'name' => 'Original Room',
+            'description' => 'Original description',
+            'room_category_id' => $category->id,
+            'capacity' => 4,
+            'hourly_rate' => 15.00,
+            'is_active' => true,
+        ]);
 
-        // Use the Livewire test directly with the component class and record ID
+        // Use the Livewire test directly with the component class
         Livewire::test(RoomResource\Pages\EditRoom::class, [
             'record' => $room->id,
         ])
             ->fillForm([
                 'name' => 'Updated Room',
-                'description' => 'Updated Description',
-                'capacity' => 15,
-                'hourly_rate' => 30.00,
-                'is_active' => false,
+                'description' => 'Updated description',
                 'room_category_id' => $category->id,
-                'amenities' => ['wifi', 'projector', 'sound_system'],
+                'capacity' => 6,
+                'hourly_rate' => 25.00,
+                'is_active' => false,
             ])
             ->call('save')
             ->assertHasNoFormErrors();
 
+        // Check that the room was updated in the database
         $this->assertDatabaseHas('practice_space_rooms', [
             'id' => $room->id,
             'name' => 'Updated Room',
-            'description' => 'Updated Description',
-            'capacity' => 15,
-            'hourly_rate' => 30.00,
-            'is_active' => 0,
+            'description' => 'Updated description',
             'room_category_id' => $category->id,
+            'capacity' => 6,
+            'hourly_rate' => 25.00,
+            'is_active' => 0,
         ]);
     }
 
-    /** @test */
+    /**
+     * @test
+     * @covers UI-003
+     */
     public function it_can_render_view_page()
     {
         $this->actingAs($this->testUser);
 
         $room = Room::factory()->create([
-            'amenities' => json_encode(['wifi', 'projector']),
+            'name' => 'Viewable Room',
+            'description' => 'A viewable practice room',
         ]);
 
-        // Use the Livewire test directly with the component class and record ID
+        // Use the Livewire test directly with the component class
         Livewire::test(RoomResource\Pages\ViewRoom::class, [
             'record' => $room->id,
-        ])->assertSuccessful();
+        ])
+            ->assertSuccessful()
+            ->assertSee('Viewable Room');
     }
 
-    /** @test */
+    /**
+     * @test
+     * @covers UI-001
+     */
     public function it_can_delete_room()
     {
         $this->actingAs($this->testUser);
 
-        $room = Room::factory()->create([
-            'amenities' => json_encode(['wifi', 'projector']),
-        ]);
+        $room = Room::factory()->create();
 
-        // Use the Livewire test directly with the component class and record ID
-        Livewire::test(RoomResource\Pages\EditRoom::class, [
-            'record' => $room->id,
-        ])
-            ->callAction('delete');
+        // Use the Livewire test directly with the component class
+        Livewire::test(RoomResource\Pages\ListRooms::class)
+            ->assertCanSeeTableRecords([$room])
+            ->callTableAction('delete', $room)
+            ->assertCanNotSeeTableRecords([$room]);
 
-        // Since the Room model doesn't use soft deletes, check that it's actually deleted
+        // Check that the room was deleted from the database
         $this->assertDatabaseMissing('practice_space_rooms', [
             'id' => $room->id,
         ]);

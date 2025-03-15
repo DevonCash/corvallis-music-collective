@@ -57,7 +57,10 @@ class BookingPolicyTest extends TestCase
         ]);
     }
 
-    /** @test */
+    /**
+     * @test
+     * @covers REQ-002
+     */
     public function booking_policy_is_associated_with_room_category()
     {
         // Test that the room falls back to the category's default booking policy
@@ -68,7 +71,11 @@ class BookingPolicyTest extends TestCase
         $this->assertEquals($this->roomCategory->default_booking_policy->openingTime, $this->room->booking_policy->openingTime);
     }
 
-    /** @test */
+    /**
+     * @test
+     * @covers REQ-007
+     * @covers REQ-009
+     */
     public function booking_duration_is_validated_against_policy()
     {
         // Test booking with valid duration
@@ -105,7 +112,11 @@ class BookingPolicyTest extends TestCase
         $this->assertFalse($tooShortBooking->validateAgainstPolicy());
     }
 
-    /** @test */
+    /**
+     * @test
+     * @covers REQ-007
+     * @covers REQ-009
+     */
     public function booking_advance_notice_is_validated_against_policy()
     {
         // Test booking with valid advance notice
@@ -142,7 +153,10 @@ class BookingPolicyTest extends TestCase
         $this->assertFalse($tooFarBooking->validateAgainstPolicy());
     }
 
-    /** @test */
+    /**
+     * @test
+     * @covers REQ-009
+     */
     public function booking_weekly_limit_is_enforced()
     {
         // Get the start of the week to ensure all bookings are in the same week
@@ -172,7 +186,10 @@ class BookingPolicyTest extends TestCase
         $this->assertFalse($sixthBooking->validateAgainstPolicy());
     }
 
-    /** @test */
+    /**
+     * @test
+     * @covers REQ-009
+     */
     public function cancellation_policy_is_enforced()
     {
         // Create a booking for tomorrow
@@ -198,39 +215,38 @@ class BookingPolicyTest extends TestCase
         $this->assertFalse($booking->canCancelWithRefund());
     }
 
-    /** @test */
+    /**
+     * @test
+     * @covers REQ-009
+     * @covers REQ-016
+     */
     public function booking_policy_can_be_overridden_for_specific_user()
     {
-        // Skip this test since we're using a value object now and don't have database-backed overrides
-        $this->markTestSkipped('Policy overrides are not supported with the ValueObjects\BookingPolicy implementation');
+        // Create a custom policy for a specific user
+        $customPolicy = new BookingPolicy(
+            openingTime: '07:00', // Earlier opening time
+            closingTime: '23:00', // Later closing time
+            maxBookingDurationHours: 12.0, // Longer max duration
+            minBookingDurationHours: 0.5,
+            maxAdvanceBookingDays: 120, // Longer advance booking
+            minAdvanceBookingHours: 0.5, // Shorter minimum notice
+            cancellationHours: 12, // Shorter cancellation period
+            maxBookingsPerWeek: 10 // More bookings per week
+        );
         
-        // Create a policy override for the user
-        $this->bookingPolicy->createOverrideForUser($this->testUser->id, [
-            'max_bookings_per_week' => 5,
-            'max_booking_duration_hours' => 6,
-        ]);
+        // Apply the custom policy to the user
+        $this->testUser->update(['booking_policy_override' => $customPolicy]);
         
-        // Create 4 bookings for the user this week (exceeds normal limit but within override)
-        for ($i = 0; $i < 4; $i++) {
-            Booking::factory()->create([
-                'room_id' => $this->room->id,
-                'user_id' => $this->testUser->id,
-                'start_time' => now()->addDay($i)->setHour(10),
-                'end_time' => now()->addDay($i)->setHour(12),
-                'state' => 'scheduled',
-            ]);
-        }
-        
-        // Create a 5th booking with longer duration
-        $fifthBooking = new Booking([
+        // Create a booking that would violate the standard policy but is allowed by the custom policy
+        $booking = new Booking([
             'room_id' => $this->room->id,
             'user_id' => $this->testUser->id,
-            'start_time' => now()->addDays(5)->setHour(10),
-            'end_time' => now()->addDays(5)->setHour(15), // 5 hours, exceeds normal max but within override
+            'start_time' => now()->addDays(100), // 100 days in advance (exceeds standard 90 days)
+            'end_time' => now()->addDays(100)->addHours(10), // 10 hours (exceeds standard 8 hours)
             'state' => 'scheduled',
         ]);
         
-        // Should pass validation due to policy override
-        $this->assertTrue($fifthBooking->validateAgainstPolicy());
+        // Should pass validation due to custom policy
+        $this->assertTrue($booking->validateAgainstPolicy());
     }
 } 

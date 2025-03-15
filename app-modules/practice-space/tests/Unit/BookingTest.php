@@ -10,7 +10,10 @@ class BookingTest extends TestCase
 {
     use RefreshDatabase;
 
-    /** @test */
+    /**
+     * @test
+     * @covers REQ-007
+     */
     public function it_can_create_a_booking()
     {
         $startTime = now()->addDay()->setHour(10)->setMinute(0);
@@ -35,7 +38,10 @@ class BookingTest extends TestCase
         // Skip testing the state property directly since it's cast to a class
     }
 
-    /** @test */
+    /**
+     * @test
+     * @covers REQ-007
+     */
     public function it_has_correct_fillable_attributes()
     {
         $expectedFillable = [
@@ -65,7 +71,10 @@ class BookingTest extends TestCase
         $this->assertEquals($expectedFillable, $booking->getFillable());
     }
 
-    /** @test */
+    /**
+     * @test
+     * @covers REQ-007
+     */
     public function it_has_correct_casts()
     {
         $expectedCasts = [

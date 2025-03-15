@@ -49,24 +49,29 @@ class PaymentIntegrationTest extends TestCase
         $this->room->update(['product_id' => $this->product->id]);
     }
 
-    /** @test */
+    /**
+     * @test
+     * @covers INT-001
+     */
     public function booking_uses_has_payments_trait()
     {
-        // Check if the Booking model uses the HasPayments trait
         $booking = new Booking();
-        $this->assertTrue(method_exists($booking, 'payments'), 'Booking model should have a payments method from HasPayments trait');
+        $this->assertTrue(method_exists($booking, 'payments'));
+        $this->assertTrue(method_exists($booking, 'createPayment'));
     }
 
-    /** @test */
+    /**
+     * @test
+     * @covers INT-001
+     */
     public function booking_can_create_payment()
     {
         // Create a booking
         $booking = Booking::factory()->create([
-            'user_id' => $this->testUser->id,
             'room_id' => $this->room->id,
+            'user_id' => $this->testUser->id,
             'start_time' => now()->addDay()->setHour(10),
-            'end_time' => now()->addDay()->setHour(12),
-            'total_price' => 50.00,
+            'end_time' => now()->addDay()->setHour(12), // 2 hours
             'state' => 'scheduled',
         ]);
         
@@ -74,210 +79,231 @@ class PaymentIntegrationTest extends TestCase
         $payment = $booking->createPayment([
             'amount' => 50.00,
             'description' => 'Payment for booking #' . $booking->id,
+            'user_id' => $this->testUser->id,
         ]);
         
         // Assert that the payment was created
-        $this->assertNotNull($payment);
         $this->assertInstanceOf(Payment::class, $payment);
         $this->assertEquals(50.00, $payment->amount);
+        $this->assertEquals($this->testUser->id, $payment->user_id);
+        $this->assertEquals('Payment for booking #' . $booking->id, $payment->description);
         $this->assertEquals($booking->id, $payment->payable_id);
         $this->assertEquals(Booking::class, $payment->payable_type);
     }
 
-    /** @test */
+    /**
+     * @test
+     * @covers INT-001
+     */
     public function booking_can_retrieve_payments()
     {
         // Create a booking
         $booking = Booking::factory()->create([
-            'user_id' => $this->testUser->id,
             'room_id' => $this->room->id,
+            'user_id' => $this->testUser->id,
             'start_time' => now()->addDay()->setHour(10),
-            'end_time' => now()->addDay()->setHour(12),
-            'total_price' => 50.00,
+            'end_time' => now()->addDay()->setHour(12), // 2 hours
             'state' => 'scheduled',
         ]);
         
         // Create multiple payments for the booking
         $payment1 = $booking->createPayment([
             'amount' => 25.00,
-            'description' => 'Partial payment for booking #' . $booking->id,
+            'description' => 'Deposit for booking #' . $booking->id,
+            'user_id' => $this->testUser->id,
         ]);
         
         $payment2 = $booking->createPayment([
             'amount' => 25.00,
-            'description' => 'Final payment for booking #' . $booking->id,
+            'description' => 'Balance for booking #' . $booking->id,
+            'user_id' => $this->testUser->id,
         ]);
         
-        // Retrieve payments
+        // Retrieve payments for the booking
         $payments = $booking->payments;
         
         // Assert that the payments were retrieved
         $this->assertCount(2, $payments);
-        $this->assertEquals(25.00, $payments[0]->amount);
-        $this->assertEquals(25.00, $payments[1]->amount);
+        $this->assertTrue($payments->contains($payment1));
+        $this->assertTrue($payments->contains($payment2));
     }
 
-    /** @test */
+    /**
+     * @test
+     * @covers INT-001
+     */
     public function booking_payment_status_is_updated_when_payment_is_made()
     {
-        // Create a booking with pending payment status
+        // Create a booking
         $booking = Booking::factory()->create([
-            'user_id' => $this->testUser->id,
             'room_id' => $this->room->id,
+            'user_id' => $this->testUser->id,
             'start_time' => now()->addDay()->setHour(10),
-            'end_time' => now()->addDay()->setHour(12),
-            'total_price' => 50.00,
-            'payment_status' => 'pending',
+            'end_time' => now()->addDay()->setHour(12), // 2 hours
             'state' => 'scheduled',
+            'payment_status' => 'pending',
         ]);
         
         // Create a payment for the booking
         $payment = $booking->createPayment([
             'amount' => 50.00,
             'description' => 'Payment for booking #' . $booking->id,
-            'status' => 'completed',
+            'user_id' => $this->testUser->id,
+            'status' => 'pending',
         ]);
         
-        // Refresh the booking
-        $booking->refresh();
+        // Assert that the booking payment status is still pending
+        $this->assertEquals('pending', $booking->fresh()->payment_status);
         
-        // Assert that the payment status was updated
-        $this->assertEquals('paid', $booking->payment_status);
+        // Update the payment status to completed
+        $payment->update(['status' => 'completed']);
+        
+        // Assert that the booking payment status is updated to paid
+        $this->assertEquals('paid', $booking->fresh()->payment_status);
     }
 
-    /** @test */
+    /**
+     * @test
+     * @covers INT-001
+     * @covers REQ-007
+     */
     public function booking_state_is_updated_when_payment_is_completed()
     {
-        // Create a booking with scheduled state
+        // Create a booking
         $booking = Booking::factory()->create([
-            'user_id' => $this->testUser->id,
             'room_id' => $this->room->id,
+            'user_id' => $this->testUser->id,
             'start_time' => now()->addDay()->setHour(10),
-            'end_time' => now()->addDay()->setHour(12),
-            'total_price' => 50.00,
-            'payment_status' => 'pending',
+            'end_time' => now()->addDay()->setHour(12), // 2 hours
             'state' => 'scheduled',
+            'payment_status' => 'pending',
         ]);
         
         // Create a payment for the booking
         $payment = $booking->createPayment([
             'amount' => 50.00,
             'description' => 'Payment for booking #' . $booking->id,
+            'user_id' => $this->testUser->id,
+            'status' => 'pending',
         ]);
         
-        // Complete the payment
-        $payment->markAsCompleted();
+        // Assert that the booking state is still scheduled
+        $this->assertEquals('scheduled', $booking->fresh()->state);
         
-        // Refresh the booking
-        $booking->refresh();
+        // Update the payment status to completed
+        $payment->update(['status' => 'completed']);
         
-        // Assert that the payment status was updated to paid
-        $this->assertEquals('paid', $booking->payment_status);
-        
-        // Note: The booking state is not automatically updated by the payment system
-        // This would be handled by a separate state machine or business logic
+        // Assert that the booking state is updated to confirmed
+        $this->assertEquals('confirmed', $booking->fresh()->state);
     }
 
-    /** @test */
+    /**
+     * @test
+     * @covers INT-001
+     */
     public function booking_can_be_refunded()
     {
-        // Create a booking with confirmed state and paid payment status
+        // Create a booking
         $booking = Booking::factory()->create([
-            'user_id' => $this->testUser->id,
             'room_id' => $this->room->id,
+            'user_id' => $this->testUser->id,
             'start_time' => now()->addDay()->setHour(10),
-            'end_time' => now()->addDay()->setHour(12),
-            'total_price' => 50.00,
-            'payment_status' => 'paid',
+            'end_time' => now()->addDay()->setHour(12), // 2 hours
             'state' => 'confirmed',
+            'payment_status' => 'paid',
         ]);
         
-        // Create a completed payment for the booking
+        // Create a payment for the booking
         $payment = $booking->createPayment([
             'amount' => 50.00,
             'description' => 'Payment for booking #' . $booking->id,
+            'user_id' => $this->testUser->id,
             'status' => 'completed',
         ]);
         
-        // Refund the payment
-        $refund = $booking->refund([
-            'amount' => 50.00,
-            'reason' => 'Customer requested cancellation',
-        ]);
+        // Cancel the booking with refund
+        $booking->cancelWithRefund('Customer requested cancellation');
         
-        // Refresh the booking
-        $booking->refresh();
+        // Assert that the booking state is updated to cancelled
+        $this->assertEquals('cancelled', $booking->fresh()->state);
         
-        // Assert that the refund was created
+        // Assert that a refund payment was created
+        $refund = $booking->payments()->where('type', 'refund')->first();
         $this->assertNotNull($refund);
-        $this->assertEquals(50.00, $refund->amount);
+        $this->assertEquals(-50.00, $refund->amount); // Negative amount for refund
+        $this->assertEquals('completed', $refund->status);
         
-        // Assert that the payment status was updated
-        $this->assertEquals('refunded', $booking->payment_status);
-        
-        // Note: The booking state is not automatically updated by the payment system
-        // This would be handled by a separate state machine or business logic
+        // Assert that the booking payment status is updated to refunded
+        $this->assertEquals('refunded', $booking->fresh()->payment_status);
     }
 
-    /** @test */
+    /**
+     * @test
+     * @covers REQ-017
+     */
     public function booking_total_price_is_calculated_from_room_hourly_rate()
     {
-        // Create a booking for 3 hours
-        $startTime = now()->addDay()->setHour(10);
-        $endTime = now()->addDay()->setHour(13);
+        // Set the room hourly rate
+        $this->room->update(['hourly_rate' => 25.00]);
         
+        // Create a booking for 2 hours
         $booking = Booking::factory()->create([
-            'user_id' => $this->testUser->id,
             'room_id' => $this->room->id,
-            'start_time' => $startTime,
-            'end_time' => $endTime,
+            'user_id' => $this->testUser->id,
+            'start_time' => now()->addDay()->setHour(10),
+            'end_time' => now()->addDay()->setHour(12), // 2 hours
             'state' => 'scheduled',
         ]);
         
-        // Calculate expected price in cents (hourly rate * hours * 100)
-        $expectedPriceInCents = (int)round($this->room->hourly_rate * 3 * 100);
+        // Assert that the booking total price is calculated correctly
+        $this->assertEquals(50.00, $booking->calculateTotalPrice());
         
-        // Get the calculated price in cents
-        $calculatedPriceInCents = $booking->calculateTotalPriceInCents();
+        // Create a booking for 3.5 hours
+        $booking = Booking::factory()->create([
+            'room_id' => $this->room->id,
+            'user_id' => $this->testUser->id,
+            'start_time' => now()->addDay()->setHour(13),
+            'end_time' => now()->addDay()->setHour(16)->addMinutes(30), // 3.5 hours
+            'state' => 'scheduled',
+        ]);
         
-        // Assert that the total price in cents is exactly correct (no floating point issues)
-        $this->assertEquals($expectedPriceInCents, $calculatedPriceInCents);
-        
-        // Also test the float-based method for backward compatibility
-        $this->assertEqualsWithDelta($this->room->hourly_rate * 3, $booking->calculateTotalPrice(), 0.01);
+        // Assert that the booking total price is calculated correctly
+        $this->assertEquals(87.50, $booking->calculateTotalPrice());
     }
 
-    /** @test */
+    /**
+     * @test
+     * @covers REQ-017
+     */
     public function booking_can_apply_discount()
     {
-        // Create a booking with a fixed price
-        $originalPrice = 75.00; // $75.00
+        // Set the room hourly rate
+        $this->room->update(['hourly_rate' => 25.00]);
+        
+        // Create a booking for 2 hours
         $booking = Booking::factory()->create([
-            'user_id' => $this->testUser->id,
             'room_id' => $this->room->id,
+            'user_id' => $this->testUser->id,
             'start_time' => now()->addDay()->setHour(10),
-            'end_time' => now()->addDay()->setHour(13), // 3 hours
-            'total_price' => $originalPrice,
+            'end_time' => now()->addDay()->setHour(12), // 2 hours
             'state' => 'scheduled',
+            'discount_percentage' => 10, // 10% discount
         ]);
         
-        // Calculate expected discounted price in cents
-        $discountPercent = 20;
-        $originalPriceInCents = (int)round($originalPrice * 100); // 7500 cents
-        $discountAmountInCents = (int)round($originalPriceInCents * ($discountPercent / 100)); // 1500 cents
-        $expectedDiscountedPriceInCents = $originalPriceInCents - $discountAmountInCents; // 6000 cents
-        $expectedDiscountedPrice = $expectedDiscountedPriceInCents / 100; // $60.00
+        // Assert that the booking total price is calculated correctly with discount
+        $this->assertEquals(45.00, $booking->calculateTotalPrice()); // 50.00 - 10% = 45.00
         
-        // Apply a discount
-        $booking->applyDiscount($discountPercent, 'Member discount');
+        // Create a booking with a different discount
+        $booking = Booking::factory()->create([
+            'room_id' => $this->room->id,
+            'user_id' => $this->testUser->id,
+            'start_time' => now()->addDay()->setHour(13),
+            'end_time' => now()->addDay()->setHour(16)->addMinutes(30), // 3.5 hours
+            'state' => 'scheduled',
+            'discount_percentage' => 20, // 20% discount
+        ]);
         
-        // Refresh the booking
-        $booking->refresh();
-        
-        // Assert that the discount was applied correctly
-        $this->assertEquals($expectedDiscountedPrice, $booking->total_price);
-        
-        // Also verify the cents calculation
-        $this->assertEquals($expectedDiscountedPriceInCents, (int)round($booking->total_price * 100));
+        // Assert that the booking total price is calculated correctly with discount
+        $this->assertEquals(70.00, $booking->calculateTotalPrice()); // 87.50 - 20% = 70.00
     }
 } 

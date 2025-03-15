@@ -1,25 +1,13 @@
 import daisyui from 'daisyui';
 import defaultTheme from 'tailwindcss/defaultTheme';
 import typography from '@tailwindcss/typography';
-import filamentConfig from './vendor/filament/filament/tailwind.config.preset';
 
 /** @type {import('tailwindcss').Config} */
 export default {
-    presets: [
-      filamentConfig
-    ],
     content: [
-        './vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php',
-        './vendor/awcodes/filament-table-repeater/resources/**/*.blade.php',
-        './vendor/filament/filament/resources/views/**/*.blade.php',
         './storage/framework/views/*.php',
         './resources/**/*.blade.php',
-        './resources/**/*.js',
-        './resources/**/*.vue',
         './app-modules/**/*.blade.php',
-        './app-modules/**/Filament/**/*.php',
-        './app-modules/**/*.js',
-        './resources/**/*.vue',
     ],
     theme: {
         extend: {

@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "ca2bc06acd54d04a4be69bb33126a638",
+    "content-hash": "b7cbed715492a39c3fbfaca97880c891",
     "packages": [
         {
             "name": "alpineio/model-states-for-filament",
@@ -2091,6 +2091,41 @@
             }
         },
         {
+            "name": "corvmc/commerce",
+            "version": "1.0",
+            "dist": {
+                "type": "path",
+                "url": "app-modules/commerce",
+                "reference": "06d2971daec979b56047a449281fe1ec097f7d88"
+            },
+            "require": {
+                "calebporzio/sushi": "^2.5"
+            },
+            "type": "library",
+            "extra": {
+                "laravel": {
+                    "providers": [
+                        "CorvMC\\Commerce\\Providers\\CommerceServiceProvider"
+                    ]
+                }
+            },
+            "autoload": {
+                "psr-4": {
+                    "CorvMC\\Commerce\\": "src/",
+                    "CorvMC\\Commerce\\Tests\\": "tests/",
+                    "CorvMC\\Commerce\\Database\\Factories\\": "database/factories/",
+                    "CorvMC\\Commerce\\Database\\Seeders\\": "database/seeders/"
+                }
+            },
+            "license": [
+                "proprietary"
+            ],
+            "transport-options": {
+                "symlink": true,
+                "relative": true
+            }
+        },
+        {
             "name": "corvmc/community-calendar",
             "version": "1.0",
             "dist": {
@@ -2282,6 +2317,38 @@
                     "CorvMC\\Productions\\Tests\\": "tests/",
                     "CorvMC\\Productions\\Database\\Factories\\": "database/factories/",
                     "CorvMC\\Productions\\Database\\Seeders\\": "database/seeders/"
+                }
+            },
+            "license": [
+                "proprietary"
+            ],
+            "transport-options": {
+                "symlink": true,
+                "relative": true
+            }
+        },
+        {
+            "name": "corvmc/professional-services",
+            "version": "1.0",
+            "dist": {
+                "type": "path",
+                "url": "app-modules/professional-services",
+                "reference": "493d110896ad70a3ca1c0eb417873e9f69a79738"
+            },
+            "type": "library",
+            "extra": {
+                "laravel": {
+                    "providers": [
+                        "CorvMC\\ProfessionalServices\\Providers\\ProfessionalServicesServiceProvider"
+                    ]
+                }
+            },
+            "autoload": {
+                "psr-4": {
+                    "CorvMC\\ProfessionalServices\\": "src/",
+                    "CorvMC\\ProfessionalServices\\Tests\\": "tests/",
+                    "CorvMC\\ProfessionalServices\\Database\\Factories\\": "database/factories/",
+                    "CorvMC\\ProfessionalServices\\Database\\Seeders\\": "database/seeders/"
                 }
             },
             "license": [
@@ -5911,41 +5978,6 @@
                 "source": "https://github.com/Masterminds/html5-php/tree/2.9.0"
             },
             "time": "2024-03-31T07:05:07+00:00"
-        },
-        {
-            "name": "modules/commerce",
-            "version": "1.0",
-            "dist": {
-                "type": "path",
-                "url": "app-modules/commerce",
-                "reference": "546ca162af421b86d3de33a49d05ac945d23a6e9"
-            },
-            "require": {
-                "calebporzio/sushi": "^2.5"
-            },
-            "type": "library",
-            "extra": {
-                "laravel": {
-                    "providers": [
-                        "CorvMC\\Commerce\\Providers\\CommerceServiceProvider"
-                    ]
-                }
-            },
-            "autoload": {
-                "psr-4": {
-                    "CorvMC\\Commerce\\": "src/",
-                    "CorvMC\\Commerce\\Tests\\": "tests/",
-                    "CorvMC\\Commerce\\Database\\Factories\\": "database/factories/",
-                    "CorvMC\\Commerce\\Database\\Seeders\\": "database/seeders/"
-                }
-            },
-            "license": [
-                "proprietary"
-            ],
-            "transport-options": {
-                "symlink": true,
-                "relative": true
-            }
         },
         {
             "name": "moneyphp/money",

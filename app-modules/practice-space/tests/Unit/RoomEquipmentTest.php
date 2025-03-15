@@ -10,7 +10,10 @@ class RoomEquipmentTest extends TestCase
 {
     use RefreshDatabase;
 
-    /** @test */
+    /**
+     * @test
+     * @covers REQ-003
+     */
     public function it_can_create_room_equipment()
     {
         $equipment = new RoomEquipment([
@@ -30,7 +33,10 @@ class RoomEquipmentTest extends TestCase
         $this->assertEquals('2023-01-15', $equipment->last_maintenance_date->format('Y-m-d'));
     }
 
-    /** @test */
+    /**
+     * @test
+     * @covers REQ-003
+     */
     public function it_has_correct_fillable_attributes()
     {
         $expectedFillable = [
@@ -46,7 +52,10 @@ class RoomEquipmentTest extends TestCase
         $this->assertEquals($expectedFillable, $equipment->getFillable());
     }
 
-    /** @test */
+    /**
+     * @test
+     * @covers REQ-003
+     */
     public function it_has_correct_casts()
     {
         $equipment = new RoomEquipment();

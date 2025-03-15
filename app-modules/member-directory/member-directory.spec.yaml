@@ -1,0 +1,412 @@
+metadata:
+  version: "1.0.0"
+  date: "2025-03-15"
+  status: "Draft"
+  module: "member-directory"
+
+terminology:
+  - acronym: "MD"
+    definition: "Member Directory"
+  - acronym: "UX"
+    definition: "User Experience"
+  - acronym: "API"
+    definition: "Application Programming Interface"
+
+requirements:
+  # Core Profile Requirements
+  - id: "REQ-001"
+    description: "The system shall provide comprehensive member profiles including basic information, musical skills, influences, and portfolio."
+    type: "mandatory"
+    priority: "High"
+    acceptance_criteria: "Member profiles must include name, location, contact info, profile picture, musical skills, and influences."
+    tests: ["TEST-001"]
+
+  - id: "REQ-002"
+    description: "The system shall support media attachments including audio, video, and images for member portfolios."
+    type: "mandatory"
+    priority: "High"
+    acceptance_criteria: "Users can upload and display at least 3 types of media (audio, video, images) in their portfolios."
+    tests: ["TEST-002"]
+
+  - id: "REQ-003"
+    description: "The system shall implement reasonable storage limits based on membership level."
+    type: "mandatory"
+    priority: "Medium"
+    acceptance_criteria: "Storage limits are enforced and clearly communicated to users."
+    tests: ["TEST-003"]
+
+  # Professional Services Requirements
+  - id: "REQ-004"
+    description: "The system shall provide a marketplace for professional services with booking and scheduling capabilities."
+    type: "mandatory"
+    priority: "High"
+    acceptance_criteria: "Users can list services, set rates, and manage bookings through the platform."
+    tests: ["TEST-004"]
+    related_requirements: ["REQ-005"]
+
+  - id: "REQ-005"
+    description: "The system shall implement a transparent commission structure for service transactions."
+    type: "mandatory"
+    priority: "High"
+    acceptance_criteria: "Commission rates are clearly displayed and automatically calculated for all transactions."
+    tests: ["TEST-005"]
+
+  # Professional Profile Extensions
+  - id: "REQ-022"
+    description: "The system shall support multiple specialized profile types for professional services."
+    type: "mandatory"
+    priority: "High"
+    acceptance_criteria: |
+      - Support for Teacher and Session Musician profile types initially
+      - Ability to add new profile types without code changes
+      - Users can maintain multiple professional profiles
+      - Clear indication of verified professional status
+    tests: ["TEST-025"]
+    related_requirements: ["REQ-004", "REQ-005"]
+
+  - id: "REQ-023"
+    description: "The system shall implement specific fields and validation for Teacher profiles."
+    type: "mandatory"
+    priority: "High"
+    acceptance_criteria: |
+      - Teaching experience and qualifications
+      - Instrument specializations
+      - Teaching levels (beginner to advanced)
+      - Lesson formats (in-person, online, group)
+      - Hourly rates and package options
+      - Student age ranges
+      - Teaching location or virtual setup
+    tests: ["TEST-026"]
+
+  - id: "REQ-024"
+    description: "The system shall implement specific fields and validation for Session Musician profiles."
+    type: "mandatory"
+    priority: "High"
+    acceptance_criteria: |
+      - Professional experience and credits
+      - Genre specializations
+      - Equipment/gear list
+      - Studio vs live performance availability
+      - Travel radius for in-person sessions
+      - Day rate and hourly rate options
+      - Union membership status
+    tests: ["TEST-027"]
+
+  - id: "REQ-025"
+    description: "The system shall provide verification and endorsement features for professional profiles."
+    type: "mandatory"
+    priority: "High"
+    acceptance_criteria: |
+      - Document upload for certifications
+      - Reference verification system
+      - Client testimonials and ratings
+      - Peer endorsements for skills
+      - Background check integration (optional)
+    tests: ["TEST-028"]
+    safety_critical: true
+
+  - id: "REQ-026"
+    description: "The system shall implement advanced search and filtering for professional profiles."
+    type: "mandatory"
+    priority: "High"
+    acceptance_criteria: |
+      - Filter by profile type (Teacher, Session Musician)
+      - Search by rates and availability
+      - Filter by location/travel radius
+      - Search by specific qualifications
+      - Sort by rating and experience
+    tests: ["TEST-029"]
+    related_requirements: ["REQ-006"]
+
+  - id: "REQ-027"
+    description: "The system shall provide booking and scheduling management for professional services."
+    type: "mandatory"
+    priority: "High"
+    acceptance_criteria: |
+      - Calendar integration for availability
+      - Automated booking requests
+      - Payment processing for deposits
+      - Cancellation policy enforcement
+      - Recurring booking support
+      - Contract/agreement generation
+    tests: ["TEST-030"]
+    related_requirements: ["REQ-004"]
+
+  # Networking Requirements
+  - id: "REQ-006"
+    description: "The system shall provide advanced search functionality to find members by skills, location, and availability."
+    type: "mandatory"
+    priority: "High"
+    acceptance_criteria: "Users can search and filter members using at least 5 different criteria."
+    tests: ["TEST-006"]
+
+  - id: "REQ-007"
+    description: "The system shall implement a secure messaging system between members."
+    type: "mandatory"
+    priority: "High"
+    acceptance_criteria: "Messages are encrypted and delivered reliably between users."
+    tests: ["TEST-007"]
+
+  # Skill Verification Requirements
+  - id: "REQ-008"
+    description: "The system should provide peer endorsement functionality for skill verification."
+    type: "recommended"
+    priority: "Medium"
+    acceptance_criteria: "Users can endorse others' skills and endorsements are displayed on profiles."
+    tests: ["TEST-008"]
+
+  # Privacy and Security Requirements
+  - id: "REQ-009"
+    description: "The system shall implement granular privacy controls for member information."
+    type: "mandatory"
+    priority: "High"
+    acceptance_criteria: "Users can control visibility of each profile element individually."
+    tests: ["TEST-009"]
+    safety_critical: true
+
+  # Integration Requirements
+  - id: "REQ-010"
+    description: "The system shall integrate with the Band Profile module for linking individual members to bands."
+    type: "mandatory"
+    priority: "High"
+    acceptance_criteria: "Members can be associated with multiple band profiles with defined roles."
+    tests: ["TEST-010"]
+
+  # Data Retention and Privacy Requirements
+  - id: "REQ-011"
+    description: "The system shall implement GDPR-compliant data retention and deletion policies."
+    type: "mandatory"
+    priority: "High"
+    acceptance_criteria: |
+      - Users can request complete data export in machine-readable format
+      - Account deletion process removes all personal data within 30 days
+      - Soft deletion implemented for data recovery within 30-day window
+    tests: ["TEST-014"]
+    safety_critical: true
+
+  - id: "REQ-012"
+    description: "The system shall maintain audit logs for all profile modifications and data access."
+    type: "mandatory"
+    priority: "High"
+    acceptance_criteria: |
+      - All profile changes are logged with timestamp and user
+      - Access logs retained for 90 days
+      - Audit logs are immutable and encrypted
+    tests: ["TEST-015"]
+
+  # Validation Requirements
+  - id: "REQ-013"
+    description: "The system shall enforce strict media upload validation and sanitization."
+    type: "mandatory"
+    priority: "High"
+    acceptance_criteria: |
+      - Images: JPG, PNG, WebP only; max 10MB
+      - Audio: MP3, WAV, OGG only; max 50MB
+      - Video: MP4, WebM only; max 200MB
+      - All files scanned for malware
+    tests: ["TEST-016"]
+
+  - id: "REQ-014"
+    description: "The system shall validate and sanitize all user input fields."
+    type: "mandatory"
+    priority: "High"
+    acceptance_criteria: |
+      - HTML/script tags stripped from text inputs
+      - Input length limits enforced
+      - Special characters properly escaped
+      - Input validation errors clearly communicated
+    tests: ["TEST-017"]
+
+  # Performance Requirements
+  - id: "REQ-015"
+    description: "The system shall meet specific performance benchmarks for all operations."
+    type: "mandatory"
+    priority: "High"
+    acceptance_criteria: |
+      - Profile page loads < 2 seconds (95th percentile)
+      - Search results returned < 1 second
+      - Media upload processing < 5 seconds for images, < 30 seconds for audio/video
+      - System supports 1000 concurrent users
+      - API endpoints respond within 500ms
+    tests: ["TEST-018"]
+    performance_critical: true
+
+  - id: "REQ-016"
+    description: "The system shall implement rate limiting and abuse prevention."
+    type: "mandatory"
+    priority: "High"
+    acceptance_criteria: |
+      - API requests limited to 100 per minute per user
+      - Media uploads limited to 10 per hour
+      - Failed login attempts limited to 5 per 15 minutes
+      - Automated abuse detection for message sending
+    tests: ["TEST-019"]
+
+  # Accessibility Requirements
+  - id: "REQ-017"
+    description: "The system shall comply with WCAG 2.1 Level AA standards."
+    type: "mandatory"
+    priority: "High"
+    acceptance_criteria: |
+      - All content accessible via keyboard navigation
+      - Screen reader compatibility for all features
+      - Color contrast ratios meet WCAG standards
+      - Alt text required for all images
+      - ARIA labels implemented where needed
+    tests: ["TEST-020"]
+
+  - id: "REQ-018"
+    description: "The system shall be fully responsive across all device types."
+    type: "mandatory"
+    priority: "High"
+    acceptance_criteria: |
+      - Functional on desktop, tablet, and mobile devices
+      - Touch-friendly interface elements
+      - Adaptive media playback controls
+      - Responsive image loading
+    tests: ["TEST-021"]
+
+  # Internationalization Requirements
+  - id: "REQ-019"
+    description: "The system shall support multiple languages and locales."
+    type: "mandatory"
+    priority: "Medium"
+    acceptance_criteria: |
+      - UI supports English, Spanish, French initially
+      - Date/time formats adapt to user's locale
+      - Currency displayed in user's preferred format
+      - Right-to-left language support
+      - Unicode support for all text fields
+    tests: ["TEST-022"]
+
+  # Notification Requirements
+  - id: "REQ-020"
+    description: "The system shall provide configurable notification preferences."
+    type: "mandatory"
+    priority: "Medium"
+    acceptance_criteria: |
+      - Users can enable/disable notifications by type
+      - Support for email, in-app, and push notifications
+      - Batch notification options
+      - Quiet hours configuration
+      - Notification frequency limits
+    tests: ["TEST-023"]
+
+  - id: "REQ-021"
+    description: "The system shall implement real-time notifications for critical events."
+    type: "mandatory"
+    priority: "High"
+    acceptance_criteria: |
+      - Instant message notifications
+      - Booking request alerts
+      - Profile endorsement notifications
+      - Security alert notifications
+      - System maintenance notifications
+    tests: ["TEST-024"]
+
+interfaces:
+  - id: "INT-001"
+    description: "The system shall integrate with the User Module for core authentication and authorization."
+    type: "mandatory"
+    source: "Member Directory"
+    destination: "User Module"
+    tests: ["TEST-011"]
+
+  - id: "INT-002"
+    description: "The system shall integrate with the Productions Module for staffing events."
+    type: "mandatory"
+    source: "Member Directory"
+    destination: "Productions Module"
+    tests: ["TEST-012"]
+
+  - id: "INT-003"
+    description: "The system shall integrate with the Lists Module for vendor and service directories."
+    type: "mandatory"
+    source: "Member Directory"
+    destination: "Lists Module"
+    tests: ["TEST-013"]
+
+  - id: "INT-004"
+    description: "The system shall integrate with the Professional Services module for extended profile capabilities."
+    type: "mandatory"
+    source: "Member Directory"
+    destination: "Professional Services"
+    tests: ["TEST-014"]
+
+dependencies:
+  # External Services
+  - id: "DEP-001"
+    name: "Media Storage Service"
+    description: "Cloud storage service for member media files"
+    type: "required"
+    fallback: "Local file storage with reduced limits"
+    requirements: ["REQ-002", "REQ-013"]
+
+  - id: "DEP-002"
+    name: "Email Service"
+    description: "Transactional email service for notifications"
+    type: "required"
+    fallback: "Queue emails for retry, notify user of delivery delay"
+    requirements: ["REQ-020", "REQ-021"]
+
+  - id: "DEP-003"
+    name: "Payment Processing"
+    description: "Payment gateway for marketplace transactions"
+    type: "required"
+    fallback: "Disable marketplace features, display maintenance notice"
+    requirements: ["REQ-004", "REQ-005"]
+
+  # Internal Dependencies
+  - id: "DEP-004"
+    name: "User Authentication Module"
+    description: "Core user authentication and authorization"
+    type: "required"
+    requirements: ["REQ-009", "INT-001"]
+
+  - id: "DEP-005"
+    name: "Band Profile Module"
+    description: "Band management and association"
+    type: "required"
+    requirements: ["REQ-010"]
+
+  # Third-Party Libraries
+  - id: "DEP-006"
+    name: "Media Processing Library"
+    description: "Library for media file processing and optimization"
+    type: "required"
+    version: "^2.0.0"
+    requirements: ["REQ-002", "REQ-013"]
+
+  - id: "DEP-007"
+    name: "Search Engine"
+    description: "Full-text search and indexing engine"
+    type: "required"
+    version: "^7.0.0"
+    requirements: ["REQ-006"]
+
+  - id: "DEP-008"
+    name: "Calendar Service"
+    description: "Calendar integration service for booking management"
+    type: "required"
+    version: "^3.0.0"
+    requirements: ["REQ-027"]
+
+  - id: "DEP-009"
+    name: "Document Generation Service"
+    description: "Service for generating contracts and agreements"
+    type: "required"
+    fallback: "Basic template system with manual review"
+    requirements: ["REQ-027"]
+
+  - id: "DEP-010"
+    name: "Background Check Service"
+    description: "Third-party service for optional background checks"
+    type: "optional"
+    fallback: "Manual verification process"
+    requirements: ["REQ-025"]
+
+  - id: "DEP-011"
+    name: "Verification Module"
+    description: "Internal module for handling professional verifications"
+    type: "required"
+    requirements: ["REQ-025"] 

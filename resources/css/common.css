@@ -1,0 +1,36 @@
+
+.border-stripe {
+  position: relative;
+}
+
+.border-stripe:after {
+  content: "";
+  display: block;
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 1.75em;
+  background: var(--stripe);
+}
+
+:root {
+  --cmc-orange: #e5771e;
+  --cmc-yellow: #ffe28a;
+  --cmc-blue: #003b5c;
+  --cmc-light-blue: #B8DDE1;
+  --speaker-case: oklch(var(--p, 0.66 0.15 40));
+  --speaker-fill: oklch(var(--a, 0.92 0.09 85));
+  --sound-lines: oklch(var(--s, 0.53 0.13 210));
+  --speaker-front: oklch(var(--b3, 87.22% 0.0392 204.51));
+
+  --stripe: linear-gradient(
+    to bottom,
+    oklch(var(--s)) 0%,
+    oklch(var(--s)) 33%,
+    oklch(var(--wa)) 33%,
+    oklch(var(--wa)) 66%,
+    oklch(var(--er)) 66%,
+    oklch(var(--er)) 100%
+  );
+}

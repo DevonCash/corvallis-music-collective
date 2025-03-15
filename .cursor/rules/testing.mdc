@@ -8,6 +8,6 @@ globs: **/tests/**
     ```php
     /**
      * @test
-     * @covers {List of REQs from the module specification}
+     * @covers Comma separated list of requirement IDs from the spec
      */
     ```

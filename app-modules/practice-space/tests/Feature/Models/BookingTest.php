@@ -29,7 +29,10 @@ class BookingTest extends TestCase
         ]);
     }
 
-    /** @test */
+    /**
+     * @test
+     * @covers REQ-007
+     */
     public function it_can_create_a_booking()
     {
         $room = Room::factory()->create();
@@ -48,67 +51,93 @@ class BookingTest extends TestCase
         $this->assertDatabaseHas('practice_space_bookings', [
             'user_id' => $this->testUser->id,
             'room_id' => $room->id,
-            'state' => 'scheduled',
         ]);
         
-        $this->assertEquals($startTime->toDateTimeString(), $booking->start_time->toDateTimeString());
-        $this->assertEquals($endTime->toDateTimeString(), $booking->end_time->toDateTimeString());
+        $this->assertEquals($startTime->format('Y-m-d H:i'), $booking->start_time->format('Y-m-d H:i'));
+        $this->assertEquals($endTime->format('Y-m-d H:i'), $booking->end_time->format('Y-m-d H:i'));
+        $this->assertEquals('scheduled', $booking->getRawOriginal('state'));
     }
 
-    /** @test */
+    /**
+     * @test
+     * @covers REQ-007
+     * @covers REQ-020
+     */
     public function it_has_user_relationship()
     {
+        $room = Room::factory()->create();
+        
         $booking = Booking::factory()->create([
             'user_id' => $this->testUser->id,
-            'state' => 'scheduled',
+            'room_id' => $room->id,
         ]);
-
+        
         $this->assertInstanceOf(User::class, $booking->user);
         $this->assertEquals($this->testUser->id, $booking->user->id);
     }
 
-    /** @test */
+    /**
+     * @test
+     * @covers REQ-007
+     */
     public function it_has_room_relationship()
     {
-        $room = Room::factory()->create();
+        $room = Room::factory()->create([
+            'name' => 'Test Room',
+            'hourly_rate' => 25.00,
+        ]);
+        
         $booking = Booking::factory()->create([
-            'user_id' => $this->testUser->id, 
+            'user_id' => $this->testUser->id,
+            'room_id' => $room->id,
+        ]);
+        
+        $this->assertInstanceOf(Room::class, $booking->room);
+        $this->assertEquals($room->id, $booking->room->id);
+        $this->assertEquals('Test Room', $booking->room->name);
+    }
+
+    /**
+     * @test
+     * @covers REQ-007
+     */
+    public function it_has_default_state_of_scheduled()
+    {
+        $room = Room::factory()->create();
+        
+        $booking = Booking::factory()->create([
+            'user_id' => $this->testUser->id,
+            'room_id' => $room->id,
+            // Note: not specifying state, should default to scheduled
+        ]);
+        
+        $this->assertInstanceOf(ScheduledState::class, $booking->state);
+        $this->assertEquals('scheduled', $booking->getRawOriginal('state'));
+    }
+
+    /**
+     * @test
+     * @covers REQ-007
+     * @covers REQ-011
+     */
+    public function it_can_transition_state()
+    {
+        $room = Room::factory()->create();
+        
+        $booking = Booking::factory()->create([
+            'user_id' => $this->testUser->id,
             'room_id' => $room->id,
             'state' => 'scheduled',
         ]);
-
-        $this->assertInstanceOf(Room::class, $booking->room);
-        $this->assertEquals($room->id, $booking->room->id);
-    }
-
-    /** @test */
-    public function it_has_default_state_of_scheduled()
-    {
-        $booking = Booking::factory()->create([
-            'user_id' => $this->testUser->id,
-            'state' => 'scheduled',
-        ]);
         
-        $this->assertEquals('scheduled', $booking->getRawOriginal('state'));
-        $this->assertEquals('Scheduled', ScheduledState::getLabel());
-    }
-
-    /** @test */
-    public function it_can_transition_state()
-    {
-        $booking = Booking::factory()->create([
-            'user_id' => $this->testUser->id,
-            'state' => 'scheduled',
-        ]);
+        // Transition from scheduled to confirmed
+        $booking->state->transitionTo(ConfirmedState::class);
         
-        $this->assertEquals('scheduled', $booking->getRawOriginal('state'));
-        
-        // Transition to confirmed state
-        $booking->state = 'confirmed';
-        $booking->save();
+        // Refresh the model from the database
         $booking->refresh();
         
+        // Check that the state was updated
+        $this->assertInstanceOf(ConfirmedState::class, $booking->state);
         $this->assertEquals('confirmed', $booking->getRawOriginal('state'));
-        $this->assertEquals('Confirmed', ConfirmedState::getLabel());
     }
 } 

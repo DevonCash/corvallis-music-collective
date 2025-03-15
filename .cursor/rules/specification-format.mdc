@@ -1,28 +1,95 @@
 ---
-description: Specification format rules
-globs: *.spec.md
+description: Creating structured specifications
+globs: 
+alwaysApply: false
 ---
+# YAML Specification Format
 
-# Markdown Specification Format
+## File Structure
+- Each module must have a specification file named `{module-name}.spec.yaml`
+- The specification file must be valid YAML format
+- The specification file must include version, date, and status metadata
 
-- Use unique IDs for each requirement (REQ-001, REQ-002)
-- Mark mandatory requirements with "shall", optional with "may", recommendations with "should"
+## Requirement Format
+- Each requirement must have a unique ID in the format REQ-XXX (e.g., REQ-001, REQ-002)
+- Requirements must be organized in a hierarchical structure
+- Requirements must be grouped by functional area
+- Each requirement must include the following attributes:
+  - `id`: Unique identifier (REQ-XXX)
+  - `description`: Clear description of the requirement
+  - `type`: One of "mandatory", "recommended", or "optional"
+  - `priority`: One of "High", "Medium", or "Low"
+  - `acceptance_criteria`: Measurable criteria for validation
+
+## Requirement Language
+- Mandatory requirements must use "shall" in the description
+- Recommended requirements must use "should" in the description
+- Optional requirements must use "may" in the description
 - Avoid ambiguous terms: "adequate", "user-friendly", "etc.", "and/or"
 - Include measurable criteria (5kg, not "lightweight")
-- Separate functional requirements from non-functional requirements
-- Structure hierarchically with consistent indentation
-- Use consistent terminology throughout
-- Include acceptance criteria for each requirement
 - Keep one requirement per statement
-- Format tables with clear headers and units
+- Avoid conjunctions that could create compound requirements
+
+## Traceability
+- Each requirement must include a `tests` array listing test IDs that cover it
+- Each requirement may include a `related_requirements` array listing related requirement IDs
+- Each requirement may include a `source` attribute indicating its origin
+- Interface requirements must include `source` and `destination` attributes
+
+## Example Format
+```yaml
+metadata:
+  version: "1.0.0"
+  date: "2023-05-01"
+  status: "Draft"
+  module: "practice-space"
+
+terminology:
+  - acronym: "PS"
+    definition: "Practice Space"
+  - acronym: "UX"
+    definition: "User Experience"
+
+requirements:
+  - id: "REQ-001"
+    description: "The system shall maintain detailed profiles for each practice space."
+    type: "mandatory"
+    priority: "High"
+    acceptance_criteria: "Room profiles contain complete information with at least 5 descriptive fields."
+    tests: ["TEST-001", "TEST-002"]
+    related_requirements: ["REQ-002", "REQ-003"]
+    
+  - id: "REQ-002"
+    description: "The system should provide tools for future capacity planning."
+    type: "recommended"
+    priority: "Medium"
+    acceptance_criteria: "Capacity planning tools accurately predict demand within 15% margin."
+    tests: ["TEST-003"]
+    
+  - id: "REQ-003"
+    description: "The system may allow users to rate and provide feedback."
+    type: "optional"
+    priority: "Low"
+    acceptance_criteria: "Feedback is collected and displayed with room information."
+    tests: []
+
+interfaces:
+  - id: "INT-001"
+    description: "The system shall integrate with the Payments Module."
+    type: "mandatory"
+    source: "Practice Space"
+    destination: "Payments"
+    tests: ["TEST-004"]
+```
+
+## Additional Guidelines
+- Separate functional requirements from non-functional requirements
+- Use consistent terminology throughout
 - Define all acronyms before use
 - Include version control information
-- Reference related requirements explicitly
-- Mark interfaces clearly with source and destination
-- Flag safety-critical requirements distinctly
-- Include traceability to source documents or stakeholder needs
-- Avoid conjunctions that could create compound requirements
+- Flag safety-critical requirements with a `safety_critical: true` attribute
 - Format equations consistently using standard notation
 - Specify environmental conditions for all physical requirements
 - Include tolerance ranges for all measurements
-- Use mermaid diagrams for complex relationships
+- Use diagrams for complex relationships (referenced as external files)
+- Automated validation must be performed on all specification files 

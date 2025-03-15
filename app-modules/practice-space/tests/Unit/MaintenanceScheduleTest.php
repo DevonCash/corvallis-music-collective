@@ -10,7 +10,10 @@ class MaintenanceScheduleTest extends TestCase
 {
     use RefreshDatabase;
 
-    /** @test */
+    /**
+     * @test
+     * @covers REQ-004
+     */
     public function it_can_create_maintenance_schedule()
     {
         $startTime = now()->addDay()->setHour(8)->setMinute(0);
@@ -39,7 +42,10 @@ class MaintenanceScheduleTest extends TestCase
         $this->assertEquals('Focus on drum kit', $maintenance->notes);
     }
 
-    /** @test */
+    /**
+     * @test
+     * @covers REQ-004
+     */
     public function it_has_correct_fillable_attributes()
     {
         $expectedFillable = [
@@ -58,7 +64,10 @@ class MaintenanceScheduleTest extends TestCase
         $this->assertEquals($expectedFillable, $maintenance->getFillable());
     }
 
-    /** @test */
+    /**
+     * @test
+     * @covers REQ-004
+     */
     public function it_has_correct_casts()
     {
         $maintenance = new MaintenanceSchedule();
