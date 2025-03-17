@@ -4,7 +4,7 @@ namespace CorvMC\PracticeSpace\Tests\Feature\Livewire;
 
 use App\Models\User;
 use Carbon\Carbon;
-use CorvMC\PracticeSpace\Livewire\CustomRoomAvailabilityCalendar;
+use CorvMC\PracticeSpace\Livewire\RoomAvailabilityCalendar;
 use CorvMC\PracticeSpace\Models\Booking;
 use CorvMC\PracticeSpace\Models\Room;
 use CorvMC\PracticeSpace\Tests\TestCase;
@@ -15,7 +15,7 @@ use Livewire\Livewire;
  * @test
  * @covers REQ-005
  */
-class CustomRoomAvailabilityCalendarTest extends TestCase
+class RoomAvailabilityCalendarTest extends TestCase
 {
     use RefreshDatabase;
 
@@ -54,7 +54,7 @@ class CustomRoomAvailabilityCalendarTest extends TestCase
         ]);
 
         // Test the Livewire component
-        $component = Livewire::test(CustomRoomAvailabilityCalendar::class)
+        $component = Livewire::test(RoomAvailabilityCalendar::class)
             ->set('selectedRoom', $this->room->id);
         
         // Get the cell data from the component
@@ -79,7 +79,7 @@ class CustomRoomAvailabilityCalendarTest extends TestCase
      */
     public function it_navigates_between_weeks_in_calendar()
     {
-        $component = Livewire::test(CustomRoomAvailabilityCalendar::class)
+        $component = Livewire::test(RoomAvailabilityCalendar::class)
             ->set('selectedRoom', $this->room->id);
         
         // Get the initial start date
@@ -110,7 +110,7 @@ class CustomRoomAvailabilityCalendarTest extends TestCase
      */
     public function it_shows_hourly_time_slots_in_calendar()
     {
-        $component = Livewire::test(CustomRoomAvailabilityCalendar::class)
+        $component = Livewire::test(RoomAvailabilityCalendar::class)
             ->set('selectedRoom', $this->room->id);
         
         // Get the cell data from the component
@@ -145,7 +145,7 @@ class CustomRoomAvailabilityCalendarTest extends TestCase
      */
     public function it_marks_past_time_slots_as_invalid()
     {
-        $component = Livewire::test(CustomRoomAvailabilityCalendar::class)
+        $component = Livewire::test(RoomAvailabilityCalendar::class)
             ->set('selectedRoom', $this->room->id);
         
         // Get the cell data from the component
@@ -176,7 +176,7 @@ class CustomRoomAvailabilityCalendarTest extends TestCase
      */
     public function it_shows_room_details_in_calendar()
     {
-        $component = Livewire::test(CustomRoomAvailabilityCalendar::class)
+        $component = Livewire::test(RoomAvailabilityCalendar::class)
             ->set('selectedRoom', $this->room->id);
         
         // Get the room details from the component

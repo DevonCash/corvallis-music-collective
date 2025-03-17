@@ -17,7 +17,7 @@ use Filament\Notifications\Notification;
 use Livewire\Attributes\On;
 use Illuminate\Support\Facades\Blade;
 
-class CustomRoomAvailabilityCalendar extends Component implements HasForms
+class RoomAvailabilityCalendar extends Component implements HasForms
 {
     use InteractsWithForms;
     
