@@ -19,6 +19,7 @@ use Illuminate\Session\Middleware\StartSession;
 use Illuminate\View\Middleware\ShareErrorsFromSession;
 use CorvMC\BandProfiles\Models\Band;
 use App\Models\User;
+use Filament\View\PanelsRenderHook;
 
 class BandPanelProvider extends PanelProvider
 {
@@ -28,8 +29,24 @@ class BandPanelProvider extends PanelProvider
             ->id('band')
             ->path('band')
             ->tenant(Band::class, ownershipRelationship: 'bands')
+            ->brandName('Corvallis Music Collective')
+            ->brandLogo(fn() => view('filament.brand'))
+            ->brandLogoHeight('4rem')
+            ->favicon(asset('favicon.svg'))
             ->colors([
-                'primary' => Color::Amber,
+                'primary' => [
+                    50 => '#fffdf5',
+                    100 => '#fff9e0',
+                    200 => '#fff3c2',
+                    300 => '#ffe28a', // Our brand accent color
+                    400 => '#ffd666',
+                    500 => '#ffc53d',
+                    600 => '#e6a800',
+                    700 => '#cc8a00',
+                    800 => '#a66f00',
+                    900 => '#805500',
+                    950 => '#4d3300',
+                ],
             ])
             ->discoverResources(in: app_path('Filament/Band/Resources'), for: 'App\\Filament\\Band\\Resources')
             ->discoverPages(in: app_path('Filament/Band/Pages'), for: 'App\\Filament\\Band\\Pages')
@@ -57,7 +74,12 @@ class BandPanelProvider extends PanelProvider
             ])
             ->authGuard('web')
             ->databaseTransactions()
-            ->sidebarCollapsibleOnDesktop()
+            ->renderHook(
+                PanelsRenderHook::SIDEBAR_NAV_START,
+                fn () => view('filament.components.back-to-member-link')
+            )
+            ->font('Lexend')
+            ->viteTheme('resources/css/filament/member/theme.css')
             ->maxContentWidth('full');
     }
 }

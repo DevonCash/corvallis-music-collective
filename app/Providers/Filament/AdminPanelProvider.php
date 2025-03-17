@@ -17,6 +17,9 @@ use Illuminate\Foundation\Http\Middleware\VerifyCsrfToken;
 use Illuminate\Routing\Middleware\SubstituteBindings;
 use Illuminate\Session\Middleware\StartSession;
 use Illuminate\View\Middleware\ShareErrorsFromSession;
+use Filament\View\PanelsRenderHook;
+use Rmsramos\Activitylog\ActivitylogPlugin;
+use CorvMC\PracticeSpace\Filament\PracticeSpacePluginProvider;
 
 class AdminPanelProvider extends PanelProvider
 {
@@ -52,9 +55,19 @@ class AdminPanelProvider extends PanelProvider
             ->authMiddleware([
                 Authenticate::class,
             ])
+            ->renderHook(
+                PanelsRenderHook::SIDEBAR_NAV_START,
+                fn () => view('filament.components.back-to-member-link')
+            )
+            ->font('Lexend')
+            ->viteTheme('resources/css/filament/member/theme.css')
             ->authGuard('web')
+            ->plugins([
+                ActivitylogPlugin::make()
+                    ->navigationItem(false),
+                PracticeSpacePluginProvider::admin(),
+            ])
             ->databaseTransactions()
-            ->sidebarCollapsibleOnDesktop()
             ->maxContentWidth('full');
     }
 }

@@ -19,6 +19,7 @@ use Illuminate\Session\Middleware\StartSession;
 use Illuminate\View\Middleware\ShareErrorsFromSession;
 use CorvMC\Sponsorship\Models\Sponsor;
 use App\Models\User;
+use Filament\View\PanelsRenderHook;
 
 class SponsorPanelProvider extends PanelProvider
 {
@@ -28,8 +29,24 @@ class SponsorPanelProvider extends PanelProvider
             ->id('sponsor')
             ->path('sponsor')
             ->tenant(Sponsor::class, ownershipRelationship: 'sponsors')
+            ->brandName('Corvallis Music Collective')
+            ->brandLogo(fn() => view('filament.brand'))
+            ->brandLogoHeight('4rem')
+            ->favicon(asset('favicon.svg'))
             ->colors([
-                'primary' => Color::Amber,
+                'primary' => [
+                    50 => '#e6f7fa',
+                    100 => '#cceef5',
+                    200 => '#99dcea',
+                    300 => '#66cbe0',
+                    400 => '#33b9d5',
+                    500 => '#00859b', // Our brand secondary color
+                    600 => '#006d7f',
+                    700 => '#005564',
+                    800 => '#003d48',
+                    900 => '#00252c',
+                    950 => '#000c10',
+                ],
             ])
             ->discoverResources(in: app_path('Filament/Sponsor/Resources'), for: 'App\\Filament\\Sponsor\\Resources')
             ->discoverPages(in: app_path('Filament/Sponsor/Pages'), for: 'App\\Filament\\Sponsor\\Pages')
@@ -57,7 +74,12 @@ class SponsorPanelProvider extends PanelProvider
             ])
             ->authGuard('web')
             ->databaseTransactions()
-            ->sidebarCollapsibleOnDesktop()
+            ->renderHook(
+                PanelsRenderHook::SIDEBAR_NAV_START,
+                fn () => view('filament.components.back-to-member-link')
+            )
+            ->font('Lexend')
+            ->viteTheme('resources/css/filament/member/theme.css')
             ->maxContentWidth('full');
     }
 }

@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Filament\Resources;
+namespace App\Filament\Admin\Resources;
 
 use App\Models\User;
 use Filament\Forms;
@@ -8,14 +8,8 @@ use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
-use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\SoftDeletingScope;
 use Filament\Tables\Actions\Action;
-use Spatie\Permission\Models\Role;
-use App\Filament\Resources\UserResource\Pages;
-use Filament\Facades\Filament;
-use Illuminate\Database\Eloquent\Model;
-use Illuminate\Support\Facades\Auth;
+use App\Filament\Admin\Resources\UserResource\Pages;
 
 class UserResource extends Resource
 {

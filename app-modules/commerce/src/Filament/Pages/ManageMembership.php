@@ -23,7 +23,6 @@ class ManageMembership extends Page implements HasForms
 
     protected static ?string $navigationIcon = 'heroicon-o-credit-card';
     protected static string $view = 'commerce::filament.pages.manage-membership';
-    protected static ?string $navigationGroup = 'Account';
     protected static ?int $navigationSort = 10;
     protected static ?string $slug = 'membership';
 
@@ -124,8 +123,8 @@ class ManageMembership extends Page implements HasForms
         /** @var \App\Models\User $user */
         $user = Auth::user();
         $tiers = $this->getMembershipTiers();
-        $currentSubscription = $user->subscription('default')->asStripeSubscription();
-        $currentTier = $tiers->get($currentSubscription->plan->id);
+        $currentSubscription = $user->subscription('default')?->asStripeSubscription();
+        $currentTier = $tiers->get($currentSubscription?->plan->id);
         $currentInterval = $currentTier['current_price']['recurring']['interval'] ?? 'month';
         
         return $form
@@ -135,8 +134,8 @@ class ManageMembership extends Page implements HasForms
                 ->columns(3)
                 ->visible(fn() => $currentSubscription?->stripe_status === 'active')
                 ->headerActions([
-                    $this->manageMembershipAction($currentSubscription->plan->id)
-                        ->label('Manage Membership')
+                    $currentSubscription ? $this->manageMembershipAction($currentSubscription->plan->id)
+                        ->label('Manage Membership') : null
                 ])
                 ->schema([
                     Placeholder::make('tier')

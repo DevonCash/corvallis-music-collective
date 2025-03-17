@@ -21,13 +21,8 @@ use Illuminate\Routing\Middleware\SubstituteBindings;
 use Illuminate\Session\Middleware\StartSession;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\View\Middleware\ShareErrorsFromSession;
-use App\Models\User;
 use Filament\Http\Middleware\AuthenticateSession;
-use Rmsramos\Activitylog\ActivitylogPlugin;
 use Saade\FilamentFullCalendar\FilamentFullCalendarPlugin;
-use Illuminate\Support\Str;
-use Spatie\Permission\Traits\HasRoles;
-use Illuminate\Support\Collection;
 use Filament\Navigation\NavigationBuilder;
 
 class MemberPanelProvider extends PanelProvider
@@ -69,7 +64,7 @@ class MemberPanelProvider extends PanelProvider
         foreach ($user->bands as $band) {
             $items[] = NavigationItem::make($band->name)
                 ->label($band->name)
-                ->url("/band/b/{$band->id}")
+                ->url("/band/{$band->id}")
                 ->icon('heroicon-o-musical-note')
                 ->group('My Bands');
         }
@@ -102,7 +97,19 @@ class MemberPanelProvider extends PanelProvider
             ->favicon(asset('favicon.svg'))
             ->font('Lexend')
             ->colors([
-                'primary' => Color::Amber,
+                'primary' => [
+                    50 => '#fff7f5',
+                    100 => '#ffe9e5',
+                    200 => '#ffd3cc',
+                    300 => '#ffb3a3',
+                    400 => '#f98e75',
+                    500 => '#ef7a5c',
+                    600 => '#dd6d45', // Our button color
+                    700 => '#c85a31',
+                    800 => '#a64a28',
+                    900 => '#8b3d21',
+                    950 => '#461c0d',
+                ],
             ])
             ->sidebarWidth('15rem')
             ->discoverResources(in: app_path('Filament/Member/Resources'), for: 'App\\Filament\\Member\\Resources')
@@ -111,10 +118,7 @@ class MemberPanelProvider extends PanelProvider
                 Pages\Dashboard::class,
             ])
             ->plugins([
-                ActivitylogPlugin::make()
-                    ->navigationItem(false),
-                FilamentFullCalendarPlugin::make(),
-                PracticeSpacePluginProvider::make(),
+                PracticeSpacePluginProvider::member(),
                 CommercePluginProvider::make(),
             ])
             ->widgets([
@@ -136,7 +140,6 @@ class MemberPanelProvider extends PanelProvider
                 Authenticate::class,
             ])
             ->navigation(function (NavigationBuilder $builder) use ($panel): NavigationBuilder {
-                // dd($panel);
                 $hasPages = collect([...$panel->getPages(), ...$panel->getResources()]);
                 $items = $hasPages->map(fn($page) => $page::getNavigationItems())->flatten();
                 $groups = $items->filter(fn($item) => $item->getGroup() !== null)->groupBy(fn($item) => $item->getGroup());
@@ -151,7 +154,9 @@ class MemberPanelProvider extends PanelProvider
                         ...($this->getAdminNavigationItems()),
                     ]);
             })
+            ->databaseTransactions()
             ->databaseNotifications()
+            ->font('Lexend')
             ->viteTheme('resources/css/filament/member/theme.css')
             ->maxContentWidth('full');
     }
