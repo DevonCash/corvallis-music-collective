@@ -1,5 +1,6 @@
 @import '../../../../vendor/filament/filament/resources/css/base.css';
 @import '../../common.css';
+@import '../../../../app-modules/practice-space/resources/css/room-calendar.css';
 
 @tailwind base;
 @tailwind components;

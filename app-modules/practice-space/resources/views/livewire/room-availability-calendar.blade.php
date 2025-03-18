@@ -1,38 +1,53 @@
-<div class="overflow-hidden">
+<div>
+    <header class="flex justify-between items-center gap-4">
+        <div>
+    <h2 class="text-xl font-bold">Room Availability Calendar</h2>
+    <p class="text-sm text-gray-500 mb-4">This calendar shows when rooms are booked. Your bookings are highlighted in blue and show your name, while other bookings are marked as "Booked".</p>
+        </div>
+    <div class="nowrap">
+        <x-filament::button class='calendar-button' wire:click="mountAction('createBooking', {room_id: '@js($this->selectedRoom->id)'})">
+            Book a Room
+        </x-filament::button>
+    </div>
+    </header>
+    <div class="calendar-container">
         <!-- Room Selection -->
-        <div class="p-2 bg-base-200 border-b flex md:flex-row flex-col w-full gap-4">
-            <div class="flex flex-1 md:flex-col justify-between gap-2  items-center md:items-start">
-                <div class='text-lg font-semibold'>
+        <div class="calendar-header">
+            <div class="flex flex-1 md:flex-col justify-between gap-2 items-center md:items-start">
+                <div class='calendar-header-title'>
                     {{ $startDate->format('M j') }} - {{ $endDate->format('M j, Y') }}
                 </div>
-                <div class="flex space-x-2">
+                <div class="flex gap-1">
                     <button 
                         wire:click="previousPeriod" 
-                        class="px-3 py-1 bg-base-100 border border-neutral-400 rounded-md text-base-content hover:bg-base-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                        class="calendar-nav-button"
                         @if(!$this->canNavigateToPreviousPeriod()) disabled @endif
                     >
                         <x-heroicon-s-chevron-left class="w-5 h-5" />
                     </button>
                     <button 
                         wire:click="nextPeriod" 
-                        class="px-3 py-1 bg-base-100 border border-neutral-400 rounded-md text-base-content hover:bg-base-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                        class="calendar-nav-button"
                         @if(!$this->canNavigateToNextPeriod()) disabled @endif
                     >
                         <x-heroicon-s-chevron-right class="w-5 h-5" />
                     </button>
                     <button 
                         wire:click="today" 
-                        class="px-3 py-1 bg-base-100 border border-neutral-400 rounded-md text-base-content hover:bg-base-200"
+                        class="calendar-nav-button"
                     >
                         Today
                     </button>
                 </div>
             </div>
-            @if(\CorvMC\PracticeSpace\Models\Room::count() > 1)
-                <div class='flex-1'>
-                    {{ $this->form }}
-                </div>
-            @endif
+            <div class="flex justify-between items-center">
+                @if(\CorvMC\PracticeSpace\Models\Room::count() > 1)
+                    <div class='flex-1'>
+                        {{ $this->form }}
+                    </div>
+                @endif
+               
+            </div>
         </div>
         
         <!-- Scroll Container -->
@@ -41,7 +56,7 @@
             <!-- Calendar Container -->
             <div class="w-fit">
                 <!-- Calendar Grid -->
-                <div class="grid relative" 
+                <div class="calendar-grid" 
                     style="
                         grid-template-columns: auto repeat({{ count($cellData) }}, minmax(var(--width), 1fr));
                         grid-template-rows: auto repeat({{ count($cellData[0] ?? []) }}, var(--height));
@@ -78,15 +93,13 @@
                             if(ev.target.dataset.booked === 'true') return;
                             if(ev.target.dataset.invalidDuration === 'true') return;
                             
-                            const cellData = ev.target.dataset;
+                            console.log(ev.target.dataset);
 
-                            if (cellData && cellData.booked !== 'true' && cellData.invalidDuration !== 'true') {
-                                $wire.dispatch('open-booking-form', { 
-                                    date: cellData.date, 
-                                    time: cellData.time,
-                                    room_id: $wire.get('selectedRoom')
-                                });
-                            }
+                            $wire.mountAction('createBooking', { 
+                                room_id: $wire.get('selectedRoom')?.id,
+                                booking_date: ev.target.dataset.date, 
+                                booking_time: ev.target.dataset.time,
+                            });
                         }
                     }"
                     @mousemove="handleMouseMove"
@@ -102,15 +115,16 @@
                     @foreach($cellData as $dateIndex => $_)
                         @php 
                             $date = $this->startDate->copy()->addDays($dateIndex);
-                            $isToday = $date->isToday();
-                            $isPast = $date->lt(now()->startOfDay());
+                            $today = \Carbon\Carbon::now($this->selectedRoom->timezone)->startOfDay();
+                            $isToday = $date->isSameDay($today);
+                            $isPast = $date->lt($today);
                         @endphp
-                        <div class="sticky top-0 border-b p-2 text-center font-medium {{ $isToday ? 'bg-info bg-opacity-10' : ($isPast ? 'bg-base-200' : 'bg-base-200') }}" 
+                        <div class="date-header {{ $isToday ? 'date-header-today' : '' }}" 
                              style="grid-column: {{ $dateIndex + 2 }}; grid-row: 1;"
                              data-header>
                             {{ $date->format('D n/j') }}
                             @if($isToday)
-                                <div class="text-xs text-info">Today</div>
+                                <div class="date-header-today-label">Today</div>
                             @endif
                         </div>
                     @endforeach
@@ -119,8 +133,9 @@
                     @foreach($cellData as $dateIndex => $date)
                         @foreach($date as $slotIndex => $cell)
                             <div 
-                                class="border-b border-r relative {{ $cell['booking_id'] ? ($cell['is_current_user_booking'] ? 'bg-primary bg-opacity-10' : '') : '' }}"
-                                style="grid-column: {{ $dateIndex + 2 }}; grid-row: {{ $slotIndex + 2 }}; {{ ($cell['invalid_duration'] || $cell['booking_id']) ? 'background-image: linear-gradient(45deg, rgba(209, 213, 219, 0.3) 25%, transparent 25%, transparent 50%, rgba(209, 213, 219, 0.3) 50%, rgba(209, 213, 219, 0.3) 75%, transparent 75%, transparent); background-size: 16px 16px;' : '' }} {{ $cell['booking_id'] && $cell['is_current_user_booking'] ? 'background-color: rgba(229, 119, 30, 0.1);' : '' }}"
+                                class="time-cell {{ $cell['invalid_duration'] || $cell['booking_id'] ? 'time-cell-striped' : '' }} {{ $cell['booking_id'] ? ($cell['is_current_user_booking'] ? 'time-cell-booked-by-user' : '') : '' }}"
+                                style="grid-column: {{ $dateIndex + 2 }}; grid-row: {{ $slotIndex + 2 }};
+                                {{ $cell['booking_id'] && $cell['is_current_user_booking'] ? 'background-color: rgba(229, 119, 30, 0.1);' : '' }}"
                                 data-time-cell
                                 data-date="{{ $cell['date'] }}"
                                 data-time="{{ $cell['time'] }}"
@@ -135,28 +150,11 @@
                             ></div>
                         @endforeach
                     @endforeach
-                    
-                    <!-- Single Cursor Element -->
-                    <div 
-                        x-show="showCursor"
-                        x-transition:enter="transition ease-out duration-100"
-                        x-transition:enter-start="opacity-0 scale-95"
-                        x-transition:enter-end="opacity-100 scale-100"
-                        class="pointer-events-none flex items-center justify-center bg-primary w-full h-full opacity-75"
-                        :style="`
-                            grid-column: ${cursorColumn}; 
-                            grid-row: ${cursorRow};
-                        `"
-                    >
-                        <div class="w-8 h-8 text-primary-content flex items-center justify-center">
-                            <x-filament::icon icon='heroicon-m-plus' class='size-5'/>
-                        </div>
-                    </div>
-                    
+                
                     <!-- Bookings -->
                     @foreach(array_filter($bookings, fn($booking) => $booking['is_current_user'] || Auth::user()->can('manage', \CorvMC\PracticeSpace\Models\Booking::class)) as $booking)
                         <div 
-                            class="{{ $booking['is_current_user'] ? 'bg-primary border-primary text-primary-content' : 'bg-base-100 border-neutral-400' }} border rounded-md p-2 text-xs m-1 shadow-sm"
+                            class="booking {{ $booking['is_current_user'] ? 'booking-by-user' : 'booking-by-other' }}"
                             style="
                                 grid-column: {{ $booking['date_index'] + 2 }};
                                 grid-row: {{ $booking['time_index'] + 2 }} / span {{ $booking['slots'] }};
@@ -164,19 +162,19 @@
                                 pointer-events: auto;
                             "
                         >
-                            <div class="font-medium">{{ $booking['title'] }}</div>
-                            <div class="">{{ $booking['time_range'] }}</div>
+                            <div class="booking-title">{{ $booking['title'] }}</div>
+                            <div>{{ $booking['time_range'] }}</div>
                         </div>
                     @endforeach
                     @else
-                    <div class="p-8 text-center text-base-content-secondary">
+                    <div class="calendar-empty-state">
                         <p>Please select a room to view the calendar.</p>
                     </div>
                     @endif
 
 
-                    <div class="sticky top-0 left-0 border-b border-r p-2 font-medium flex justify-center text-base-content-secondary bg-base-200" 
-                    style="grid-column: 1; grid-row: 1;"
+                    <div class="time-column-header" 
+                    style="grid-column: 1; grid-row: 1; "
                     data-header>
                          Time
                     </div>
@@ -193,7 +191,7 @@
                                     $timeString = $timeSlot['time'];
                                     $time = Carbon\Carbon::createFromFormat('H:i', $timeString);
                                 @endphp
-                                <div class="border-b border-r p-2 text-sm text-base-content-secondary bg-base-100 flex items-center justify-center" 
+                                <div class="time-label" 
                                     style="grid-column: 1; grid-row: {{ ($timeSlotIndex) + 1 }} / span 2; height: calc(var(--height) * 2);"
                                     data-time-label>
                                     {{ $time->format('g:ia') }}
@@ -202,7 +200,32 @@
                         @endif
                     </div>
                     
+
+                        
+                    <!-- Single Cursor Element -->
+                    <div 
+                        x-show="showCursor"
+                        x-transition:enter="transition ease-out duration-100"
+                        x-transition:enter-start="opacity-0 scale-95"
+                        x-transition:enter-end="opacity-100 scale-100"
+                        class="calendar-cursor"
+                        :style="`
+                            grid-column: ${cursorColumn}; 
+                            grid-row: ${cursorRow};
+                            top: -1px; 
+                            left: -1px;
+                            width: calc(100% + 1px);
+                            height: calc(100% + 1px);
+                        `"
+                    >
+                        <div class="calendar-cursor-icon">
+                            <x-filament::icon icon='heroicon-m-plus' class='size-5'/>
+                        </div>
+                    </div>
+                    
                 </div>
             </div>
         </div>
-</div> 
+    </div>
+    <x-filament-actions::modals /> 
+</div>

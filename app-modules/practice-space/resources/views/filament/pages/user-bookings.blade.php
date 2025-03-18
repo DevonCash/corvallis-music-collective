@@ -7,8 +7,7 @@
         </div>
         
         <div>
-            <h2 class="text-xl font-bold">Room Availability Calendar</h2>
-            <p class="text-sm text-gray-500 mb-4">This calendar shows when rooms are booked. Your bookings are highlighted in blue and show your name, while other bookings are marked as "Booked".</p>
+            
             @livewire('room-availability-calendar')
         </div>
     </div>

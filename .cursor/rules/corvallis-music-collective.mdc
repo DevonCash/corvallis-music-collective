@@ -1,5 +1,5 @@
 ---
-description: Designing new features or business logic
+description: Creating new business rules or features
 globs: 
 alwaysApply: false
 ---
@@ -29,7 +29,6 @@ Membership tiers should primarily reflect differences in:
 
 ### 4. Equitable Resource Distribution
 - **Need-Based Allocation**: Prioritize access based on project requirements
-- **Skill-Appropriate Access**: Match specialized equipment with demonstrated proficiency
 - **Community Impact**: Consider potential community benefit when allocating limited resources
 
 ## Decision Framework

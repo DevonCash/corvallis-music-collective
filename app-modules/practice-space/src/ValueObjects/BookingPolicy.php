@@ -124,35 +124,40 @@ class BookingPolicy implements Arrayable, JsonSerializable, CastsAttributes
      * Get the opening time as a Carbon instance for a specific date
      *
      * @param string $date Date in Y-m-d format
+     * @param string|null $timezone Timezone for the returned Carbon instance
      * @return Carbon
      */
-    public function getOpeningTime(string $date): Carbon
+    public function getOpeningTime(string $date, ?string $timezone = null): Carbon
     {
-        return Carbon::parse($date . ' ' . $this->openingTime);
+        $dateTime = Carbon::parse($date . ' ' . $this->openingTime . ' ' . $timezone ?? '');
+        return $dateTime;
     }
 
     /**
      * Get the closing time as a Carbon instance for a specific date
      *
      * @param string $date Date in Y-m-d format
+     * @param string|null $timezone Timezone for the returned Carbon instance
      * @return Carbon
      */
-    public function getClosingTime(string $date): Carbon
+    public function getClosingTime(string $date, ?string $timezone = null): Carbon
     {
-        return Carbon::parse($date . ' ' . $this->closingTime);
+        $dateTime = Carbon::parse($date . ' ' . $this->closingTime);
+        return $timezone ? $dateTime->setTimezone($timezone) : $dateTime;
     }
 
     /**
      * Get the operating hours for a specific date
      *
      * @param string $date Date in Y-m-d format
+     * @param string|null $timezone Timezone for the returned Carbon instances
      * @return array ['opening' => Carbon, 'closing' => Carbon]
      */
-    public function getOperatingHours(string $date): array
+    public function getOperatingHours(string $date, ?string $timezone = null): array
     {
         return [
-            'opening' => $this->getOpeningTime($date),
-            'closing' => $this->getClosingTime($date)
+            'opening' => $this->getOpeningTime($date, $timezone),
+            'closing' => $this->getClosingTime($date, $timezone)
         ];
     }
 

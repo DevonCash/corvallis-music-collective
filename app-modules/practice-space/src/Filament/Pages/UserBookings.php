@@ -10,13 +10,9 @@ use CorvMC\PracticeSpace\Models\Booking;
 use Illuminate\Database\Eloquent\Builder;
 use Filament\Tables\Concerns\InteractsWithTable;
 use Filament\Tables\Contracts\HasTable;
-use CorvMC\PracticeSpace\Filament\Actions\CreateBookingAction;
 use CorvMC\PracticeSpace\Models\States\BookingState;
 use CorvMC\StateManagement\Filament\Actions\TransitionTableActions;
-use Livewire\Attributes\On;
 use CorvMC\PracticeSpace\Models\States\BookingState\{ConfirmedState, ScheduledState, CheckedInState};
-use CorvMC\PracticeSpace\Models\Room;
-use Carbon\Carbon;
 
 class UserBookings extends Page implements HasTable
 {
@@ -78,46 +74,5 @@ class UserBookings extends Page implements HasTable
             ->emptyStateHeading('No bookings yet')
             ->emptyStateDescription('Once you book a practice room, your reservations will appear here.')
             ->emptyStateIcon('heroicon-o-calendar');
-    }
-
-    #[On('open-booking-form')]
-    function openBookingForm(string $date, string $time, string $room_id)
-    {
-        // First mount the action
-    $this->mountAction('create_booking');
-    
-    // Get the last index since we just mounted it
-    $index = count($this->mountedActions) - 1;
-    
-    // Directly set the data in the mountedActionsData array
-    $this->mountedActionsData[$index] = array_merge($this->mountedActionsData[$index], [
-        
-        'booking_date' => $date,
-        'booking_time' => $time,
-        'room_id' => $room_id
-    ]);
-    
-    // Get the first available duration and set it
-    $room = Room::find($room_id);
-    if ($room) {
-        $startTime = Carbon::createFromFormat('Y-m-d H:i', $date . ' ' . $time);
-        $availableDurations = $room->getAvailableDurations($startTime, true);
-        
-        if (!empty($availableDurations)) {
-            // Get the first available duration option (first key in the array)
-            $firstDuration = array_key_first($availableDurations);
-            $this->mountedActionsData[$index]['duration_hours'] = $firstDuration;
-        }
-    }
-    
-    // Force a form refresh
-    $this->resetValidation();
-    }
-    
-    protected function getHeaderActions(): array
-    {
-        return [
-            CreateBookingAction::make(),
-        ];
     }
 } 

@@ -13,9 +13,7 @@ use Filament\Forms\Components\Wizard\Step;
 use Illuminate\Support\HtmlString;
 use Closure;
 use Filament\Forms\Components\Hidden;
-use Illuminate\Support\Facades\Blade;
-use Livewire\Attributes\On;
-
+use CorvMC\PracticeSpace\Filament\Forms\Components\SelectRoom;
 class CreateBookingAction
 {
     /**
@@ -33,7 +31,7 @@ class CreateBookingAction
 
     public static function make(): Action
     {
-        return Action::make('create_booking')
+        return Action::make('createBooking')
             ->label('Book a Room')
             ->color('primary')
             ->model(Booking::class)
@@ -45,46 +43,7 @@ class CreateBookingAction
                     ->icon('heroicon-o-home')
                     ->columns(2)
                     ->schema([
-                        Forms\Components\Hidden::make('timezone')
-                            ->extraAttributes([
-                                'x-data' => '{}',
-                                'x-init' => '$nextTick(() => $el.dispatchEvent(new Event("input", {bubbles: true})))',
-                                ':value' => 'Intl.DateTimeFormat().resolvedOptions().timeZone',
-                            ]),
-                        Forms\Components\Select::make('room_id')
-                            ->label('Room')
-                            ->visible(fn() => Room::count() > 1)
-                            ->default(function () {
-                                return Room::first()->id;
-                            })
-                            ->relationship('room', 'name')
-                            ->getOptionLabelFromRecordUsing(function (Room $record) {
-                                // Format the room option to show more details
-
-                                // Format price - show without cents if it's a whole dollar amount
-                                $hourlyRate = $record->hourly_rate;
-                                $formattedPrice = floor($hourlyRate) == $hourlyRate
-                                    ? '$' . number_format($hourlyRate, 0)
-                                    : '$' . number_format($hourlyRate, 2);
-
-                                // Create a two-row display with HTML formatting and icons
-                                // Matching the style in the screenshot more closely
-                                return Blade::render("
-                                            <div class='flex flex-col py-1'>
-                                            <div class='text-sm text-gray-500 flex items-center gap-2 mt-1'>
-                                                <span class='font-medium text-gray-900'>{$record->name}</span>
-                                                    <span>{$formattedPrice}/hr</span>
-                                                    <span class='flex items-center'>
-                                                        <x-filament::icon icon='heroicon-o-users' class='w-4 h-4 text-gray-400 mr-1' />
-                                                        {$record->capacity}
-                                                    </span>
-                                                </div>
-                                                " . ($record->description ? "<div class='text-xs text-gray-400 mt-1 truncate max-w-md'>{$record->description}</div>" : "") . "
-                                            </div>
-                                        ");
-                            })
-                            ->allowHtml()
-                            ->searchable(['name', 'description'])
+                        SelectRoom::make()
                             ->preload()
                             ->required()
                             ->live()
@@ -98,6 +57,7 @@ class CreateBookingAction
                             ->required()
                             ->label('Date')
                             ->disabled(fn(Forms\Get $get) => $get('room_id') === null)
+                            ->timezone(fn(Forms\Get $get) => Room::find($get('room_id'))->first()->timezone)
                             ->minDate(function (Forms\Get $get) {
                                 if (!$get('room_id')) return now();
 
@@ -131,7 +91,7 @@ class CreateBookingAction
                                 if (!$get('room_id') || !$get('booking_date')) return [];
 
                                 $room = Room::find($get('room_id'));
-                                $startTime = Carbon::createFromFormat('Y-m-d', $get('booking_date'), $get('timezone'))->startOfDay();
+                                $startTime = Carbon::createFromFormat('Y-m-d', $get('booking_date'), $room->timezone)->startOfDay();
                                 return $room->getAvailableTimeSlots($startTime);
                             })->afterStateUpdated(function (Forms\Set $set, Forms\Get $get) {
                                 // Instead of clearing duration, set it to the first available option
@@ -181,8 +141,9 @@ class CreateBookingAction
                                         }
 
                                         try {
+                                            $room = Room::find($get('room_id'));
                                             // Collect form data
-                                            $start_time = Carbon::createFromFormat('Y-m-d H:i', $get('booking_date') . ' ' . $get('booking_time'), $get('timezone'));
+                                            $start_time = Carbon::createFromFormat('Y-m-d H:i', $get('booking_date') . ' ' . $get('booking_time'), $room->timezone);
                                             $end_time = $start_time->copy()->addHours(floatVal($get('duration_hours')));
                                             $booking = new Booking([
                                                 'room_id' => $get('room_id'),
@@ -210,7 +171,8 @@ class CreateBookingAction
             ->action(function (array $data): void {
                 try {
                     // Create the booking directly
-                    $startDateTime = Carbon::createFromFormat('Y-m-d H:i', $data['booking_date'] . ' ' . $data['booking_time'], $data['timezone']);
+                    $room = Room::find($data['room_id']);
+                    $startDateTime = Carbon::createFromFormat('Y-m-d H:i', $data['booking_date'] . ' ' . $data['booking_time'], $room->timezone);
                     $endDateTime = $startDateTime->copy()->addHours(floatVal($data['duration_hours']));
                     $booking =  new Booking([
                         'room_id' => $data['room_id'],

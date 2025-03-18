@@ -31,6 +31,7 @@ class Room extends Model
         'specifications',
         'booking_policy',
         'use_custom_policy',
+        'timezone',
     ];
 
     protected $casts = [
@@ -43,6 +44,7 @@ class Room extends Model
         'amenities' => 'array',
         'booking_policy' => \CorvMC\PracticeSpace\ValueObjects\BookingPolicy::class,
         'use_custom_policy' => 'boolean',
+        'timezone' => 'string',
     ];
 
     /**
@@ -137,29 +139,36 @@ class Room extends Model
      * Get available time slots for this room on a specific date
      *
      * @param \Carbon\Carbon $date
-     * @param float|null $duration Duration in hours (optional)
      * @return array
      */
     public function getAvailableTimeSlots(Carbon $date): array
     {
-        // Get operating hours
-        $openingTime = $date->copy()->setTimeFromTimeString($this->booking_policy->openingTime);
-        $closingTime = $date->copy()->setTimeFromTimeString($this->booking_policy->closingTime);
+        // Store the original timezone
+        $originalTz = $date->timezone->getName();
+        
+        // Work with UTC times internally
+        $dateUtc = $date->copy()->setTimezone('UTC');
+        
+        // Get operating hours (in UTC)
+        $openingTime = $dateUtc->copy()->startOfDay()->setTimeFromTimeString($this->booking_policy->openingTime)->setTimezone('UTC');
+        $closingTime = $dateUtc->copy()->startOfDay()->setTimeFromTimeString($this->booking_policy->closingTime)->setTimezone('UTC');
 
         // If no duration is specified, use the minimum booking duration from the policy
         $minDuration = $this->booking_policy->minBookingDurationHours;
 
-        // Check if the date is today and apply minimum advance booking hours
-        $now = Carbon::now();
-        $isToday = $now->isSameDay($date);
+        // Get current time in UTC
+        $nowUtc = Carbon::now('UTC');
+        
+        // Check if the date is today
+        $isToday = $nowUtc->isSameDay($dateUtc);
 
         // If booking is for today, adjust the opening time based on minimum advance booking hours
-        if ($isToday && $this->booking_policy->minAdvanceBookingHours > 0) {
-            // Calculate the minimum advance time by adding the required hours to the current time
-            $minAdvanceTime = $now->copy()->addHours($this->booking_policy->minAdvanceBookingHours);
-
-            // If the minimum advance time is after the opening time, use it instead
-            if ($minAdvanceTime->gt($openingTime)) {
+        if ($isToday) {
+            // For today, use the current time plus minimum advance booking hours
+            $minAdvanceTime = $nowUtc->copy()->addHours($this->booking_policy->minAdvanceBookingHours);
+            
+            // If minAdvanceTime is greater than opening time, use it instead
+            if ($minAdvanceTime->greaterThan($openingTime)) {
                 $openingTime = $minAdvanceTime;
 
                 // Round up to the next half hour
@@ -177,8 +186,8 @@ class Room extends Model
             }
         }
 
-        // Get all bookings for this room on this date
-        $bookings = $this->bookingsOn($date)
+        // Get all bookings for this room on this date (in UTC)
+        $bookings = $this->bookingsOn($dateUtc->copy()->startOfDay())
             ->where('state', '!=', 'cancelled')
             ->get();
 
@@ -186,8 +195,10 @@ class Room extends Model
         $timeSlots = [];
 
         for ($t = $openingTime->copy(); $t < $closingTime; $t->addMinutes(30)) {
-            $timeKey = $t->format('H:i');
-            $displayTime = $t->format('g:i A');
+            // Convert to display timezone for the keys and display values
+            $tDisplay = $t->copy()->setTimezone($this->timezone);
+            $timeKey = $tDisplay->format('H:i');
+            $displayTime = $tDisplay->format('g:i A');
 
             // Check if this time slot is available (not within any existing booking)
             if ($bookings->contains(
@@ -309,30 +320,42 @@ class Room extends Model
     /**
      * Get available durations for this room at a specific date and time
      *
-     * @param Carbon $date
-     * @param string $time Start time parameter
-     * @param bool $includeHalfHour
+     * @param Carbon $startTime
      * @return array
      */
     public function getAvailableDurations(Carbon $startTime): array
     {
-        // Get operating hours
-        $openingTime = $startTime->copy()->setTimeFromTimeString($this->booking_policy->openingTime);
-        $closingTime = $startTime->copy()->setTimeFromTimeString($this->booking_policy->closingTime);
+        // Store the original timezone of the input time
+        $originalTimezone = $startTime->timezone->getName();
+        
+        // Work with UTC times internally to avoid conversion issues
+        $startTimeUtc = $startTime->copy()->setTimezone('UTC');
+        
+        // Get operating hours in UTC
+        $openingTime = $startTimeUtc->copy()->startOfDay()->setTimeFromTimeString($this->booking_policy->openingTime)->setTimezone('UTC');
+        $closingTime = $startTimeUtc->copy()->startOfDay()->setTimeFromTimeString($this->booking_policy->closingTime)->setTimezone('UTC');
 
-        // Get all bookings for this room on this date
-        $bookings = $this->bookingsOn($startTime)
+        // Get all bookings for this room on this date (in UTC)
+        $bookings = $this->bookingsOn($startTimeUtc->copy()->startOfDay())
             ->where('state', '!=', 'cancelled')
             ->get();
 
         // If start time is after closing time, return empty array
-        if ($startTime >= $closingTime) {
+        if ($startTimeUtc >= $closingTime) {
+            return [];
+        }
+
+        // Get current time in UTC
+        $nowUtc = Carbon::now('UTC');
+        
+        // If start time is in the past, return empty array
+        if ($startTimeUtc < $nowUtc) {
             return [];
         }
 
         // Check if the start time is within any existing booking
-        $isStartTimeBooked = $bookings->contains(function ($booking) use ($startTime) {
-            return $startTime->between(
+        $isStartTimeBooked = $bookings->contains(function ($booking) use ($startTimeUtc) {
+            return $startTimeUtc->between(
                 $booking->start_time,
                 $booking->end_time->subMinute()
             );
@@ -343,19 +366,18 @@ class Room extends Model
         }
 
         // Find the next booking that starts after this time
-        $nextBooking = $bookings->first(function ($booking) use ($startTime) {
-            return $booking->start_time > $startTime;
+        $nextBooking = $bookings->first(function ($booking) use ($startTimeUtc) {
+            return $booking->start_time > $startTimeUtc;
         });
 
         // Calculate maximum possible duration in hours
         if ($nextBooking) {
-            $maxPossibleDuration = $startTime->diffInMinutes($nextBooking->start_time) / 60;
+            $maxPossibleDuration = $startTimeUtc->diffInMinutes($nextBooking->start_time) / 60;
         } else {
-            $maxPossibleDuration = $startTime->diffInMinutes($closingTime) / 60;
+            $maxPossibleDuration = $startTimeUtc->diffInMinutes($closingTime) / 60;
         }
 
         $maxPossibleDuration = min($maxPossibleDuration, $this->booking_policy->maxBookingDurationHours);
-
 
         // Generate duration options
         return $this->generateDurationOptions($maxPossibleDuration, true);
@@ -401,7 +423,7 @@ class Room extends Model
         $leadTimeInDays = $policy->minAdvanceBookingHours / 24;
 
         // Allow bookings for today if the lead time is less than 1 day
-        return $leadTimeInDays < 1 ? now() : now()->addDays(ceil($leadTimeInDays));
+        return $leadTimeInDays < 1 ? Carbon::now($this->timezone) : Carbon::now($this->timezone)->addDays(ceil($leadTimeInDays));
     }
 
     public function getMaximumBookingDate()
@@ -410,7 +432,7 @@ class Room extends Model
         $policy = $this->booking_policy;
         $leadTimeInDays = $policy->maxAdvanceBookingDays;
 
-        return now()->addDays($leadTimeInDays);
+        return Carbon::now($this->timezone)->addDays($leadTimeInDays);
     }
 
     /**
@@ -423,8 +445,8 @@ class Room extends Model
     public function getFullyBookedDates(?Carbon $startDate = null, ?Carbon $endDate = null): array
     {
         // Default date range: today to 3 months from now
-        $startDate = $startDate ?? Carbon::today();
-        $endDate = $endDate ?? Carbon::today()->addMonths(3);
+        $startDate = $startDate ?? Carbon::today($this->timezone);
+        $endDate = $endDate ?? Carbon::today($this->timezone)->addMonths(3);
 
         // Get all bookings for this room within the date range
         $bookings = $this->bookingsIntersecting($startDate, $endDate)
@@ -520,7 +542,7 @@ class Room extends Model
      */
     private function getOperatingHours(string $date): array
     {
-        $dateObj = Carbon::parse($date);
+        $dateObj = Carbon::parse($date, $this->timezone);
         $policy = $this->booking_policy;
 
         // Set opening and closing times for this date
@@ -531,5 +553,15 @@ class Room extends Model
             'opening' => $openingTime,
             'closing' => $closingTime
         ];
+    }
+
+    /**
+     * Get the timezone for the room
+     * 
+     * @return string
+     */
+    public function getTimezoneAttribute(): string
+    {
+        return $this->attributes['timezone'] ?? config('app.timezone');
     }
 }

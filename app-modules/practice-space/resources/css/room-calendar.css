@@ -1,0 +1,101 @@
+/* Room Availability Calendar Styles */
+  /* Layout */
+  .calendar-container {
+    @apply overflow-hidden bg-gray-100 dark:bg-gray-800;
+  }
+
+  .calendar-header {
+    @apply p-2 bg-gray-100 dark:bg-gray-800 border-b dark:border-gray-700 flex md:flex-row flex-col w-full gap-4 p-4 md:items-center;
+  }
+
+  .calendar-header-title {
+    @apply text-lg font-semibold dark:text-gray-200;
+  }
+
+  .calendar-nav-button {
+    @apply px-3 py-1 bg-white dark:bg-gray-700 border border-neutral-400 dark:border-gray-600 rounded-md text-gray-800 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+
+  .calendar-grid {
+    @apply grid relative;
+  }
+
+  /* Date Headers */
+  .date-header {
+    @apply sticky top-0 border-b-2 dark:border-gray-600 p-2 text-center font-medium bg-gray-100 dark:bg-gray-800;
+  }
+
+  .date-header-today {
+    @apply text-primary-600 bg-primary-50 dark:bg-primary-500/20 dark:text-primary-400 border-primary-600 dark:border-primary-400;
+  }
+
+  .date-header-today-label {
+    @apply text-xs text-primary-600 dark:text-primary-400;
+  }
+
+  /* Time Column */
+  .time-column-header {
+    @apply sticky top-0 left-0 border-b dark:border-gray-600 border-r-gray-400 dark:border-r-gray-500 p-2 font-medium flex justify-center text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-800;
+  }
+
+  .time-label {
+    @apply sticky left-0 border-b dark:border-gray-600 border-r-gray-400 dark:border-r-gray-500 p-2 text-sm text-gray-500 dark:text-gray-400 bg-white dark:bg-gray-900 flex items-center justify-center;
+  }
+
+  /* Time Cells */
+  .time-cell {
+    @apply relative bg-white dark:bg-gray-900 cursor-pointer;
+    border: 1px solid;
+    border-left: 0px;
+    border-top: 0px;
+    border-color: rgb(var(--gray-300)) rgb(var(--gray-400)) rgb(var(--gray-300)) rgb(var(--gray-400));
+  }
+
+  .time-cell-striped {
+    --stripe-color: rgb(var(--gray-300)); 
+    background-image: linear-gradient(45deg, var(--stripe-color) 25%, transparent 25%, transparent 50%, var(--stripe-color) 50%, var(--stripe-color) 75%, transparent 75%, transparent);
+    background-size: 32px 32px;
+  }
+
+  .time-cell-striped:is(.dark *){
+    --stripe-color: rgb(var(--gray-600));
+  }
+
+  .time-cell-booked-by-user {
+    @apply bg-primary-500 bg-opacity-10 dark:bg-primary-500/20;
+  }
+
+  /* Bookings */
+  .booking {
+    @apply border rounded-md p-2 text-xs m-1 shadow-sm;
+  }
+
+  .booking-by-user {
+    @apply bg-primary-500 border-primary-500 text-white;
+  }
+
+  .booking-by-other {
+    @apply bg-white dark:bg-gray-800 border-neutral-400 dark:border-gray-600 dark:text-gray-200;
+  }
+
+  .booking-title {
+    @apply font-medium;
+  }
+
+  /* Cursor */
+  .calendar-cursor {
+    @apply z-10 pointer-events-none flex items-center justify-center border-2 border-primary-600 dark:border-primary-400 bg-primary-500/20 w-full h-full relative;
+  }
+
+  .calendar-cursor-icon {
+    @apply w-8 h-8 text-primary-600 dark:text-primary-400 flex items-center justify-center;
+  }
+
+  /* Empty State */
+  .calendar-empty-state {
+    @apply p-8 text-center text-gray-500 dark:text-gray-400;
+  }
+
+  .calendar-button .fi-btn-label {
+    @apply text-nowrap;
+  }
