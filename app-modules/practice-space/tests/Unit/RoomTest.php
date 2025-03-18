@@ -22,6 +22,7 @@ class RoomTest extends TestCase
             'capacity' => 5,
             'hourly_rate' => 20.00,
             'is_active' => true,
+            'timezone' => 'America/Los_Angeles',
         ]);
 
         $this->assertEquals('Test Room', $room->name);
@@ -29,6 +30,7 @@ class RoomTest extends TestCase
         $this->assertEquals(5, $room->capacity);
         $this->assertEquals(20.00, $room->hourly_rate);
         $this->assertTrue($room->is_active);
+        $this->assertEquals('America/Los_Angeles', $room->timezone);
     }
 
     /**
@@ -47,6 +49,7 @@ class RoomTest extends TestCase
             'photos',
             'specifications',
             'booking_policy',
+            'timezone',
         ];
 
         $room = new Room();
@@ -68,6 +71,7 @@ class RoomTest extends TestCase
             'size_sqft' => 'integer',
             'amenities' => 'array',
             'booking_policy' => 'CorvMC\PracticeSpace\ValueObjects\BookingPolicy',
+            'timezone' => 'string',
         ];
 
         $room = new Room();

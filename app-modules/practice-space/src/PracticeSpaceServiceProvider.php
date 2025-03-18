@@ -8,6 +8,7 @@ use CorvMC\PracticeSpace\Console\Commands\SendConfirmationReminders;
 use CorvMC\PracticeSpace\Console\Commands\ProcessExpiredConfirmations;
 use CorvMC\PracticeSpace\Console\Commands\RecalculateBookingPrices;
 use CorvMC\PracticeSpace\Livewire\RoomAvailabilityCalendar;
+use CorvMC\PracticeSpace\Providers\RecurringBookingServiceProvider;
 use Illuminate\Support\ServiceProvider;
 use Livewire\Livewire;
 use Laravel\Cashier\Events\WebhookReceived;
@@ -22,6 +23,7 @@ class PracticeSpaceServiceProvider extends ServiceProvider
     public function register(): void
     {
         // Register module-specific services
+        $this->app->register(RecurringBookingServiceProvider::class);
     }
 
     /**

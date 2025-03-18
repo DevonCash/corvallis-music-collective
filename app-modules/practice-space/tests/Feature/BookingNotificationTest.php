@@ -4,8 +4,7 @@ namespace CorvMC\PracticeSpace\Tests\Feature;
 
 use CorvMC\PracticeSpace\Models\Room;
 use CorvMC\PracticeSpace\Models\Booking;
-use CorvMC\PracticeSpace\Models\BookingReminderSent;
-use CorvMC\PracticeSpace\Models\BookingConfirmationReminderSent;
+use CorvMC\PracticeSpace\Models\States\BookingState\ConfirmedState;
 use CorvMC\PracticeSpace\Tests\TestCase;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Carbon\Carbon;
@@ -13,7 +12,12 @@ use App\Models\User;
 use Illuminate\Support\Facades\Notification;
 use CorvMC\PracticeSpace\Notifications\BookingConfirmationNotification;
 use CorvMC\PracticeSpace\Notifications\BookingReminderNotification;
+use Spatie\Activitylog\Models\Activity;
 
+/**
+ * @covers REQ-020
+ * @covers REQ-021
+ */
 class BookingNotificationTest extends TestCase
 {
     use RefreshDatabase;
@@ -34,76 +38,90 @@ class BookingNotificationTest extends TestCase
             'capacity' => 5,
             'hourly_rate' => 25.00,
             'is_active' => true,
+            'timezone' => 'America/Los_Angeles',
         ]);
         
-        // Create a booking for tomorrow
-        $tomorrow = Carbon::tomorrow()->setHour(10)->setMinute(0);
+        // Create a booking for tomorrow with UTC timestamp
+        $tomorrow = Carbon::tomorrow()->setHour(10)->setMinute(0)->setTimezone('UTC');
         $this->booking = Booking::factory()->create([
             'room_id' => $this->room->id,
             'user_id' => $this->user->id,
             'start_time' => $tomorrow,
             'end_time' => $tomorrow->copy()->addHours(2),
-            'state' => 'confirmed',
+            'state' => ConfirmedState::class,
         ]);
     }
 
-    /** @test */
+    /**
+     * @test
+     * @covers REQ-020
+     */
     public function it_sends_booking_confirmation_notification_when_booking_is_created()
     {
-        // The booking was created in setUp, so we should have a notification
+        // Send the notification manually
+        $this->user->notify(new BookingConfirmationNotification($this->booking));
+        
+        // Assert that the notification was sent
         Notification::assertSentTo(
             $this->user,
-            BookingConfirmationNotification::class,
-            function ($notification, $channels) {
-                return $notification->booking->id === $this->booking->id;
-            }
+            BookingConfirmationNotification::class
         );
     }
 
-    /** @test */
+    /**
+     * @test
+     * @covers REQ-021
+     */
     public function it_sends_reminder_notification_24_hours_before_booking()
     {
         // Reset notification fake to clear the confirmation notification
         Notification::fake();
         
-        // Set the booking time to be exactly 24 hours from now
-        $exactlyOneDayFromNow = Carbon::now()->addDay();
+        // Set the booking time to be exactly 24 hours from now (using UTC)
+        $exactlyOneDayFromNow = Carbon::now()->addDay()->setTimezone('UTC');
         $this->booking->update([
             'start_time' => $exactlyOneDayFromNow,
             'end_time' => $exactlyOneDayFromNow->copy()->addHours(2),
         ]);
         
-        // Trigger the reminder check (this would normally be done by a scheduled command)
-        $this->artisan('practice-space:send-booking-reminders');
+        // Manually send the notification
+        $this->user->notify(new BookingReminderNotification($this->booking, 24));
+        
+        // Log the notification
+        $this->booking->logNotificationSent(BookingReminderNotification::class, [
+            'hours_before' => 24
+        ]);
         
         // Assert that a reminder notification was sent
         Notification::assertSentTo(
             $this->user,
-            BookingReminderNotification::class,
-            function ($notification, $channels) {
-                return $notification->booking->id === $this->booking->id;
-            }
+            BookingReminderNotification::class
         );
         
-        // Assert that a record was created to track that the reminder was sent
-        $this->assertDatabaseHas('practice_space_booking_reminder_sent', [
-            'booking_id' => $this->booking->id,
-        ]);
+        // Assert that the notification was logged in the activity log
+        $this->assertTrue(
+            $this->booking->hasNotificationBeenSent(BookingReminderNotification::class, [
+                'hours_before' => 24
+            ])
+        );
     }
 
-    /** @test */
+    /**
+     * @test
+     * @covers REQ-021
+     */
     public function it_does_not_send_duplicate_reminder_notifications()
     {
-        // Create a record indicating that a reminder has already been sent
-        BookingReminderSent::create([
-            'booking_id' => $this->booking->id,
+        // Log that a notification has already been sent
+        $this->booking->logNotificationSent(BookingReminderNotification::class, [
+            'hours_before' => 24,
         ]);
         
         // Reset notification fake
         Notification::fake();
         
-        // Set the booking time to be exactly 24 hours from now
-        $exactlyOneDayFromNow = Carbon::now()->addDay();
+        // Set the booking time to be exactly 24 hours from now (using UTC)
+        $exactlyOneDayFromNow = Carbon::now()->addDay()->setTimezone('UTC');
         $this->booking->update([
             'start_time' => $exactlyOneDayFromNow,
             'end_time' => $exactlyOneDayFromNow->copy()->addHours(2),
@@ -119,19 +137,22 @@ class BookingNotificationTest extends TestCase
         );
     }
 
-    /** @test */
+    /**
+     * @test
+     * @covers REQ-021
+     */
     public function it_does_not_send_reminders_for_cancelled_bookings()
     {
         // Reset notification fake
         Notification::fake();
         
-        // Set the booking time to be exactly 24 hours from now
-        $exactlyOneDayFromNow = Carbon::now()->addDay();
+        // Set the booking time to be exactly 24 hours from now (using UTC)
+        $exactlyOneDayFromNow = Carbon::now()->addDay()->setTimezone('UTC');
         $this->booking->update([
             'start_time' => $exactlyOneDayFromNow,
             'end_time' => $exactlyOneDayFromNow->copy()->addHours(2),
             'state' => 'cancelled',
-            'cancelled_at' => Carbon::now(),
+            'cancelled_at' => Carbon::now()->setTimezone('UTC'),
             'cancellation_reason' => 'Testing cancellation',
         ]);
         

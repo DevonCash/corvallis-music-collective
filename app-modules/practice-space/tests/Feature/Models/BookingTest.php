@@ -35,9 +35,11 @@ class BookingTest extends TestCase
      */
     public function it_can_create_a_booking()
     {
-        $room = Room::factory()->create();
+        $room = Room::factory()->create([
+            'timezone' => 'UTC', // Explicitly set timezone to UTC
+        ]);
         
-        $startTime = Carbon::now()->addDay();
+        $startTime = Carbon::now()->addDay()->setTimezone('UTC'); // Explicitly use UTC
         $endTime = $startTime->copy()->addHours(2);
         
         $booking = Booking::factory()->create([
@@ -53,8 +55,20 @@ class BookingTest extends TestCase
             'room_id' => $room->id,
         ]);
         
-        $this->assertEquals($startTime->format('Y-m-d H:i'), $booking->start_time->format('Y-m-d H:i'));
-        $this->assertEquals($endTime->format('Y-m-d H:i'), $booking->end_time->format('Y-m-d H:i'));
+        // Use start_time_utc to compare with UTC time
+        $this->assertEquals(
+            $startTime->format('Y-m-d H:i'), 
+            $booking->start_time_utc->format('Y-m-d H:i'),
+            'Start time in UTC does not match the expected value'
+        );
+        
+        // Use end_time_utc to compare with UTC time
+        $this->assertEquals(
+            $endTime->format('Y-m-d H:i'), 
+            $booking->end_time_utc->format('Y-m-d H:i'),
+            'End time in UTC does not match the expected value'
+        );
+        
         $this->assertEquals('scheduled', $booking->getRawOriginal('state'));
     }
 
@@ -130,8 +144,11 @@ class BookingTest extends TestCase
             'state' => 'scheduled',
         ]);
         
+        // Ensure we're working with the model instance, not a string
+        $this->assertInstanceOf(ScheduledState::class, $booking->state);
+        
         // Transition from scheduled to confirmed
-        $booking->state->transitionTo(ConfirmedState::class);
+        $booking->state->transitionTo($booking, ConfirmedState::class);
         
         // Refresh the model from the database
         $booking->refresh();

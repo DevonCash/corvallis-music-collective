@@ -1,0 +1,334 @@
+metadata:
+  version: "1.0.0"
+  date: "2025-03-14"
+  status: "Draft"
+  module: "practice-space"
+
+overview: >
+  The Practice Space module provides a comprehensive system for managing rehearsal spaces, 
+  booking processes, and related resources for musicians and bands. This module enables 
+  members to discover, reserve, and utilize practice rooms while providing administrators 
+  with tools to manage spaces, monitor usage, and optimize resource allocation.
+
+terminology:
+  - acronym: "PS"
+    definition: "Practice Space"
+  - acronym: "UX"
+    definition: "User Experience"
+  - acronym: "SLA"
+    definition: "Service Level Agreement"
+  - acronym: "UI"
+    definition: "User Interface"
+
+interfaces:
+  - id: "INT-001"
+    description: "The system shall integrate with the Payments Module to handle booking fees and payment processing."
+    type: "mandatory"
+    source: "Practice Space"
+    destination: "Payments"
+    tests: ["TEST-003"]
+    tasks: ["TASK-003"]
+    
+  - id: "INT-002"
+    description: "The system shall link bookings to member profiles in the Member Directory Module."
+    type: "mandatory"
+    source: "Practice Space"
+    destination: "Member Directory"
+    
+  - id: "INT-003"
+    description: "The system shall allow band-level bookings through integration with the Band Profiles Module."
+    type: "mandatory"
+    source: "Practice Space"
+    destination: "Band Profiles"
+    
+  - id: "INT-004"
+    description: "The system shall coordinate rehearsal space for events through the Productions Module."
+    type: "mandatory"
+    source: "Practice Space"
+    destination: "Productions"
+    
+  - id: "INT-005"
+    description: "The system shall track equipment in practice spaces through the Gear Inventory Module."
+    type: "mandatory"
+    source: "Practice Space"
+    destination: "Gear Inventory"
+
+requirements:
+  # Room Management
+  - id: "REQ-001"
+    description: "The system shall maintain detailed profiles for each practice space including dimensions, capacity, and available equipment."
+    type: "mandatory"
+    priority: "High"
+    acceptance_criteria: "Room profiles contain complete information with at least 5 descriptive fields and support for multiple images."
+    tests: ["TEST-001"]
+    tasks: ["TASK-001"]
+    category: "Room Management"
+    
+  - id: "REQ-002"
+    description: "The system shall categorize rooms by size, purpose, or equipment with at least 3 distinct categories."
+    type: "mandatory"
+    priority: "Medium"
+    acceptance_criteria: "Rooms can be filtered by at least 3 different category types."
+    category: "Room Management"
+    
+  - id: "REQ-003"
+    description: "The system shall track equipment available in each room with quantity and status information."
+    type: "mandatory"
+    priority: "Medium"
+    acceptance_criteria: "Equipment inventory shows accurate counts and maintenance status for each item."
+    category: "Room Management"
+    
+  - id: "REQ-004"
+    description: "The system shall support scheduling and tracking of room maintenance with start/end times and status updates."
+    type: "mandatory"
+    priority: "Medium"
+    acceptance_criteria: "Maintenance events block room availability and generate notifications."
+    category: "Room Management"
+    
+  - id: "REQ-005"
+    description: "The system shall display room availability through a visual calendar with hourly resolution."
+    type: "mandatory"
+    priority: "High"
+    acceptance_criteria: "Calendar shows accurate availability for at least 30 days in advance."
+    category: "Room Management"
+    
+  - id: "REQ-006"
+    description: "The system may allow users to rate and provide feedback on rooms using a 1-5 star scale."
+    type: "optional"
+    priority: "Low"
+    acceptance_criteria: "Feedback is collected and displayed with room information."
+    category: "Room Management"
+    
+  # Booking System
+  - id: "REQ-007"
+    description: "The system shall allow users to reserve rooms for specific time slots with minimum duration of 30 minutes."
+    type: "mandatory"
+    priority: "High"
+    acceptance_criteria: "Users can successfully book available rooms with confirmation."
+    tests: ["TEST-002"]
+    tasks: ["TASK-002"]
+    category: "Booking System"
+    
+  - id: "REQ-008"
+    description: "The system shall support recurring bookings on daily, weekly, or monthly patterns."
+    type: "mandatory"
+    priority: "Medium"
+    acceptance_criteria: "Recurring bookings appear correctly on the calendar for at least 6 months."
+    category: "Booking System"
+    
+  - id: "REQ-009"
+    description: "The system shall enforce configurable booking policies including maximum advance booking days (7-90 days) and cancellation periods (1-48 hours)."
+    type: "mandatory"
+    priority: "High"
+    acceptance_criteria: "Policies are enforced consistently across all booking attempts."
+    tests: ["TEST-002"]
+    tasks: ["TASK-004"]
+    category: "Booking System"
+    
+  - id: "REQ-010"
+    description: "The system may implement a waitlist for popular time slots with automatic notification when slots become available."
+    type: "optional"
+    priority: "Low"
+    acceptance_criteria: "Users receive notifications within 5 minutes of cancellations."
+    category: "Booking System"
+    
+  - id: "REQ-011"
+    description: "The system shall send automated confirmation and reminder notifications 24 hours before bookings."
+    type: "mandatory"
+    priority: "Medium"
+    acceptance_criteria: "All notifications are delivered on schedule with accurate information."
+    category: "Booking System"
+    
+  - id: "REQ-012"
+    description: "The system may support digital check-in/check-out processes for room access."
+    type: "optional"
+    priority: "Low"
+    acceptance_criteria: "Check-in/out status is accurately recorded with timestamps."
+    category: "Booking System"
+    
+  - id: "REQ-013"
+    description: "The system shall provide tools for handling booking conflicts with clear resolution paths."
+    type: "mandatory"
+    priority: "Medium"
+    acceptance_criteria: "Conflicts are identified and resolved without double-bookings."
+    category: "Booking System"
+    
+  # Resource Optimization
+  - id: "REQ-014"
+    description: "The system shall track room usage metrics including occupancy rates and popular time slots."
+    type: "mandatory"
+    priority: "Medium"
+    acceptance_criteria: "Usage reports show accurate statistics with hourly, daily, and monthly breakdowns."
+    category: "Resource Optimization"
+    
+  - id: "REQ-015"
+    description: "The system should provide tools for future capacity planning based on historical usage data."
+    type: "recommended"
+    priority: "Low"
+    acceptance_criteria: "Capacity planning tools accurately predict demand within 15% margin."
+    category: "Resource Optimization"
+    
+  - id: "REQ-016"
+    description: "The system shall support prioritized room allocation based on configurable member criteria."
+    type: "mandatory"
+    priority: "Medium"
+    acceptance_criteria: "Priority allocation works correctly for at least 3 different member types."
+    category: "Resource Optimization"
+    
+  - id: "REQ-017"
+    description: "The system may implement time-based pricing with at least 3 rate tiers (peak, standard, off-peak)."
+    type: "optional"
+    priority: "Low"
+    acceptance_criteria: "Pricing tiers apply correctly based on time of day and day of week."
+    category: "Resource Optimization"
+    
+  # Member Experience
+  - id: "REQ-018"
+    description: "The system may suggest appropriate rooms based on member-specified requirements."
+    type: "optional"
+    priority: "Low"
+    acceptance_criteria: "Recommendations match stated requirements for at least 80% of test cases."
+    category: "Member Experience"
+    
+  - id: "REQ-019"
+    description: "The system shall allow members to save preferred practice spaces for quick booking."
+    type: "mandatory"
+    priority: "Low"
+    acceptance_criteria: "Saved preferences persist across sessions and expedite the booking process."
+    category: "Member Experience"
+    
+  - id: "REQ-020"
+    description: "The system shall maintain booking history with searchable records for at least 12 months."
+    type: "mandatory"
+    priority: "Medium"
+    acceptance_criteria: "Complete booking history is available with all relevant details."
+    category: "Member Experience"
+    
+  - id: "REQ-021"
+    description: "The system may allow equipment requests for booked sessions at least 24 hours in advance."
+    type: "optional"
+    priority: "Low"
+    acceptance_criteria: "Equipment requests are tracked and fulfilled for 95% of cases."
+    category: "Member Experience"
+    
+  - id: "REQ-022"
+    description: "The system shall provide a mobile-friendly interface that functions on screens 320px wide and larger."
+    type: "mandatory"
+    priority: "Medium"
+    acceptance_criteria: "All core functions work correctly on mobile devices with specified screen sizes."
+    category: "Member Experience"
+
+non_functional_requirements:
+  # Performance
+  - id: "NFR-001"
+    description: "The system shall support at least 100 concurrent users with response times under 2 seconds for 95% of requests."
+    type: "mandatory"
+    priority: "High"
+    acceptance_criteria: "Load testing confirms performance under specified conditions."
+    category: "Performance"
+    
+  - id: "NFR-002"
+    description: "The calendar view shall load within 3 seconds when displaying up to 20 rooms for a 30-day period."
+    type: "mandatory"
+    priority: "Medium"
+    acceptance_criteria: "Performance testing confirms load times under specified conditions."
+    category: "Performance"
+    
+  - id: "NFR-003"
+    description: "The system shall process booking requests within 5 seconds including payment verification."
+    type: "mandatory"
+    priority: "High"
+    acceptance_criteria: "Timing tests confirm processing speed for 99% of booking attempts."
+    category: "Performance"
+    
+  # Reliability
+  - id: "NFR-004"
+    description: "The system shall maintain 99.5% uptime during operating hours (8am-10pm local time)."
+    type: "mandatory"
+    priority: "High"
+    acceptance_criteria: "Monitoring confirms uptime meets or exceeds target."
+    category: "Reliability"
+    
+  - id: "NFR-005"
+    description: "The system shall perform automated data backups at least once per day with 30-day retention."
+    type: "mandatory"
+    priority: "Medium"
+    acceptance_criteria: "Backup logs confirm successful execution and retention."
+    category: "Reliability"
+    
+  - id: "NFR-006"
+    description: "The system shall implement conflict detection to prevent double-bookings with 100% accuracy."
+    type: "mandatory"
+    priority: "High"
+    acceptance_criteria: "Testing confirms no double-bookings can occur under any circumstances."
+    category: "Reliability"
+    related_requirements: ["REQ-007", "REQ-013"]
+    
+  - id: "NFR-007"
+    description: "The system shall enforce booking policies consistently across all interfaces and access methods."
+    type: "mandatory"
+    priority: "Medium"
+    acceptance_criteria: "Testing confirms consistent policy enforcement across web, mobile, and API interfaces."
+    category: "Reliability"
+    related_requirements: ["REQ-007", "REQ-009"]
+
+ui_components:
+  - id: "UI-005"
+    description: "Calendar view for room availability"
+    tests: ["TEST-004"]
+    tasks: ["TASK-002"]
+
+data_model:
+  entities:
+    - name: "Room"
+      attributes:
+        - "id: UUID (PK)"
+        - "name: String"
+        - "description: Text"
+        - "dimensions: String"
+        - "capacity: Integer"
+        - "category_id: UUID (FK)"
+        - "created_at: Timestamp"
+        - "updated_at: Timestamp"
+      
+    - name: "RoomCategory"
+      attributes:
+        - "id: UUID (PK)"
+        - "name: String"
+        - "description: Text"
+        - "booking_policy_id: UUID (FK)"
+        
+    - name: "Booking"
+      attributes:
+        - "id: UUID (PK)"
+        - "room_id: UUID (FK)"
+        - "user_id: UUID (FK)"
+        - "band_id: UUID (FK, nullable)"
+        - "start_time: Timestamp"
+        - "end_time: Timestamp"
+        - "status: Enum (confirmed, cancelled, completed)"
+        - "created_at: Timestamp"
+        - "updated_at: Timestamp"
+        
+    - name: "BookingPolicy"
+      attributes:
+        - "id: UUID (PK)"
+        - "name: String"
+        - "max_advance_days: Integer"
+        - "cancellation_hours: Integer"
+        - "min_duration_minutes: Integer"
+        
+    - name: "RoomEquipment"
+      attributes:
+        - "id: UUID (PK)"
+        - "room_id: UUID (FK)"
+        - "equipment_id: UUID (FK)"
+        - "quantity: Integer"
+        - "status: Enum (available, maintenance, unavailable)"
+        
+  relationships:
+    - "Room to RoomCategory: Many-to-one relationship (a room belongs to one category)"
+    - "RoomCategory to BookingPolicy: Many-to-one relationship (a category uses one policy)"
+    - "Booking to User: Many-to-one relationship (a booking is made by one user)"
+    - "Booking to Band: Many-to-one optional relationship (a booking may be for one band)"
+    - "RoomEquipment to Equipment: Many-to-one relationship (equipment item references one equipment type)" 

@@ -43,12 +43,15 @@ class SendBookingReminders extends Command
         // 2. Start in approximately $hoursBeforeBooking hours
         // 3. Haven't had a reminder sent for this time window yet
         
-        $targetStartTime = Carbon::now()->addHours($hoursBeforeBooking);
+        // We need to calculate the target time in UTC since the start_time is stored in UTC
+        $targetStartTime = now()->addHours((int)$hoursBeforeBooking)->setTimezone('UTC');
         $startTimeMin = $targetStartTime->copy()->subMinutes(30);
         $startTimeMax = $targetStartTime->copy()->addMinutes(30);
         
+        $this->info("Looking for bookings between {$startTimeMin->toDateTimeString()} and {$startTimeMax->toDateTimeString()} UTC");
+        
         $bookings = Booking::query()
-            ->where('state', ConfirmedState::$name)
+            ->where('state', ConfirmedState::class)
             ->whereBetween('start_time', [$startTimeMin, $startTimeMax])
             ->get()
             ->filter(function ($booking) use ($hoursBeforeBooking) {
@@ -66,6 +69,7 @@ class SendBookingReminders extends Command
             foreach ($bookings as $booking) {
                 $user = User::find($booking->user_id);
                 $this->info("Would send {$hoursBeforeBooking}-hour reminder to {$user->email} for booking #{$booking->id}");
+                $this->info("  Booking start: {$booking->start_time} UTC / {$booking->start_time->copy()->setTimezone($booking->room->timezone)} Room time");
             }
             
             return;

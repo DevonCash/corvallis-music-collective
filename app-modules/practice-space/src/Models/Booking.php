@@ -18,14 +18,58 @@ use Spatie\Activitylog\LogOptions;
 use Spatie\Activitylog\Traits\LogsActivity;
 use CorvMC\Finance\Concerns\HasPayments;
 use CorvMC\PracticeSpace\Traits\LogsNotifications;
+use CorvMC\PracticeSpace\Traits\HasRecurringBookings;
 use Illuminate\Support\Facades\Log;
+use CorvMC\PracticeSpace\ValueObjects\BookingPolicy;
 
 class Booking extends Model
 {
     // Temporarily commented out HasPayments for testing
-    use LogsActivity, HasFactory, SoftDeletes, HasPayments, LogsNotifications;
+    use LogsActivity, HasFactory, SoftDeletes, HasPayments, LogsNotifications, HasRecurringBookings;
 
     protected $table = 'practice_space_bookings';
+
+    /**
+     * The attributes that should be cast.
+     *
+     * @var array
+     */
+    protected $casts = [
+        'start_time' => 'datetime',
+        'end_time' => 'datetime',
+        'is_recurring' => 'boolean',
+        'is_recurring_parent' => 'boolean',
+        'check_in_time' => 'datetime',
+        'check_out_time' => 'datetime',
+        'total_price' => 'decimal:2',
+        'state' => State::class.':'.BookingState::class,
+        'confirmation_requested_at' => 'datetime',
+        'confirmation_deadline' => 'datetime',
+        'confirmed_at' => 'datetime',
+        'cancelled_at' => 'datetime',
+        'payment_completed' => 'boolean',
+        'recurrence_end_date' => 'datetime',
+    ];
+    
+    /**
+     * The attributes that should be treated as dates.
+     * 
+     * @var array
+     */
+    protected $dates = [
+        'start_time',
+        'end_time',
+        'check_in_time',
+        'check_out_time',
+        'confirmation_requested_at',
+        'confirmation_deadline',
+        'confirmed_at',
+        'cancelled_at',
+        'recurrence_end_date',
+        'created_at',
+        'updated_at',
+        'deleted_at',
+    ];
 
     protected $fillable = [
         'room_id',
@@ -35,7 +79,11 @@ class Booking extends Model
         'status',
         'notes',
         'is_recurring',
+        'is_recurring_parent',
         'recurring_pattern',
+        'rrule_string',
+        'recurrence_end_date',
+        'recurring_booking_id',
         'check_in_time',
         'check_out_time',
         'total_price',
@@ -48,21 +96,6 @@ class Booking extends Model
         'cancellation_reason',
         'no_show_notes',
         'payment_completed',
-    ];
-
-    protected $casts = [
-        'start_time' => 'datetime',
-        'end_time' => 'datetime',
-        'is_recurring' => 'boolean',
-        'check_in_time' => 'datetime',
-        'check_out_time' => 'datetime',
-        'total_price' => 'decimal:2',
-        'state' => State::class.':'.BookingState::class,
-        'confirmation_requested_at' => 'datetime',
-        'confirmation_deadline' => 'datetime',
-        'confirmed_at' => 'datetime',
-        'cancelled_at' => 'datetime',
-        'payment_completed' => 'boolean',
     ];
 
     /**
@@ -123,6 +156,7 @@ class Booking extends Model
     {
         return BookingFactory::new();
     }
+
 
     /**
      * Get the activity log options for the model.
@@ -426,19 +460,22 @@ class Booking extends Model
             return $this;
         }
         
+        // Work with the start_time in UTC for consistency
+        $startTimeUtc = $this->start_time_utc;
+        
         // Calculate when confirmation should be requested
-        $confirmationWindowStart = $this->start_time->copy()->subDays($policy->confirmationWindowDays);
+        $confirmationWindowStart = $startTimeUtc->copy()->subDays($policy->confirmationWindowDays);
         
         // Only set if it's in the future
         if ($confirmationWindowStart->isFuture()) {
             $this->confirmation_requested_at = $confirmationWindowStart;
         } else {
             // If the window has already started, set it to now
-            $this->confirmation_requested_at = now();
+            $this->confirmation_requested_at = now()->setTimezone('UTC');
         }
         
         // Calculate the confirmation deadline
-        $this->confirmation_deadline = $this->start_time->copy()->subDays($policy->autoConfirmationDeadlineDays);
+        $this->confirmation_deadline = $startTimeUtc->copy()->subDays($policy->autoConfirmationDeadlineDays);
         
         return $this;
     }
@@ -452,8 +489,10 @@ class Booking extends Model
             return false;
         }
         
-        $now = now();
-        return $now->isAfter($this->confirmation_requested_at) && $now->isBefore($this->confirmation_deadline);
+        // Use UTC for consistent datetime comparisons
+        $now = now()->setTimezone('UTC');
+        
+        return $now->gte($this->confirmation_requested_at) && $now->lte($this->confirmation_deadline);
     }
     
     /**
@@ -465,7 +504,9 @@ class Booking extends Model
             return false;
         }
         
-        return now()->isAfter($this->confirmation_deadline);
+        // Use UTC for consistent datetime comparisons
+        $now = now()->setTimezone('UTC');
+        return $now->gt($this->confirmation_deadline);
     }
     
     /**
@@ -478,10 +519,11 @@ class Booking extends Model
         }
         
         // Can be marked as no-show 15 minutes after the booking starts
-        $noShowTime = $this->start_time->copy()->addMinutes(15);
+        // We work with UTC values for consistent datetime comparisons
+        $noShowTime = $this->start_time_utc->copy()->addMinutes(15);
+        $now = now()->setTimezone('UTC');
         
-        // For testing purposes, use Carbon::now() instead of now() to allow mocking
-        return Carbon::now()->isAfter($noShowTime) && $this->state instanceof BookingState\ConfirmedState;
+        return $now->gt($noShowTime) && $this->state instanceof BookingState\ConfirmedState;
     }
     
     /**
@@ -585,5 +627,198 @@ class Booking extends Model
         $this->save();
         
         return $this;
+    }
+
+    /**
+     * Get the start time with the room's timezone applied.
+     *
+     * @param string $value
+     * @return \Carbon\Carbon
+     */
+    public function getStartTimeAttribute($value)
+    {
+        if (!$value) return null;
+        
+        // Get the base Carbon instance from UTC storage
+        $date = Carbon::parse($value);
+        
+        // Get the room's timezone, fallback to app timezone if not found
+        $timezone = optional($this->room)->timezone ?? config('app.timezone');
+        
+        // Convert from UTC to room's timezone
+        return $date->setTimezone($timezone);
+    }
+    
+    /**
+     * Get the end time with the room's timezone applied.
+     *
+     * @param string $value
+     * @return \Carbon\Carbon
+     */
+    public function getEndTimeAttribute($value)
+    {
+        if (!$value) return null;
+        
+        // Get the base Carbon instance from UTC storage
+        $date = Carbon::parse($value);
+        
+        // Get the room's timezone, fallback to app timezone if not found
+        $timezone = optional($this->room)->timezone ?? config('app.timezone');
+        
+        // Convert from UTC to room's timezone
+        return $date->setTimezone($timezone);
+    }
+    
+    /**
+     * Get the start time in UTC.
+     *
+     * @return \Carbon\Carbon|null
+     */
+    public function getStartTimeUtcAttribute()
+    {
+        if (!$this->attributes['start_time']) return null;
+        return Carbon::parse($this->attributes['start_time'])->setTimezone('UTC');
+    }
+    
+    /**
+     * Get the end time in UTC.
+     *
+     * @return \Carbon\Carbon|null
+     */
+    public function getEndTimeUtcAttribute()
+    {
+        if (!$this->attributes['end_time']) return null;
+        return Carbon::parse($this->attributes['end_time'])->setTimezone('UTC');
+    }
+    
+    /**
+     * Set the start_time attribute, converting to UTC for storage.
+     *
+     * @param mixed $value
+     * @return void
+     */
+    public function setStartTimeAttribute($value)
+    {
+        if (!$value) {
+            $this->attributes['start_time'] = null;
+            return;
+        }
+
+        // If value is already a Carbon instance
+        if ($value instanceof Carbon) {
+            // Store in UTC
+            $this->attributes['start_time'] = $value->copy()->setTimezone('UTC');
+            return;
+        }
+
+        // If it's a string, parse it in the room's timezone then convert to UTC
+        $timezone = optional($this->room)->timezone ?? config('app.timezone');
+        $date = Carbon::parse($value, $timezone);
+        $this->attributes['start_time'] = $date->setTimezone('UTC');
+    }
+    
+    /**
+     * Set the end_time attribute, converting to UTC for storage.
+     *
+     * @param mixed $value
+     * @return void
+     */
+    public function setEndTimeAttribute($value)
+    {
+        if (!$value) {
+            $this->attributes['end_time'] = null;
+            return;
+        }
+
+        // If value is already a Carbon instance
+        if ($value instanceof Carbon) {
+            // Store in UTC
+            $this->attributes['end_time'] = $value->copy()->setTimezone('UTC');
+            return;
+        }
+
+        // If it's a string, parse it in the room's timezone then convert to UTC
+        $timezone = optional($this->room)->timezone ?? config('app.timezone');
+        $date = Carbon::parse($value, $timezone);
+        $this->attributes['end_time'] = $date->setTimezone('UTC');
+    }
+    
+    /**
+     * Get the room timezone or fall back to app timezone
+     *
+     * @return string
+     */
+    public function getRoomTimezone(): string
+    {
+        return optional($this->room)->timezone ?? config('app.timezone');
+    }
+    
+    /**
+     * Check if this booking overlaps with a given time range.
+     * All times are assumed to be in the room's timezone.
+     *
+     * @param \Carbon\Carbon $start Start time in room's timezone
+     * @param \Carbon\Carbon $end End time in room's timezone
+     * @return bool
+     */
+    public function overlapsWithTimeRange(Carbon $start, Carbon $end): bool
+    {
+        // Convert to UTC for comparison
+        $startUtc = $start->copy()->setTimezone('UTC');
+        $endUtc = $end->copy()->setTimezone('UTC');
+        
+        // Compare with booking times in UTC
+        return $this->start_time_utc->lte($endUtc) && $this->end_time_utc->gte($startUtc);
+    }
+    
+    /**
+     * Check if this booking falls on a specific date.
+     * The date is assumed to be in the room's timezone.
+     *
+     * @param \Carbon\Carbon|string $date Date in room's timezone (can be string like '2023-04-15')
+     * @return bool
+     */
+    public function isOnDate($date): bool
+    {
+        // Parse the date in room's timezone
+        $timezone = $this->getRoomTimezone();
+        if (!$date instanceof Carbon) {
+            $date = Carbon::parse($date, $timezone);
+        }
+        
+        // Create start and end of day in room's timezone
+        $startOfDay = $date->copy()->startOfDay();
+        $endOfDay = $date->copy()->endOfDay();
+        
+        // Check if booking overlaps with this day
+        return $this->overlapsWithTimeRange($startOfDay, $endOfDay);
+    }
+    
+    /**
+     * Format the booking times in the room's timezone with a given format.
+     *
+     * @param string $format The date format
+     * @return array
+     */
+    public function formatTimesInRoomTimezone(string $format = 'Y-m-d H:i:s'): array
+    {
+        return [
+            'start' => $this->start_time->format($format),
+            'end' => $this->end_time->format($format),
+        ];
+    }
+    
+    /**
+     * Format the booking times in UTC with a given format.
+     *
+     * @param string $format The date format
+     * @return array
+     */
+    public function formatTimesInUtc(string $format = 'Y-m-d H:i:s'): array
+    {
+        return [
+            'start' => $this->start_time_utc->format($format),
+            'end' => $this->end_time_utc->format($format),
+        ];
     }
 } 

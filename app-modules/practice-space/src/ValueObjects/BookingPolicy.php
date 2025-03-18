@@ -129,7 +129,7 @@ class BookingPolicy implements Arrayable, JsonSerializable, CastsAttributes
      */
     public function getOpeningTime(string $date, ?string $timezone = null): Carbon
     {
-        $dateTime = Carbon::parse($date . ' ' . $this->openingTime . ' ' . $timezone ?? '');
+        $dateTime = Carbon::parse($date . ' ' . $this->openingTime, $timezone);
         return $dateTime;
     }
 
@@ -142,7 +142,7 @@ class BookingPolicy implements Arrayable, JsonSerializable, CastsAttributes
      */
     public function getClosingTime(string $date, ?string $timezone = null): Carbon
     {
-        $dateTime = Carbon::parse($date . ' ' . $this->closingTime . ' ' . $timezone ?? '');
+        $dateTime = Carbon::parse($date . ' ' . $this->closingTime, $timezone);
         return $dateTime;
     }
 

@@ -124,7 +124,7 @@ abstract class TestCase extends BaseTestCase
     protected function getResourceIndexUrl(string $resource): string
     {
         return Filament::getPanel($this->getPanel())
-            ->getUrl($resource::getSlug());
+            ->getUrl(null, $resource::getSlug());
     }
 
     /**
@@ -135,7 +135,7 @@ abstract class TestCase extends BaseTestCase
     protected function getResourceCreateUrl(string $resource): string
     {
         return Filament::getPanel($this->getPanel())
-            ->getUrl($resource::getSlug() . '/create');
+            ->getUrl(null, $resource::getSlug() . '/create');
     }
 
     /**
@@ -147,7 +147,7 @@ abstract class TestCase extends BaseTestCase
     protected function getResourceEditUrl(string $resource, Model $record): string
     {
         return Filament::getPanel($this->getPanel())
-            ->getUrl($resource::getSlug() . '/' . $record->getKey() . '/edit');
+            ->getUrl(null, $resource::getSlug() . '/' . $record->getKey() . '/edit');
     }
 
     /**
@@ -159,7 +159,7 @@ abstract class TestCase extends BaseTestCase
     protected function getResourceViewUrl(string $resource, Model $record): string
     {
         return Filament::getPanel($this->getPanel())
-            ->getUrl($resource::getSlug() . '/' . $record->getKey());
+            ->getUrl(null, $resource::getSlug() . '/' . $record->getKey());
     }
 
     /**

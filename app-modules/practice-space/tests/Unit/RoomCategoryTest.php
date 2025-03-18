@@ -37,6 +37,7 @@ class RoomCategoryTest extends TestCase
             'name',
             'description',
             'is_active',
+            'default_booking_policy',
         ];
 
         $category = new RoomCategory();

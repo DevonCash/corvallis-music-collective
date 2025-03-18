@@ -16,15 +16,15 @@ class SpecTestCoverageCommand extends Command
      * @var string
      */
     protected $signature = 'spec:test-coverage 
-                            {module? : The specific module to analyze (optional)}
+                            {path? : Path to analyze (defaults to current directory)}
                             {--output=table : Output format (table, json, csv)}
                             {--uncovered : Show only uncovered requirements}
                             {--interactive : Run in interactive mode with prompts}
                             {--min-coverage=0 : Minimum required coverage percentage}
-                            {--dir= : Filter by specific directory within the module}
                             {--spec-file= : Filter by specific specification file}
                             {--type= : Filter by requirement type (mandatory, recommended, optional)}
-                            {--format= : Filter by specification format (yaml, markdown)}';
+                            {--min-priority= : Filter by minimum priority (High, Medium, Low)}
+                            {--depth=5 : Maximum directory depth for finding spec and test files}';
 
     /**
      * The console command description.
@@ -38,74 +38,58 @@ class SpecTestCoverageCommand extends Command
      */
     public function handle()
     {
-        $module = $this->argument('module');
+        $path = $this->argument('path');
         $outputFormat = $this->option('output');
         $onlyUncovered = $this->option('uncovered');
         $interactive = $this->option('interactive');
         $minCoverage = (float) $this->option('min-coverage');
-        $dirFilter = $this->option('dir');
         $specFileFilter = $this->option('spec-file');
         $typeFilter = $this->option('type');
-        $formatFilter = $this->option('format');
+        $minPriorityFilter = $this->option('min-priority');
+        $depth = (int) $this->option('depth');
 
+        // If no path provided, use current directory
+        if (!$path) {
+            $path = getcwd();
+        } elseif (!str_starts_with($path, '/')) {
+            // If relative path, make it absolute from current directory
+            $path = getcwd() . '/' . $path;
+        }
+
+        // Find all specification files
+        $allSpecFiles = $this->findAllSpecFiles($path, $depth);
+        
+        if (empty($allSpecFiles)) {
+            $this->error("No specification files found in {$path}");
+            return 1;
+        }
+        
         // Interactive mode
+        $selectedSpecFiles = $allSpecFiles;
         if ($interactive) {
-            $modulePaths = $this->getAvailableModules();
-            if (empty($modulePaths)) {
-                $this->error('No modules found to analyze.');
-                return 1;
+            $specsMap = [];
+            foreach ($allSpecFiles as $index => $specFile) {
+                $relativePath = $this->getRelativePath($specFile['path'], $path);
+                $specsMap[$index] = $relativePath;
             }
             
-            $moduleChoices = array_map('basename', $modulePaths);
-            $moduleChoices[] = 'all';
+            // Allow selection of spec files
+            $this->info("Found " . count($specsMap) . " specification files.");
             
-            $selectedModule = $this->choice(
-                'Which module would you like to analyze?',
-                $moduleChoices,
-                'all'
-            );
-            
-            if ($selectedModule !== 'all') {
-                $module = $selectedModule;
-                
-                // If a specific module is selected, offer directory filtering
-                $modulePath = base_path("app-modules/{$module}");
-                if (File::exists($modulePath)) {
-                    $dirs = $this->getSubdirectories($modulePath);
-                    if (!empty($dirs)) {
-                        $dirChoices = array_map(function($dir) use ($modulePath) {
-                            return str_replace($modulePath . '/', '', $dir);
-                        }, $dirs);
-                        array_unshift($dirChoices, 'all');
-                        
-                        $selectedDir = $this->choice(
-                            'Filter by directory?',
-                            $dirChoices,
-                            'all'
-                        );
-                        
-                        if ($selectedDir !== 'all') {
-                            $dirFilter = $selectedDir;
-                        }
-                    }
+            // If more than 10 files, ask if user wants to select specific ones
+            if (count($specsMap) > 1) {
+                if ($this->confirm('Would you like to select specific specification files to analyze?', false)) {
+                    $selectedIndices = $this->choice(
+                        'Select specification files to analyze (comma-separated list):',
+                        $specsMap,
+                        null,
+                        null,
+                        true
+                    );
                     
-                    // Offer spec file filtering
-                    $specFiles = $this->findSpecFiles($modulePath);
-                    if (count($specFiles) > 1) {
-                        $specChoices = array_map(function($spec) {
-                            return basename($spec['path']);
-                        }, $specFiles);
-                        array_unshift($specChoices, 'all');
-                        
-                        $selectedSpec = $this->choice(
-                            'Filter by specification file?',
-                            $specChoices,
-                            'all'
-                        );
-                        
-                        if ($selectedSpec !== 'all') {
-                            $specFileFilter = $selectedSpec;
-                        }
+                    $selectedSpecFiles = [];
+                    foreach ($selectedIndices as $index) {
+                        $selectedSpecFiles[] = $allSpecFiles[$index];
                     }
                 }
             }
@@ -122,16 +106,16 @@ class SpecTestCoverageCommand extends Command
                 $typeFilter = $selectedType;
             }
             
-            // Offer format filtering
-            $formatChoices = ['all', 'yaml', 'markdown'];
-            $selectedFormat = $this->choice(
-                'Filter by specification format?',
-                $formatChoices,
+            // Offer priority filtering
+            $priorityChoices = ['all', 'High', 'Medium', 'Low'];
+            $selectedPriority = $this->choice(
+                'Filter by minimum priority?',
+                $priorityChoices,
                 'all'
             );
             
-            if ($selectedFormat !== 'all') {
-                $formatFilter = $selectedFormat;
+            if ($selectedPriority !== 'all') {
+                $minPriorityFilter = $selectedPriority;
             }
             
             $outputFormat = $this->choice(
@@ -142,68 +126,97 @@ class SpecTestCoverageCommand extends Command
             
             $onlyUncovered = $this->confirm('Show only uncovered requirements?', false);
         }
-
-        // Determine which modules to analyze
-        $modulePaths = $this->getModulePaths($module);
         
-        if (empty($modulePaths)) {
-            $this->error('No modules found to analyze.');
+        // Filter by specific spec file if requested
+        if ($specFileFilter) {
+            $selectedSpecFiles = array_filter($selectedSpecFiles, function($spec) use ($specFileFilter) {
+                return basename($spec['path']) === $specFileFilter;
+            });
+        }
+        
+        if (empty($selectedSpecFiles)) {
+            $this->error('No specification files match the given filters.');
             return 1;
         }
 
         $results = [];
         $totalRequirements = 0;
         $totalCovered = 0;
-
+        
         $this->newLine();
         $this->components->info('Starting specification analysis');
         $this->newLine();
         
-        $bar = $this->output->createProgressBar(count($modulePaths));
+        $bar = $this->output->createProgressBar(count($selectedSpecFiles));
         $bar->start();
-
-        foreach ($modulePaths as $modulePath) {
-            $moduleName = basename($modulePath);
+        
+        // Group spec files by directory for cleaner output
+        $specsByDir = [];
+        foreach ($selectedSpecFiles as $spec) {
+            $dir = dirname($spec['path']);
+            $dirName = basename($dir);
             
-            // Parse specifications
-            $specFiles = $this->findSpecFiles($modulePath);
-            
-            // Apply spec file filter if specified
-            if ($specFileFilter) {
-                $specFiles = array_filter($specFiles, function($spec) use ($specFileFilter) {
-                    return basename($spec['path']) === $specFileFilter;
-                });
+            if (!isset($specsByDir[$dirName])) {
+                $specsByDir[$dirName] = [
+                    'specs' => [],
+                    'path' => $dir
+                ];
             }
             
-            $requirements = $this->parseSpecifications($specFiles);
+            $specsByDir[$dirName]['specs'][] = $spec;
+        }
+        
+        // Process each directory's spec files
+        foreach ($specsByDir as $dirName => $dirData) {
+            $specs = $dirData['specs'];
+            $dirPath = $dirData['path'];
             
-            // Find test files
-            $testFiles = $this->findTestFiles($modulePath, $dirFilter);
+            // Parse specifications
+            $requirements = $this->parseSpecifications($specs);
+            
+            // Find test files in the same directory and parent
+            $testFiles = $this->findAllTestFiles($dirPath, $depth);
             $testCoverage = $this->parseTestCoverage($testFiles);
             
             // Compare requirements with test coverage
-            $moduleResults = $this->compareRequirementsWithCoverage($requirements, $testCoverage);
+            $dirResults = $this->compareRequirementsWithCoverage($requirements, $testCoverage);
             
             // Apply filters
             if ($typeFilter) {
-                $moduleResults = array_filter($moduleResults, function($item) use ($typeFilter) {
+                $dirResults = array_filter($dirResults, function($item) use ($typeFilter) {
                     return $item['type'] === $typeFilter;
                 });
             }
             
-            if ($formatFilter) {
-                $moduleResults = array_filter($moduleResults, function($item) use ($formatFilter) {
-                    return $item['format'] === $formatFilter;
+            // Add priority filter
+            if ($minPriorityFilter) {
+                $priorityRanking = [
+                    'High' => 3,
+                    'Medium' => 2,
+                    'Low' => 1
+                ];
+                
+                $minPriorityRank = $priorityRanking[$minPriorityFilter] ?? 1;
+                
+                $dirResults = array_filter($dirResults, function($item) use ($priorityRanking, $minPriorityRank) {
+                    // If no priority is set, default to Low
+                    $itemPriority = isset($item['priority']) ? $item['priority'] : 'Low';
+                    $itemPriorityRank = $priorityRanking[$itemPriority] ?? 1;
+                    
+                    return $itemPriorityRank >= $minPriorityRank;
                 });
             }
             
-            $moduleTotal = count($moduleResults);
-            $moduleCovered = count(array_filter($moduleResults, fn($item) => $item['covered']));
+            $dirTotal = count($dirResults);
+            $dirCovered = count(array_filter($dirResults, fn($item) => $item['covered']));
             
-            $totalRequirements += $moduleTotal;
-            $totalCovered += $moduleCovered;
+            $totalRequirements += $dirTotal;
+            $totalCovered += $dirCovered;
             
-            $results[$moduleName] = $moduleResults;
+            if (!empty($dirResults)) {
+                $results[$dirName] = $dirResults;
+            }
+            
             $bar->advance();
         }
         
@@ -228,10 +241,6 @@ class SpecTestCoverageCommand extends Command
         ];
         
         // Add filter information to summary
-        if ($dirFilter) {
-            $summaryItems[] = "Directory Filter: {$dirFilter}";
-        }
-        
         if ($specFileFilter) {
             $summaryItems[] = "Spec File Filter: {$specFileFilter}";
         }
@@ -240,8 +249,8 @@ class SpecTestCoverageCommand extends Command
             $summaryItems[] = "Type Filter: {$typeFilter}";
         }
         
-        if ($formatFilter) {
-            $summaryItems[] = "Format Filter: {$formatFilter}";
+        if ($minPriorityFilter) {
+            $summaryItems[] = "Minimum Priority Filter: {$minPriorityFilter}";
         }
         
         $this->components->bulletList($summaryItems);
@@ -249,12 +258,10 @@ class SpecTestCoverageCommand extends Command
         // Check against minimum coverage requirement
         if ($minCoverage > 0) {
             if ($coveragePercentage < $minCoverage) {
-                $this->newLine();
-                $this->components->error("Coverage is below the minimum required threshold of {$minCoverage}%");
+                $this->error("Coverage requirement not met: {$coveragePercentage}% < {$minCoverage}%");
                 return 1;
             } else {
-                $this->newLine();
-                $this->components->info("Coverage meets or exceeds the minimum threshold of {$minCoverage}%");
+                $this->info("Coverage requirement met: {$coveragePercentage}% >= {$minCoverage}%");
             }
         }
         
@@ -262,80 +269,93 @@ class SpecTestCoverageCommand extends Command
     }
     
     /**
-     * Get the paths of modules to analyze.
+     * Get the relative path from a base path.
      */
-    private function getModulePaths(?string $specificModule): array
+    private function getRelativePath(string $path, string $basePath): string
     {
-        $basePath = base_path('app-modules');
+        // Ensure paths are normalized
+        $path = realpath($path);
+        $basePath = realpath($basePath);
         
-        if (!File::exists($basePath)) {
-            return [];
+        if (str_starts_with($path, $basePath)) {
+            $relativePath = substr($path, strlen($basePath));
+            return ltrim($relativePath, '/');
         }
         
-        if ($specificModule) {
-            $modulePath = "{$basePath}/{$specificModule}";
-            return File::exists($modulePath) ? [$modulePath] : [];
-        }
-        
-        return collect(File::directories($basePath))
-            ->filter(function ($path) {
-                return File::exists("{$path}/tests") || 
-                       File::exists("{$path}/" . basename($path) . ".spec.md") ||
-                       File::exists("{$path}/" . basename($path) . ".spec.yaml") ||
-                       File::exists("{$path}/" . basename($path) . ".spec.yml");
-            })
-            ->toArray();
+        return $path;
     }
     
     /**
-     * Find specification files in the given module path.
+     * Find all specification files in the given path and subdirectories.
      */
-    private function findSpecFiles(string $modulePath): array
+    private function findAllSpecFiles(string $path, int $depth = 5): array
     {
-        $moduleName = basename($modulePath);
         $specFiles = [];
         
-        // Check for module-name.spec.yaml/yml pattern first (prioritize YAML)
-        $yamlSpecFile = "{$modulePath}/{$moduleName}.spec.yaml";
-        $ymlSpecFile = "{$modulePath}/{$moduleName}.spec.yml";
-        $mdSpecFile = "{$modulePath}/{$moduleName}.spec.md";
-        
-        if (File::exists($yamlSpecFile)) {
-            $specFiles[] = ['path' => $yamlSpecFile, 'type' => 'yaml'];
-            // If we find a YAML file, we'll use that instead of the Markdown file
-            return $specFiles;
-        } elseif (File::exists($ymlSpecFile)) {
-            $specFiles[] = ['path' => $ymlSpecFile, 'type' => 'yaml'];
-            // If we find a YAML file, we'll use that instead of the Markdown file
-            return $specFiles;
-        } elseif (File::exists($mdSpecFile)) {
-            $specFiles[] = ['path' => $mdSpecFile, 'type' => 'markdown'];
-        }
-        
-        // Check for any .spec.* files in the module directory
-        $finder = new Finder();
-        $finder->files()->name('*.spec.yaml')->name('*.spec.yml')->name('*.spec.md')->in($modulePath)->depth('< 2');
-        
-        foreach ($finder as $file) {
-            $path = $file->getRealPath();
-            $type = $this->getSpecFileType($path);
+        try {
+            $finder = new Finder();
+            $finder->files()
+                ->name('*.spec.yaml')
+                ->name('*.spec.yml')
+                ->in($path)
+                ->depth('< ' . $depth);
             
-            $fileInfo = ['path' => $path, 'type' => $type];
-            if (!in_array($fileInfo, $specFiles)) {
-                $specFiles[] = $fileInfo;
+            foreach ($finder as $file) {
+                $specFiles[] = [
+                    'path' => $file->getRealPath(),
+                    'type' => 'yaml'
+                ];
             }
+        } catch (\Exception $e) {
+            // If the path doesn't exist or isn't readable, just return an empty array
+            $this->warn("Error scanning {$path} for spec files: " . $e->getMessage());
         }
         
         return $specFiles;
     }
     
     /**
-     * Determine the type of specification file.
+     * Find all test files in the given path and subdirectories.
      */
-    private function getSpecFileType(string $path): string
+    private function findAllTestFiles(string $path, int $depth = 5): array
     {
-        $extension = pathinfo($path, PATHINFO_EXTENSION);
-        return in_array($extension, ['yaml', 'yml']) ? 'yaml' : 'markdown';
+        $testFiles = [];
+        
+        try {
+            // First look in the path itself and its subdirectories
+            $finder = new Finder();
+            $finder->files()
+                ->name('*Test.php')
+                ->in($path)
+                ->depth('< ' . $depth);
+                
+            foreach ($finder as $file) {
+                $testFiles[] = $file->getRealPath();
+            }
+            
+            // If a tests directory exists at the same level as the spec directory, look there too
+            $testsDir = dirname($path) . '/tests';
+            if (is_dir($testsDir) && $testsDir !== $path) {
+                try {
+                    $testsFinder = new Finder();
+                    $testsFinder->files()
+                        ->name('*Test.php')
+                        ->in($testsDir)
+                        ->depth('< ' . $depth);
+                        
+                    foreach ($testsFinder as $file) {
+                        $testFiles[] = $file->getRealPath();
+                    }
+                } catch (\Exception $e) {
+                    // Ignore errors for this directory
+                }
+            }
+        } catch (\Exception $e) {
+            // If the path doesn't exist or isn't readable, just return an empty array
+            $this->warn("Error scanning for test files: " . $e->getMessage());
+        }
+        
+        return $testFiles;
     }
     
     /**
@@ -347,13 +367,7 @@ class SpecTestCoverageCommand extends Command
         
         foreach ($specFiles as $specFile) {
             $path = $specFile['path'];
-            $type = $specFile['type'];
-            
-            if ($type === 'yaml') {
-                $requirements = array_merge($requirements, $this->parseYamlSpecification($path));
-            } else {
-                $requirements = array_merge($requirements, $this->parseMarkdownSpecification($path));
-            }
+            $requirements = array_merge($requirements, $this->parseYamlSpecification($path));
         }
         
         return $requirements;
@@ -433,216 +447,6 @@ class SpecTestCoverageCommand extends Command
     }
     
     /**
-     * Parse Markdown specification file.
-     */
-    private function parseMarkdownSpecification(string $path): array
-    {
-        $requirements = [];
-        $content = File::get($path);
-        $lines = explode("\n", $content);
-        
-        // First pass: find all requirement definitions
-        foreach ($lines as $lineNum => $line) {
-            // Match requirement IDs in the format REQ-XXX
-            // This pattern matches both formats:
-            // - **REQ-001**: The system shall...
-            // - REQ-001: The system shall...
-            if (preg_match('/- (?:\*\*)?(REQ-\d+)(?:\*\*)?:?\s*(.+)/', $line, $matches)) {
-                $reqId = $matches[1];
-                $description = trim($matches[2]);
-                
-                // Determine requirement type (shall, should, may)
-                $type = 'unknown';
-                if (preg_match('/shall/i', $description)) {
-                    $type = 'mandatory';
-                } elseif (preg_match('/should/i', $description)) {
-                    $type = 'recommended';
-                } elseif (preg_match('/may/i', $description)) {
-                    $type = 'optional';
-                }
-                
-                $requirements[$reqId] = [
-                    'id' => $reqId,
-                    'description' => $description,
-                    'type' => $type,
-                    'source' => basename($path),
-                    'format' => 'markdown',
-                    'line_number' => $lineNum + 1,
-                ];
-                
-                // Look ahead for priority and acceptance criteria
-                if (isset($lines[$lineNum + 1]) && preg_match('/\*\*Priority\*\*:\s*(.+)/', $lines[$lineNum + 1], $priorityMatch)) {
-                    $requirements[$reqId]['priority'] = trim($priorityMatch[1]);
-                }
-                
-                if (isset($lines[$lineNum + 2]) && preg_match('/\*\*Acceptance Criteria\*\*:\s*(.+)/', $lines[$lineNum + 2], $acMatch)) {
-                    $requirements[$reqId]['acceptance_criteria'] = trim($acMatch[1]);
-                }
-            }
-        }
-        
-        // Second pass: find traceability matrix entries and related requirements
-        foreach ($lines as $lineNum => $line) {
-            // Check for traceability matrix entries (pattern: "- **REQ-001**:")
-            if (preg_match('/^\s*-\s+\*\*(REQ-\d+)\*\*:$/', $line, $matches)) {
-                $reqId = $matches[1];
-                
-                // If this requirement doesn't exist yet, create it
-                if (!isset($requirements[$reqId])) {
-                    // Look for the original requirement in the file
-                    foreach ($lines as $searchLine) {
-                        if (preg_match('/- (?:\*\*)?(REQ-\d+)(?:\*\*)?:?\s*(.+)/', $searchLine, $searchMatches) && 
-                            $searchMatches[1] === $reqId) {
-                            $description = trim($searchMatches[2]);
-                            
-                            // Determine requirement type
-                            $type = 'unknown';
-                            if (preg_match('/shall/i', $description)) {
-                                $type = 'mandatory';
-                            } elseif (preg_match('/should/i', $description)) {
-                                $type = 'recommended';
-                            } elseif (preg_match('/may/i', $description)) {
-                                $type = 'optional';
-                            }
-                            
-                            $requirements[$reqId] = [
-                                'id' => $reqId,
-                                'description' => $description,
-                                'type' => $type,
-                                'source' => basename($path),
-                                'format' => 'markdown',
-                                'line_number' => $lineNum + 1,
-                                'is_traceability_entry' => true,
-                            ];
-                            break;
-                        }
-                    }
-                    
-                    // If still not found, create a placeholder
-                    if (!isset($requirements[$reqId])) {
-                        $requirements[$reqId] = [
-                            'id' => $reqId,
-                            'description' => 'Defined in traceability matrix',
-                            'type' => 'unknown',
-                            'source' => basename($path),
-                            'format' => 'markdown',
-                            'line_number' => $lineNum + 1,
-                            'is_traceability_entry' => true,
-                        ];
-                    }
-                } else {
-                    // Mark existing requirement as also being in the traceability matrix
-                    $requirements[$reqId]['is_traceability_entry'] = true;
-                }
-                
-                // Look ahead for traceability information
-                $i = $lineNum + 1;
-                while ($i < count($lines) && !preg_match('/^\s*-\s+\*\*/', $lines[$i]) && trim($lines[$i]) !== '') {
-                    if (preg_match('/\*\*(Test ID|Task ID|Interface ID)\*\*:\s*(.+)/', $lines[$i], $traceMatch)) {
-                        $key = strtolower(str_replace(' ', '_', $traceMatch[1]));
-                        $requirements[$reqId][$key] = trim($traceMatch[2]);
-                    }
-                    $i++;
-                }
-            }
-            
-            // Check for lines that start with "- **Related Requirements**: REQ-XXX, REQ-YYY"
-            if (preg_match('/- \*\*Related Requirements\*\*:\s*(.+)/', $line, $matches)) {
-                $relatedReqs = preg_split('/[,\s]+/', $matches[1]);
-                foreach ($relatedReqs as $relatedReq) {
-                    if (preg_match('/REQ-\d+/', $relatedReq)) {
-                        // Make sure this requirement exists in our list
-                        if (!isset($requirements[$relatedReq])) {
-                            // Look for the original requirement in the file
-                            foreach ($lines as $searchLine) {
-                                if (preg_match('/- (?:\*\*)?(REQ-\d+)(?:\*\*)?:?\s*(.+)/', $searchLine, $searchMatches) && 
-                                    $searchMatches[1] === $relatedReq) {
-                                    $description = trim($searchMatches[2]);
-                                    
-                                    // Determine requirement type
-                                    $type = 'unknown';
-                                    if (preg_match('/shall/i', $description)) {
-                                        $type = 'mandatory';
-                                    } elseif (preg_match('/should/i', $description)) {
-                                        $type = 'recommended';
-                                    } elseif (preg_match('/may/i', $description)) {
-                                        $type = 'optional';
-                                    }
-                                    
-                                    $requirements[$relatedReq] = [
-                                        'id' => $relatedReq,
-                                        'description' => $description,
-                                        'type' => $type,
-                                        'source' => basename($path),
-                                        'format' => 'markdown',
-                                        'is_reference_only' => true,
-                                    ];
-                                    break;
-                                }
-                            }
-                            
-                            // If still not found, create a placeholder
-                            if (!isset($requirements[$relatedReq])) {
-                                $requirements[$relatedReq] = [
-                                    'id' => $relatedReq,
-                                    'description' => 'Referenced in related requirements',
-                                    'type' => 'unknown',
-                                    'source' => basename($path),
-                                    'format' => 'markdown',
-                                    'is_reference_only' => true,
-                                ];
-                            }
-                        }
-                    }
-                }
-            }
-        }
-        
-        return $requirements;
-    }
-    
-    /**
-     * Find test files in the given module path.
-     */
-    private function findTestFiles(string $modulePath, ?string $dirFilter = null): array
-    {
-        $testPath = "{$modulePath}/tests";
-        
-        if (!File::exists($testPath)) {
-            return [];
-        }
-        
-        $finder = new Finder();
-        $finder->files()->name('*.php');
-        
-        // Apply directory filter if specified
-        if ($dirFilter) {
-            $dirPath = "{$testPath}/{$dirFilter}";
-            if (File::exists($dirPath)) {
-                $finder->in($dirPath);
-            } else {
-                // Try to find the directory anywhere in the module
-                $dirPath = "{$modulePath}/{$dirFilter}";
-                if (File::exists($dirPath)) {
-                    $finder->in($dirPath);
-                } else {
-                    // If directory not found, return empty array
-                    return [];
-                }
-            }
-        } else {
-            $finder->in($testPath);
-        }
-        
-        $testFiles = [];
-        foreach ($finder as $file) {
-            $testFiles[] = $file->getRealPath();
-        }
-        
-        return $testFiles;
-    }
-    
-    /**
      * Parse test files to extract coverage information.
      */
     private function parseTestCoverage(array $testFiles): array
@@ -652,13 +456,59 @@ class SpecTestCoverageCommand extends Command
         foreach ($testFiles as $testFile) {
             $content = File::get($testFile);
             
-            // Find all test methods with @covers annotations
-            // This regex matches both formats:
+            // Find @covers annotations in class-level docblocks
+            preg_match_all('/\/\*\*\s*\n(?:.*\n)*?\s*\*\s*@covers\s+([^*\n]+)(?:\n.*)*?class\s+(\w+)/', $content, $classMatches, PREG_SET_ORDER);
+            
+            foreach ($classMatches as $match) {
+                $coveredReqs = explode(',', $match[1]);
+                
+                foreach ($coveredReqs as $req) {
+                    $reqId = trim($req);
+                    
+                    if (!isset($coverage[$reqId])) {
+                        $coverage[$reqId] = [];
+                    }
+                    
+                    $coverage[$reqId][] = [
+                        'file' => basename($testFile),
+                        'path' => $testFile,
+                        'class' => $match[2] ?? 'Unknown',
+                    ];
+                }
+            }
+            
+            // Find @covers annotations in method-level docblocks
+            // This matches both formats:
             // 1. @test on one line, @covers on the next
             // 2. Multiple @covers annotations for the same test
-            preg_match_all('/\/\*\*\s*\n(?:.*\n)*?\s*\*\s*@test\s*\n(?:.*\n)*?\s*\*\s*@covers\s+([^*\n]+)/', $content, $matches, PREG_SET_ORDER);
+            preg_match_all('/\/\*\*\s*\n(?:.*\n)*?\s*\*\s*@test\s*\n(?:.*\n)*?\s*\*\s*@covers\s+([^*\n]+)/', $content, $methodMatches, PREG_SET_ORDER);
             
-            foreach ($matches as $match) {
+            foreach ($methodMatches as $match) {
+                $coveredReqs = explode(',', $match[1]);
+                
+                foreach ($coveredReqs as $req) {
+                    $reqId = trim($req);
+                    
+                    if (!isset($coverage[$reqId])) {
+                        $coverage[$reqId] = [];
+                    }
+                    
+                    $coverage[$reqId][] = [
+                        'file' => basename($testFile),
+                        'path' => $testFile,
+                    ];
+                }
+            }
+            
+            // Also find standalone @covers annotations (not requiring @test)
+            preg_match_all('/\/\*\*\s*\n(?:.*\n)*?\s*\*\s*@covers\s+([^*\n]+)/', $content, $standaloneMatches, PREG_SET_ORDER);
+            
+            foreach ($standaloneMatches as $match) {
+                // Skip if this is a class docblock (already processed above)
+                if (preg_match('/class\s+\w+/', $content, $classMatch, 0, strpos($content, $match[0]) + strlen($match[0]))) {
+                    continue;
+                }
+                
                 $coveredReqs = explode(',', $match[1]);
                 
                 foreach ($coveredReqs as $req) {
@@ -705,7 +555,7 @@ class SpecTestCoverageCommand extends Command
                 'tests' => $covered ? $testCoverage[$reqId] : [],
                 'spec_tests' => $specTests,
                 'source' => $requirement['source'],
-                'format' => $requirement['format'] ?? 'markdown',
+                'format' => 'yaml',
             ];
             
             // Copy additional properties
@@ -785,21 +635,17 @@ class SpecTestCoverageCommand extends Command
                     }
                 }
                 
-                // Add format indicator
-                $format = isset($result['format']) ? strtoupper($result['format'][0]) : 'M';
-                
                 $tableRows[] = [
                     $result['id'],
                     $type,
                     substr($description, 0, 60) . (strlen($description) > 60 ? '...' : ''),
                     $status,
                     $result['test_count'],
-                    $format,
                 ];
             }
             
             $this->table(
-                ['Requirement ID', 'Type', 'Description', 'Status', 'Test Count', 'Format'],
+                ['Requirement ID', 'Type', 'Description', 'Status', 'Test Count'],
                 $tableRows
             );
         }
@@ -852,42 +698,5 @@ class SpecTestCoverageCommand extends Command
                 ));
             }
         }
-    }
-
-    /**
-     * Get a list of all available modules.
-     */
-    private function getAvailableModules(): array
-    {
-        $basePath = base_path('app-modules');
-        
-        if (!File::exists($basePath)) {
-            return [];
-        }
-        
-        return collect(File::directories($basePath))
-            ->filter(function ($path) {
-                return File::exists("{$path}/tests") || 
-                       File::exists("{$path}/" . basename($path) . ".spec.md") ||
-                       File::exists("{$path}/" . basename($path) . ".spec.yaml") ||
-                       File::exists("{$path}/" . basename($path) . ".spec.yml");
-            })
-            ->toArray();
-    }
-
-    /**
-     * Get subdirectories of a given path.
-     */
-    private function getSubdirectories(string $path): array
-    {
-        if (!File::exists($path)) {
-            return [];
-        }
-        
-        return collect(File::directories($path))
-            ->filter(function ($dir) {
-                return !in_array(basename($dir), ['.git', 'vendor', 'node_modules']);
-            })
-            ->toArray();
     }
 } 

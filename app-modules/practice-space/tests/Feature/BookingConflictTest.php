@@ -69,7 +69,7 @@ class BookingConflictTest extends TestCase
         ]);
         
         // Get bookings that would conflict with the exact same time slot
-        $conflictingBookings = $this->room->bookingsIntersecting($startTime, $endTime);
+        $conflictingBookings = $this->room->bookingsIntersecting($startTime, $endTime)->get();
         
         // Assert that we found the existing booking as a conflict
         $this->assertCount(1, $conflictingBookings);
@@ -99,7 +99,7 @@ class BookingConflictTest extends TestCase
         $conflictingBookings = $this->room->bookingsIntersecting(
             $partialConflictStart,
             $partialConflictEnd
-        );
+        )->get();
         
         // Assert that we found the existing booking as a conflict
         $this->assertCount(1, $conflictingBookings);

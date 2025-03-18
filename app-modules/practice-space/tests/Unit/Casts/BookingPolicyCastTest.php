@@ -2,7 +2,6 @@
 
 namespace CorvMC\PracticeSpace\Tests\Unit\Casts;
 
-use CorvMC\PracticeSpace\Casts\BookingPolicyCast;
 use CorvMC\PracticeSpace\Models\Room;
 use CorvMC\PracticeSpace\Tests\TestCase;
 use CorvMC\PracticeSpace\ValueObjects\BookingPolicy;
@@ -12,7 +11,7 @@ class BookingPolicyCastTest extends TestCase
     /** @test */
     public function it_can_cast_null_to_default_booking_policy()
     {
-        $cast = new BookingPolicyCast();
+        $cast = new BookingPolicy();
         $result = $cast->get(new Room(), 'booking_policy', null, []);
         
         $this->assertInstanceOf(BookingPolicy::class, $result);
@@ -23,7 +22,7 @@ class BookingPolicyCastTest extends TestCase
     /** @test */
     public function it_can_cast_json_to_booking_policy()
     {
-        $cast = new BookingPolicyCast();
+        $cast = new BookingPolicy();
         $json = json_encode([
             'opening_time' => '10:00',
             'closing_time' => '20:00',
@@ -43,7 +42,7 @@ class BookingPolicyCastTest extends TestCase
     /** @test */
     public function it_can_cast_array_to_booking_policy()
     {
-        $cast = new BookingPolicyCast();
+        $cast = new BookingPolicy();
         $array = [
             'opening_time' => '10:00',
             'closing_time' => '20:00',
@@ -63,7 +62,7 @@ class BookingPolicyCastTest extends TestCase
     /** @test */
     public function it_can_cast_booking_policy_to_json()
     {
-        $cast = new BookingPolicyCast();
+        $cast = new BookingPolicy();
         $policy = new BookingPolicy(
             openingTime: '10:00',
             closingTime: '20:00',
@@ -84,7 +83,7 @@ class BookingPolicyCastTest extends TestCase
     /** @test */
     public function it_can_cast_array_to_json()
     {
-        $cast = new BookingPolicyCast();
+        $cast = new BookingPolicy();
         $array = [
             'opening_time' => '10:00',
             'closing_time' => '20:00',
@@ -105,7 +104,7 @@ class BookingPolicyCastTest extends TestCase
     /** @test */
     public function it_returns_null_when_casting_null_to_json()
     {
-        $cast = new BookingPolicyCast();
+        $cast = new BookingPolicy();
         $result = $cast->set(new Room(), 'booking_policy', null, []);
         
         $this->assertNull($result);
@@ -114,7 +113,7 @@ class BookingPolicyCastTest extends TestCase
     /** @test */
     public function it_throws_exception_when_casting_invalid_value_to_json()
     {
-        $cast = new BookingPolicyCast();
+        $cast = new BookingPolicy();
         
         $this->expectException(\InvalidArgumentException::class);
         $cast->set(new Room(), 'booking_policy', 'invalid', []);

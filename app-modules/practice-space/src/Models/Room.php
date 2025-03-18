@@ -30,7 +30,6 @@ class Room extends Model
         'photos',
         'specifications',
         'booking_policy',
-        'use_custom_policy',
         'timezone',
     ];
 
@@ -43,7 +42,6 @@ class Room extends Model
         'size_sqft' => 'integer',
         'amenities' => 'array',
         'booking_policy' => \CorvMC\PracticeSpace\ValueObjects\BookingPolicy::class,
-        'use_custom_policy' => 'boolean',
         'timezone' => 'string',
     ];
 
@@ -63,22 +61,45 @@ class Room extends Model
         return $this->hasMany(Booking::class);
     }
 
+    /**
+     * Get bookings that intersect with the given time range.
+     * Time parameters are assumed to be in the room's timezone and will be
+     * converted to UTC for database queries.
+     *
+     * @param Carbon $start Start time in room's timezone
+     * @param Carbon $end End time in room's timezone
+     * @return \Illuminate\Database\Eloquent\Builder
+     */
     public function bookingsIntersecting(Carbon $start, Carbon $end)
     {
+        // Convert input times to UTC for database queries
+        $startUtc = $start->copy()->setTimezone('UTC');
+        $endUtc = $end->copy()->setTimezone('UTC');
+        
         return $this->bookings()
-            ->where(function ($query) use ($start, $end) {
-                $query->whereBetween('start_time', [$start, $end])
-                    ->orWhereBetween('end_time', [$start, $end])
-                    ->orWhere(function ($query) use ($start, $end) {
-                        $query->where('start_time', '<=', $start)
-                            ->where('end_time', '>=', $end);
+            ->where(function ($query) use ($startUtc, $endUtc) {
+                $query->whereBetween('start_time', [$startUtc, $endUtc])
+                    ->orWhereBetween('end_time', [$startUtc, $endUtc])
+                    ->orWhere(function ($query) use ($startUtc, $endUtc) {
+                        $query->where('start_time', '<=', $startUtc)
+                            ->where('end_time', '>=', $endUtc);
                     });
             });
     }
+    
+    /**
+     * Get bookings that fall on a specific date in the room's timezone.
+     *
+     * @param Carbon $date Date in room's timezone
+     * @return \Illuminate\Database\Eloquent\Builder
+     */
     public function bookingsOn(Carbon $date)
     {
+        // Ensure the date is in the room's timezone
+        $date = $date->copy()->setTimezone($this->timezone);
         $startOfDay = $date->copy()->startOfDay();
         $endOfDay = $date->copy()->endOfDay();
+        
         return $this->bookingsIntersecting($startOfDay, $endOfDay);
     }
 
@@ -128,6 +149,7 @@ class Room extends Model
      */
     public function isAvailable(Carbon $startDateTime, Carbon $endDateTime): bool
     {
+        // The bookingsIntersecting method now handles timezone conversion internally
         $conflictingBookings = $this->bookingsIntersecting($startDateTime, $endDateTime)
             ->where('state', '!=', 'cancelled')
             ->count();
@@ -143,6 +165,7 @@ class Room extends Model
      */
     public function getAvailableTimeSlots(Carbon $date): array
     {
+        // Ensure we're working with the room's timezone
         $date = $date->copy()->setTimezone($this->timezone);
         $openingTime = $this->booking_policy->getOpeningTime($date->format('Y-m-d'), $this->timezone);
         $closingTime = $this->booking_policy->getClosingTime($date->format('Y-m-d'), $this->timezone);
@@ -150,7 +173,7 @@ class Room extends Model
         // If no duration is specified, use the minimum booking duration from the policy
         $minDuration = $this->booking_policy->minBookingDurationHours;
 
-        // Get current time
+        // Get current time in room's timezone
         $now = Carbon::now($this->timezone);
         
         // Check if the date is today
@@ -180,55 +203,62 @@ class Room extends Model
             }
         }
 
-        // Get all bookings for this room on this date (in UTC)
+        // Get all bookings for this room on this date
+        // The bookingsOn method now handles timezone conversion internally
         $bookings = $this->bookingsOn($date->copy()->startOfDay())
             ->where('state', '!=', 'cancelled')
             ->get();
 
         // Generate all possible time slots
         $timeSlots = [];
+        $currentSlot = $openingTime->copy();
 
-        for ($t = $openingTime->copy(); $t < $closingTime; $t->addMinutes(30)) {
-            // Convert to display timezone for the keys and display values
-            $tDisplay = $t->copy()->setTimezone($this->timezone);
-            $timeKey = $tDisplay->format('H:i');
-            $displayTime = $tDisplay->format('g:i A');
+        while ($currentSlot->lt($closingTime)) {
+            $slotEnd = $currentSlot->copy()->addMinutes(30);
+            $timeKey = $currentSlot->format('H:i');
+            $displayTime = $currentSlot->format('g:i A');
 
-            // Check if this time slot is available (not within any existing booking)
-            if ($bookings->contains(
-                fn($b) => $t->between(
-                    $b->start_time,
-                    $b->end_time->subMinute()
-                )
-            )) {
-                continue;
+            // Check if this slot is available
+            $isAvailable = true;
+
+            // Check if this slot would allow for a minimum duration booking
+            $minDurationEnd = $currentSlot->copy()->addHours($minDuration);
+            if ($minDurationEnd->gt($closingTime)) {
+                $isAvailable = false;
             }
 
-            // Check if there's enough time for at least the minimum booking duration
-            $end = $t->copy()->addMinutes($minDuration * 60);
-
-            // Check if the end time exceeds closing time
-            if ($end > $closingTime) {
-                continue;
+            // Check if this slot overlaps with any booking
+            foreach ($bookings as $booking) {
+                // A slot is unavailable if:
+                // 1. The slot start time is within a booking
+                // 2. The slot end time is within a booking
+                // 3. The booking spans the entire slot
+                // 4. The minimum duration would overlap with a booking
+                
+                // Using the booking times directly since they're already in room's timezone
+                $bookingStart = $booking->start_time;
+                $bookingEnd = $booking->end_time;
+                
+                if (
+                    // Slot start is within booking
+                    ($currentSlot->between($bookingStart, $bookingEnd, true)) ||
+                    // Slot end is within booking
+                    ($slotEnd->between($bookingStart, $bookingEnd, true)) ||
+                    // Booking spans the entire slot
+                    ($bookingStart->lte($currentSlot) && $bookingEnd->gte($slotEnd)) ||
+                    // Minimum duration would overlap with booking
+                    ($minDurationEnd->gt($bookingStart) && $currentSlot->lt($bookingEnd))
+                ) {
+                    $isAvailable = false;
+                    break;
+                }
             }
 
-            // Find any booking that would conflict with this duration
-            $conflictingBooking = $bookings->first(function ($booking) use ($t, $end) {
-                // Check if booking starts during our time slot
-                $bookingStartsDuringSlot = $booking->start_time->between($t, $end);
-
-                // Check if our time slot starts during booking
-                $slotStartsDuringBooking = $t->between(
-                    $booking->start_time,
-                    $booking->end_time
-                );
-
-                return $bookingStartsDuringSlot || $slotStartsDuringBooking;
-            });
-
-            if (!$conflictingBooking) {
+            if ($isAvailable) {
                 $timeSlots[$timeKey] = $displayTime;
             }
+
+            $currentSlot = $slotEnd;
         }
 
         return $timeSlots;
@@ -237,7 +267,7 @@ class Room extends Model
     /**
      * Get the booking policy for this room
      * 
-     * If the room has a custom policy, it will be returned.
+     * If the room has a specific policy, it will be returned.
      * Otherwise, the category's default policy will be used.
      * If neither exists, a new default policy will be returned.
      *
@@ -245,50 +275,19 @@ class Room extends Model
      */
     public function getBookingPolicyAttribute(): BookingPolicy
     {
-        // First check if this room has a specific booking policy and use_custom_policy is true
-        if ($this->use_custom_policy && isset($this->attributes['booking_policy']) && $this->attributes['booking_policy']) {
+        // First check if this room has a specific booking policy
+        if (isset($this->attributes['booking_policy']) && $this->attributes['booking_policy']) {
             // Use the cast to convert the JSON to a BookingPolicy object
             return $this->castAttribute('booking_policy', $this->attributes['booking_policy']);
         }
         
-        // If no room-specific policy or use_custom_policy is false, fall back to the category's default policy
+        // If no room-specific policy, fall back to the category's default policy
         if ($this->category && $this->category->default_booking_policy) {
             return $this->category->default_booking_policy;
         }
         
         // If no policy found, return a default BookingPolicy
         return new BookingPolicy();
-    }
-
-    /**
-     * Set the booking policy for this room
-     * 
-     * @param BookingPolicy|array|null $value
-     * @return void
-     */
-    public function setBookingPolicyAttribute($value): void
-    {
-        // If null is provided, reset to use the category default
-        if ($value === null) {
-            $this->attributes['booking_policy'] = null;
-            return;
-        }
-        
-        // If an array is provided, ensure it uses snake_case keys
-        if (is_array($value)) {
-            // The BookingPolicy::fromArray method expects snake_case keys
-            // If you're using this method, make sure your array keys are in snake_case format
-            // e.g., 'opening_time' instead of 'openingTime'
-            $value = BookingPolicy::fromArray($value);
-        }
-        
-        // Ensure the value is a BookingPolicy instance
-        if (!$value instanceof BookingPolicy) {
-            throw new \InvalidArgumentException('The booking policy must be a BookingPolicy instance, an array, or null.');
-        }
-        
-        // Store the policy as JSON
-        $this->attributes['booking_policy'] = json_encode($value);
     }
 
     /**
@@ -319,59 +318,55 @@ class Room extends Model
      */
     public function getAvailableDurations(Carbon $startTime): array
     {
-        // Store the original timezone of the input time
-        $originalTimezone = $startTime->timezone->getName();
+        // Ensure start time is in room's timezone
+        $startTime = $startTime->copy()->setTimezone($this->timezone);
         
-        // Work with UTC times internally to avoid conversion issues
-        $startTimeUtc = $startTime->copy()->setTimezone('UTC');
-        
-        // Get operating hours in UTC
-        $openingTime = $startTimeUtc->copy()->startOfDay()->setTimeFromTimeString($this->booking_policy->openingTime)->setTimezone('UTC');
-        $closingTime = $startTimeUtc->copy()->startOfDay()->setTimeFromTimeString($this->booking_policy->closingTime)->setTimezone('UTC');
-
-        // Get all bookings for this room on this date (in UTC)
-        $bookings = $this->bookingsOn($startTimeUtc->copy()->startOfDay())
-            ->where('state', '!=', 'cancelled')
-            ->get();
+        // Get operating hours in room's timezone
+        $date = $startTime->format('Y-m-d');
+        $openingTime = $this->booking_policy->getOpeningTime($date, $this->timezone);
+        $closingTime = $this->booking_policy->getClosingTime($date, $this->timezone);
 
         // If start time is after closing time, return empty array
-        if ($startTimeUtc >= $closingTime) {
+        if ($startTime->gte($closingTime)) {
             return [];
         }
 
-        // Get current time in UTC
-        $nowUtc = Carbon::now('UTC');
+        // Get current time in room's timezone
+        $now = Carbon::now($this->timezone);
         
         // If start time is in the past, return empty array
-        if ($startTimeUtc < $nowUtc) {
+        if ($startTime->lt($now)) {
             return [];
         }
 
-        // Check if the start time is within any existing booking
-        $isStartTimeBooked = $bookings->contains(function ($booking) use ($startTimeUtc) {
-            return $startTimeUtc->between(
-                $booking->start_time,
-                $booking->end_time->subMinute()
-            );
-        });
-
-        if ($isStartTimeBooked) {
-            return []; // Start time is already booked
-        }
-
-        // Find the next booking that starts after this time
-        $nextBooking = $bookings->first(function ($booking) use ($startTimeUtc) {
-            return $booking->start_time > $startTimeUtc;
-        });
-
+        // Get the next booking after our start time
+        $nextBooking = $this->bookings()
+            ->where('state', '!=', 'cancelled')
+            ->where(function ($query) use ($startTime) {
+                // Convert start_time to UTC for database comparison
+                $startTimeUtc = $startTime->copy()->setTimezone('UTC');
+                $query->where('start_time', '>', $startTimeUtc);
+            })
+            ->orderBy('start_time')
+            ->first();
+    
         // Calculate maximum possible duration in hours
         if ($nextBooking) {
-            $maxPossibleDuration = $startTimeUtc->diffInMinutes($nextBooking->start_time) / 60;
+            // Convert next booking start time to room's timezone for comparison
+            $nextBookingStart = $nextBooking->start_time->copy()->setTimezone($this->timezone);
+            $maxPossibleDuration = $startTime->diffInMinutes($nextBookingStart) / 60;
         } else {
-            $maxPossibleDuration = $startTimeUtc->diffInMinutes($closingTime) / 60;
+            $maxPossibleDuration = $startTime->diffInMinutes($closingTime) / 60;
         }
 
-        $maxPossibleDuration = min($maxPossibleDuration, $this->booking_policy->maxBookingDurationHours);
+        // Respect the policy's max duration
+        $maxPossibleDuration = min(
+            $maxPossibleDuration,
+            $this->booking_policy->maxBookingDurationHours
+        );
+
+        // Round down to nearest half hour to avoid partial slots
+        $maxPossibleDuration = floor($maxPossibleDuration * 2) / 2;
 
         // Generate duration options
         return $this->generateDurationOptions($maxPossibleDuration, true);
@@ -534,19 +529,9 @@ class Room extends Model
      * @param string $date Date in Y-m-d format
      * @return array Array with 'opening' and 'closing' Carbon instances
      */
-    private function getOperatingHours(string $date): array
+    public function getOperatingHours(string $date): array
     {
-        $dateObj = Carbon::parse($date, $this->timezone);
-        $policy = $this->booking_policy;
-
-        // Set opening and closing times for this date
-        $openingTime = $dateObj->copy()->setTimeFromTimeString($policy->openingTime);
-        $closingTime = $dateObj->copy()->setTimeFromTimeString($policy->closingTime);
-
-        return [
-            'opening' => $openingTime,
-            'closing' => $closingTime
-        ];
+        return $this->booking_policy->getOperatingHours($date, $this->timezone);
     }
 
     /**
