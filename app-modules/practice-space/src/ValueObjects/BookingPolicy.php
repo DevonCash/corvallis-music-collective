@@ -142,8 +142,8 @@ class BookingPolicy implements Arrayable, JsonSerializable, CastsAttributes
      */
     public function getClosingTime(string $date, ?string $timezone = null): Carbon
     {
-        $dateTime = Carbon::parse($date . ' ' . $this->closingTime);
-        return $timezone ? $dateTime->setTimezone($timezone) : $dateTime;
+        $dateTime = Carbon::parse($date . ' ' . $this->closingTime . ' ' . $timezone ?? '');
+        return $dateTime;
     }
 
     /**

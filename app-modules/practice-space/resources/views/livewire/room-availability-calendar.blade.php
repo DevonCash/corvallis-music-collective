@@ -40,14 +40,12 @@
                     </button>
                 </div>
             </div>
-            <div class="flex justify-between items-center">
-                @if(\CorvMC\PracticeSpace\Models\Room::count() > 1)
-                    <div class='flex-1'>
-                        {{ $this->form }}
-                    </div>
-                @endif
-               
-            </div>
+            @if(\CorvMC\PracticeSpace\Models\Room::count() > 1)
+                <div class='flex-1'>
+                    {{ $this->form }}
+                </div>
+            @endif
+            
         </div>
         
         <!-- Scroll Container -->
@@ -96,7 +94,7 @@
                             console.log(ev.target.dataset);
 
                             $wire.mountAction('createBooking', { 
-                                room_id: $wire.get('selectedRoom')?.id,
+                                room_id: {{ $this->selectedRoom->id }},
                                 booking_date: ev.target.dataset.date, 
                                 booking_time: ev.target.dataset.time,
                             });

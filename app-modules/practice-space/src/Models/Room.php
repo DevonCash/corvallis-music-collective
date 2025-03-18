@@ -143,29 +143,23 @@ class Room extends Model
      */
     public function getAvailableTimeSlots(Carbon $date): array
     {
-        // Store the original timezone
-        $originalTz = $date->timezone->getName();
-        
-        // Work with UTC times internally
-        $dateUtc = $date->copy()->setTimezone('UTC');
-        
-        // Get operating hours (in UTC)
-        $openingTime = $dateUtc->copy()->startOfDay()->setTimeFromTimeString($this->booking_policy->openingTime)->setTimezone('UTC');
-        $closingTime = $dateUtc->copy()->startOfDay()->setTimeFromTimeString($this->booking_policy->closingTime)->setTimezone('UTC');
+        $date = $date->copy()->setTimezone($this->timezone);
+        $openingTime = $this->booking_policy->getOpeningTime($date->format('Y-m-d'), $this->timezone);
+        $closingTime = $this->booking_policy->getClosingTime($date->format('Y-m-d'), $this->timezone);
 
         // If no duration is specified, use the minimum booking duration from the policy
         $minDuration = $this->booking_policy->minBookingDurationHours;
 
-        // Get current time in UTC
-        $nowUtc = Carbon::now('UTC');
+        // Get current time
+        $now = Carbon::now($this->timezone);
         
         // Check if the date is today
-        $isToday = $nowUtc->isSameDay($dateUtc);
+        $isToday = $now->isSameDay($date);
 
         // If booking is for today, adjust the opening time based on minimum advance booking hours
         if ($isToday) {
             // For today, use the current time plus minimum advance booking hours
-            $minAdvanceTime = $nowUtc->copy()->addHours($this->booking_policy->minAdvanceBookingHours);
+            $minAdvanceTime = $now->copy()->addHours($this->booking_policy->minAdvanceBookingHours);
             
             // If minAdvanceTime is greater than opening time, use it instead
             if ($minAdvanceTime->greaterThan($openingTime)) {
@@ -187,7 +181,7 @@ class Room extends Model
         }
 
         // Get all bookings for this room on this date (in UTC)
-        $bookings = $this->bookingsOn($dateUtc->copy()->startOfDay())
+        $bookings = $this->bookingsOn($date->copy()->startOfDay())
             ->where('state', '!=', 'cancelled')
             ->get();
 

@@ -12,12 +12,9 @@ use CorvMC\PracticeSpace\Models\Room;
 use CorvMC\PracticeSpace\Models\Booking;
 use CorvMC\PracticeSpace\Filament\Forms\Components\SelectRoom;
 use CorvMC\PracticeSpace\Filament\Actions\CreateBookingAction;
-use Filament\Actions\Action;
 use Filament\Actions\Concerns\InteractsWithActions;
 use Filament\Actions\Contracts\HasActions;
 use Livewire\Attributes\Computed;
-use Filament\Forms;
-use Livewire\Attributes\On;
 
 class RoomAvailabilityCalendar extends Component implements HasForms, HasActions
 {
@@ -28,6 +25,7 @@ class RoomAvailabilityCalendar extends Component implements HasForms, HasActions
     public Carbon $startDate;
     public Carbon $endDate;
     public array $bookings = [];
+    public $data = [];
 
     #[Computed]
     public function timezone()
@@ -40,6 +38,7 @@ class RoomAvailabilityCalendar extends Component implements HasForms, HasActions
         // Set default room if none selected
         if (!$this->selectedRoom) {
             $this->selectedRoom = Room::where('is_active', true)->first();
+            $this->data['selectedRoom'] = $this->selectedRoom?->id;
         }
         
         // Set initial date range to current week, always starting on Monday
@@ -47,6 +46,7 @@ class RoomAvailabilityCalendar extends Component implements HasForms, HasActions
         $this->startDate = Carbon::now($this->timezone)->startOfWeek(Carbon::MONDAY);
         $this->endDate = $this->startDate->copy()->addDays(6); // Sunday
 
+        $this->form->fill();
         $this->loadBookings();
     }
     
@@ -84,10 +84,17 @@ class RoomAvailabilityCalendar extends Component implements HasForms, HasActions
                     ->selectablePlaceholder(false)
                     ->live()
                     ->afterStateUpdated(function ($state) {
-                        $this->selectedRoom = Room::find($state)->first();
-                        $this->loadBookings();
+                        if ($state) {
+                            // Make sure state is actually an ID
+                            $id = is_array($state) || is_object($state) ? ($state['id'] ?? null) : $state;
+                            if ($id) {
+                                $this->selectedRoom = Room::where('id', $id)->first();
+                                $this->loadBookings();
+                            }
+                        }
                     }),
-            ]);
+            ])
+            ->statePath('data');
     }
     
     public function previousPeriod(): void
