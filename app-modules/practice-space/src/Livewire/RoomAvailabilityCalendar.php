@@ -14,6 +14,7 @@ use CorvMC\PracticeSpace\Filament\Forms\Components\SelectRoom;
 use CorvMC\PracticeSpace\Filament\Actions\CreateBookingAction;
 use Filament\Actions\Concerns\InteractsWithActions;
 use Filament\Actions\Contracts\HasActions;
+use CorvMC\PracticeSpace\Traits\GeneratesCalendarData;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Reactive;
 use Livewire\Attributes\On;
@@ -22,6 +23,7 @@ class RoomAvailabilityCalendar extends Component implements HasForms, HasActions
 {
     use InteractsWithForms;
     use InteractsWithActions;
+    use GeneratesCalendarData;
     
     public ?Room $selectedRoom = null;
     
@@ -290,7 +292,13 @@ class RoomAvailabilityCalendar extends Component implements HasForms, HasActions
      */
     private function formatTimeRange($startTime, $endTime)
     {
-        return $startTime->format('g:ia') . ' - ' . $endTime->format('g:ia');
+        $startFormatted = $startTime->format(__('practice-space::room_availability_calendar.time_format'));
+        $endFormatted = $endTime->format(__('practice-space::room_availability_calendar.time_format'));
+        
+        return __('practice-space::room_availability_calendar.time_range_format', [
+            'start_time' => $startFormatted,
+            'end_time' => $endFormatted
+        ]);
     }
     
     /**
@@ -322,10 +330,8 @@ class RoomAvailabilityCalendar extends Component implements HasForms, HasActions
      */
     public function isTimeSlotInPast(string $date, string $time): bool
     {
-        $dateTime = Carbon::createFromFormat('Y-m-d H:i', "$date $time", $this->timezone);
-        $now = Carbon::now($this->timezone);
-        
-        return $dateTime->lt($now);
+        // Use a different method name to avoid recursion with the trait
+        return $this->isTimeSlotInPastByTimezone($date, $time, $this->timezone);
     }
     
     /**
@@ -335,133 +341,17 @@ class RoomAvailabilityCalendar extends Component implements HasForms, HasActions
      */
     public function generateCellData(): array
     {
-        // Early returns for invalid states
         if (!$this->selectedRoom) {
             return [];
         }
         
-        $cellData = [];
-        $bookingPolicy = $this->selectedRoom->booking_policy;
-        $minBookingDurationMinutes = $bookingPolicy->minBookingDurationHours * 60;
-        $minSlotsNeeded = ceil($minBookingDurationMinutes / 30);
-        
-        // IMPORTANT: Ensure we're working with the current time in the room's timezone
-        $now = Carbon::now($this->timezone);
-        $minAdvanceBookingThreshold = null;
-        
-        // Pre-calculate advance booking threshold if needed
-        if ($bookingPolicy->minAdvanceBookingHours > 0) {
-            // Create the threshold directly in the room's timezone
-            $minAdvanceBookingThreshold = $now->copy()->addHours($bookingPolicy->minAdvanceBookingHours);
-        }
-        
-        // Pre-process bookings by day for faster access
-        $bookingsByDay = [];
-        foreach ($this->bookings as $booking) {
-            $dayIndex = $booking['date_index'];
-            if (!isset($bookingsByDay[$dayIndex])) {
-                $bookingsByDay[$dayIndex] = [];
-            }
-            $bookingsByDay[$dayIndex][] = $booking;
-        }
-        
-        // Generate cell data for each day and time slot
-        for ($dayIndex = 0; $dayIndex < 7; $dayIndex++) {
-            $date = $this->startDate->copy()->addDays($dayIndex);
-            $dateString = $date->format('Y-m-d');
-            
-            // Convert the date to the room's timezone for accurate comparisons
-            $dateTz = $date->copy()->setTimezone($this->timezone);
-            
-            // Check if this date is in the past
-            $isPastDate = $dateTz->lt(Carbon::now($this->timezone)->startOfDay());
-            
-            // Check if this date is today
-            $isToday = $dateTz->isSameDay(Carbon::now($this->timezone));
-            
-            // Get booking policy for this day
-            $openingTime = $bookingPolicy->getOpeningTime($dateString, $this->timezone);
-            $closingTime = $bookingPolicy->getClosingTime($dateString, $this->timezone);
-            
-            // Calculate how many slots we need (from opening to closing time)
-            $minutesInDay = $openingTime->diffInMinutes($closingTime);
-            $slotsInDay = ceil($minutesInDay / 30);
-            
-            // Calculate index of slot that is too close to closing for minimum booking duration
-            $closeToClosingTime = $slotsInDay - $minSlotsNeeded;
-            
-            // Fill in data for each time slot
-            for ($slotIndex = 0; $slotIndex < $slotsInDay; $slotIndex++) {
-                $slotTime = $openingTime->copy()->addMinutes($slotIndex * 30);
-                
-                $cell = [
-                    'date' => $dateString,
-                    'time' => $slotTime->format('H:i'),
-                    'slot_index' => $slotIndex,
-                    'booking_id' => null,
-                    'is_current_user_booking' => false,
-                    'invalid_duration' => false,
-                    'room_id' => $this->selectedRoom->id,
-                ];
-                
-                // Create a full DateTime for this slot
-                $slotDateTime = Carbon::createFromFormat(
-                    'Y-m-d H:i:s', 
-                    $dateString . ' ' . $slotTime->format('H:i:s'), 
-                    $this->timezone
-                );
-                
-                // Mark cells in the past
-                if ($isPastDate || ($isToday && $slotDateTime->lt($now))) {
-                    $cell['invalid_duration'] = true;
-                }
-                
-                // Mark cells too close to current time per booking policy
-                if ($isToday && $minAdvanceBookingThreshold && $slotDateTime->lt($minAdvanceBookingThreshold)) {
-                    $cell['invalid_duration'] = true;
-                }
-                
-                // Mark cells too close to closing time
-                if ($slotIndex >= $closeToClosingTime) {
-                    $cell['invalid_duration'] = true;
-                }
-                
-                $cellData[$dayIndex][$slotIndex] = $cell;
-            }
-        }
-        
-        // Apply bookings and minimum duration restrictions
-        foreach ($bookingsByDay as $dayIndex => $dayBookings) {
-            foreach ($dayBookings as $booking) {
-                $bookingStartSlot = $booking['time_index'];
-                $bookingEndSlot = $booking['time_index'] + $booking['slots'] - 1;
-                
-                // Mark booked slots
-                for ($i = 0; $i < $booking['slots']; $i++) {
-                    $slotIndex = $bookingStartSlot + $i;
-                    if (isset($cellData[$dayIndex][$slotIndex])) {
-                        $cellData[$dayIndex][$slotIndex]['booking_id'] = $booking['id'];
-                        $cellData[$dayIndex][$slotIndex]['is_current_user_booking'] = $booking['is_current_user'];
-                    }
-                }
-                
-                // Mark slots with insufficient time before this booking
-                for ($i = max(0, $bookingStartSlot - $minSlotsNeeded + 1); $i < $bookingStartSlot; $i++) {
-                    if (isset($cellData[$dayIndex][$i]) && !$cellData[$dayIndex][$i]['booking_id']) {
-                        $cellData[$dayIndex][$i]['invalid_duration'] = true;
-                    }
-                }
-                
-                // Mark slots with insufficient time after this booking
-                for ($i = $bookingEndSlot + 1; $i < $bookingEndSlot + $minSlotsNeeded; $i++) {
-                    if (isset($cellData[$dayIndex][$i]) && !$cellData[$dayIndex][$i]['booking_id']) {
-                        $cellData[$dayIndex][$i]['invalid_duration'] = true;
-                    }
-                }
-            }
-        }
-        
-        return $cellData;
+        // Use the trait's method to generate calendar cell data
+        return $this->generateCalendarCellData(
+            $this->selectedRoom,
+            $this->startDate,
+            $this->endDate,
+            $this->bookings()
+        );
     }
     
     public function render()
@@ -507,6 +397,7 @@ class RoomAvailabilityCalendar extends Component implements HasForms, HasActions
     // Add the booking action
     public function createBookingAction()
     {
-        return CreateBookingAction::make();
+        return CreateBookingAction::make()
+            ->label(__('practice-space::room_availability_calendar.create_booking'));
     }
 }

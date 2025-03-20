@@ -44,11 +44,15 @@
 
   /* Time Cells */
   .time-cell {
-    @apply relative bg-white dark:bg-gray-900 cursor-pointer;
+    @apply relative bg-white dark:bg-gray-900;
     border: 1px solid;
     border-left: 0px;
     border-top: 0px;
     border-color: rgb(var(--gray-300)) rgb(var(--gray-400)) rgb(var(--gray-300)) rgb(var(--gray-400));
+  }
+
+  .time-cell:not(.time-cell-striped) {
+    cursor: pointer;
   }
 
   .time-cell-striped {
@@ -99,3 +103,8 @@
   .calendar-button .fi-btn-label {
     @apply text-nowrap;
   }
+
+  .calendar-header-title .timezone {
+    @apply text-sm text-gray-600/50;
+  }
+

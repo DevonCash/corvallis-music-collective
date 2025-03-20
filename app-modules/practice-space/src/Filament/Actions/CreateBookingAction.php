@@ -140,7 +140,7 @@ class CreateBookingAction
                                     return;
                                 }
                                 
-                                $availableDurations = $room->getAvailableDurations($startTime, true);
+                                $availableDurations = $room->getAvailableDurations($startTime);
                                 
                                 if (is_array($availableDurations) && !empty($availableDurations)) {
                                     // Get the first available duration option (first key in the array)
@@ -174,7 +174,7 @@ class CreateBookingAction
                                     return [];
                                 }
                                 
-                                return $room->getAvailableDurations($startTime, true);
+                                return $room->getAvailableDurations($startTime);
                             })
                     ]),
                 Step::make('Review & Confirm')

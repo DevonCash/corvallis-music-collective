@@ -8,6 +8,7 @@ use Filament\Resources\Pages\EditRecord;
 use Filament\Forms;
 use Filament\Forms\Components\{Section, Tabs, Grid, TextInput, Select, Toggle, FileUpload, Textarea};
 use CorvMC\PracticeSpace\Filament\Forms\Components\BookingPolicyForm;
+use CorvMC\PracticeSpace\Filament\Forms\Components\TimezoneSelect;
 
 
 class EditRoom extends EditRecord
@@ -115,6 +116,9 @@ class EditRoom extends EditRecord
                                                 ->suffix('sq ft')
                                                 ->placeholder('400')
                                                 ->helperText('Room size in square feet')
+                                                ->columnSpan(['md' => 6]),
+                                            
+                                            TimezoneSelect::make()
                                                 ->columnSpan(['md' => 6]),
                                             
                                             Select::make('amenities')

@@ -1,16 +1,16 @@
 <div>
     <header class="flex justify-between items-center gap-4">
         <div>
-    <h2 class="text-xl font-bold">Room Availability Calendar</h2>
-    <p class="text-sm text-gray-500 mb-4">This calendar shows when rooms are booked. Your bookings are highlighted in blue and show your name, while other bookings are marked as "Booked".</p>
+    <h2 class="text-xl font-bold">{{ __('practice-space::room_availability_calendar.calendar_title') }}</h2>
+    <p class="text-sm text-gray-500 mb-4">{{ __('practice-space::room_availability_calendar.calendar_description') }}</p>
         </div>
     <div class="nowrap">
         <x-filament::button class='calendar-button' wire:click="mountAction('createBooking', {'room_id': {{ $this->selectedRoom?->id ?? 'null' }}})">
-            Book a Room
+            {{ __('practice-space::room_availability_calendar.create_booking') }}
         </x-filament::button>
     </div>
     </header>
-    <div class="calendar-container" wire:ignore>
+    <div class="calendar-container">
         <script>
             document.addEventListener('livewire:initialized', () => {
                 Livewire.on('dateRangeUpdated', (event) => {
@@ -23,48 +23,11 @@
         </script>
         <!-- Room Selection -->
         <div class="space-y-4">
-            <div class="flex justify-between items-center">
-                <div class="flex-1">
-                    {{ $this->form }}
-                </div>
-                
-                <div class="flex space-x-2">
-                    <x-filament::button
-                        wire:click="previousPeriod"
-                        :disabled="!$this->canNavigateToPreviousPeriod()"
-                        icon="heroicon-m-chevron-left"
-                        size="sm"
-                    >
-                        Previous
-                    </x-filament::button>
-
-                    <x-filament::button
-                        wire:click="today"
-                        :disabled="!$this->selectedRoom"
-                        size="sm"
-                    >
-                        Today
-                    </x-filament::button>
-
-                    <x-filament::button
-                        wire:click="nextPeriod"
-                        :disabled="!$this->canNavigateToNextPeriod()"
-                        icon="heroicon-m-chevron-right"
-                        icon-position="after"
-                        size="sm"
-                    >
-                        Next
-                    </x-filament::button>
-                </div>
-            </div>
-
-            @if($this->selectedRoom)
-                <div class="flex justify-between items-center">
-                    <div>
+           
         <div class="calendar-header">
-            <div class="flex flex-1 md:flex-col justify-between gap-2 items-center md:items-start">
+            <div class="flex flex-1 md:flex-col justify-between gap-2 items-center md:items-start w-full">
                 <div class='calendar-header-title'>
-                    {{ $this->startDate->format('M j') }} - {{ $this->endDate->format('M j, Y') }}
+                    <div>{{ $this->startDate->format('M j') }} - {{ $this->endDate->format('M j, Y') }}</div>
                 </div>
                 <div class="flex gap-1">
                     <button 
@@ -85,7 +48,7 @@
                         wire:click="today" 
                         class="calendar-nav-button"
                     >
-                        Today
+                        {{ __('practice-space::room_availability_calendar.today') }}
                     </button>
                 </div>
             </div>
@@ -96,9 +59,6 @@
             @endif
             
         </div>
-                    </div>
-                </div>
-            @endif
 
             <!-- Scroll Container -->
             <div class="overflow-x-auto relative" style="--width: 10rem; --height: 2rem; overscroll-behavior-x: none;" x-data="{ hasScroll: false, scrollLeft: 0, scrollRight: false }" x-init="">
@@ -215,11 +175,10 @@
                         <div class="time-column-header" 
                         style="grid-column: 1; grid-row: 1; "
                         data-header>
-                             Time
+                             {{ __('practice-space::room_availability_calendar.time') }}
                         </div>
                         
                         <!-- Time Labels Column -->
-                        <div class="sticky left-0 z-10" style="grid-column: 1; grid-row: 2 / span {{ count($this->cellData()[0] ?? []) }};">
                             <!-- Time Labels -->
                             @foreach($this->cellData()[0] as $timeSlotIndex => $timeSlot)
                                 @if($timeSlotIndex % 2 === 1)
@@ -230,12 +189,11 @@
                                     $time = Carbon\Carbon::createFromFormat('H:i', $timeString);
                                 @endphp
                                 <div class="time-label" 
-                                    style="grid-column: 1; grid-row: {{ ($timeSlotIndex) + 1 }} / span 2; height: calc(var(--height) * 2);"
+                                    style="grid-column: 1; grid-row: {{ ($timeSlotIndex) + 2 }} / span 2; height: calc(var(--height) * 2);"
                                     data-time-label>
-                                    {{ $time->format('g:ia') }}
+                                    {{ $time->format(__('practice-space::room_availability_calendar.time_format')) }}
                                 </div>
                             @endforeach
-                        </div>
                         
 
                             
@@ -263,7 +221,7 @@
                     </div>
                     @else
                     <div class="calendar-empty-state">
-                        <p>Please select a room to view the calendar.</p>
+                        <p>{{ __('practice-space::room_availability_calendar.no_room_selected') }}</p>
                     </div>
                     @endif
                 </div>

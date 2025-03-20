@@ -7,7 +7,6 @@
         </div>
         
         <div>
-            
             @livewire('room-availability-calendar')
         </div>
     </div>
