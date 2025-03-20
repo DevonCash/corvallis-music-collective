@@ -58,6 +58,43 @@ class RoomAvailabilityCalendar extends Component implements HasForms, HasActions
     }
 
     #[Computed]
+    public function bookingPolicySummary()
+    {
+        if (!$this->selectedRoom || !$this->bookingPolicy) {
+            return '';
+        }
+        
+        $policy = $this->bookingPolicy;
+        
+        // Format opening hours using the localized time format
+        $policyTimeFormat = __('practice-space::room_availability_calendar.policy_time_format');
+        $openingTime = Carbon::createFromFormat('H:i', $policy->openingTime)->format($policyTimeFormat);
+        $closingTime = Carbon::createFromFormat('H:i', $policy->closingTime)->format($policyTimeFormat);
+        
+        // Build the natural language description
+        $summary = __('practice-space::room_availability_calendar.policy_open_hours', [
+            'opening_time' => $openingTime,
+            'closing_time' => $closingTime,
+            'max_duration' => $policy->maxBookingDurationHours,
+        ]);
+        
+        $summary .= ' ' . __('practice-space::room_availability_calendar.policy_booking_window', [
+            'min_hours' => $policy->minAdvanceBookingHours,
+            'max_days' => $policy->maxAdvanceBookingDays,
+        ]);
+        
+        $summary .= ' ' . __('practice-space::room_availability_calendar.policy_cancellation', [
+            'hours' => $policy->cancellationHours,
+        ]);
+        
+        $summary .= ' ' . __('practice-space::room_availability_calendar.policy_weekly_limit', [
+            'limit' => $policy->maxBookingsPerWeek,
+        ]);
+        
+        return $summary;
+    }
+
+    #[Computed]
     public function bookings()
     {
         if (!$this->selectedRoom) {
@@ -360,6 +397,7 @@ class RoomAvailabilityCalendar extends Component implements HasForms, HasActions
             'cellData' => $this->cellData(),
             'currentRoomDetails' => $this->currentRoomDetails(),
             'bookings' => $this->bookings(),
+            'policyInfo' => $this->bookingPolicySummary(),
         ]);
     }
     
