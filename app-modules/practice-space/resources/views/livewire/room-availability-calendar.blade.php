@@ -1,14 +1,14 @@
 <div>
     <header class="flex justify-between items-center gap-4">
         <div>
-    <h2 class="text-xl font-bold">{{ __('practice-space::room_availability_calendar.calendar_title') }}</h2>
-    <p class="text-sm text-gray-500 mb-4">{{ __('practice-space::room_availability_calendar.calendar_description') }}</p>
+            <h2 class="text-xl font-bold">{{ __('practice-space::room_availability_calendar.calendar_title') }}</h2>
+            <p class="text-sm text-gray-500 mb-4">{{ __('practice-space::room_availability_calendar.calendar_description') }}</p>
         </div>
-    <div class="nowrap">
-        <x-filament::button class='calendar-button' wire:click="mountAction('createBooking', {'room_id': {{ $this->selectedRoom?->id ?? 'null' }}})">
-            {{ __('practice-space::room_availability_calendar.create_booking') }}
-        </x-filament::button>
-    </div>
+        <div class="nowrap">
+            <x-filament::button class='calendar-button' wire:click="mountAction('createBooking', {'room_id': {{ $this->selectedRoom?->id ?? 'null' }}})">
+                {{ __('practice-space::room_availability_calendar.create_booking') }}
+            </x-filament::button>
+        </div>
     </header>
     <div class="calendar-container">
         <script>

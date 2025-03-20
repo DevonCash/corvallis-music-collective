@@ -1002,4 +1002,76 @@ class RoomAvailabilityCalendarTest extends TestCase
         // Now let's check the timezone properly
         $this->assertTrue(true); // Skip the rest of the test for now
     }
+
+    /**
+     * @test
+     * @covers REQ-005
+     */
+    public function closing_time_is_correctly_considered_for_maximum_booking_duration()
+    {
+        // Create a test room with fixed closing time and policy
+        $policy = new \CorvMC\PracticeSpace\ValueObjects\BookingPolicy(
+            openingTime: '09:00',
+            closingTime: '22:00',  // 10 PM closing time
+            maxBookingDurationHours: 4.0,  // 4 hour max booking duration
+            minBookingDurationHours: 0.5,  // 30 min minimum booking
+            maxAdvanceBookingDays: 30,
+            minAdvanceBookingHours: 0.0    // No advance booking requirement for test
+        );
+        
+        $room = Room::factory()->create([
+            'name' => 'Test Room for Closing Time',
+            'timezone' => 'America/Los_Angeles',
+        ]);
+        
+        // Set the booking policy
+        $room->booking_policy = $policy;
+        
+        // Mock fixed date and time for testing
+        $testDate = Carbon::parse('2030-05-15 12:00:00', 'America/Los_Angeles');
+        Carbon::setTestNow($testDate);
+        
+        // Get test times
+        $middayTime = $testDate->copy()->setTime(12, 0); // 12:00 PM - far from closing
+        $eveningTime = $testDate->copy()->setTime(19, 0); // 7:00 PM - 3 hours before closing
+        $lateTime = $testDate->copy()->setTime(21, 0);   // 9:00 PM - 1 hour before closing
+        
+        // Get duration options for each time
+        $durations1 = $room->getAvailableDurations($middayTime);
+        $durations2 = $room->getAvailableDurations($eveningTime);
+        $durations3 = $room->getAvailableDurations($lateTime);
+        
+        // Debug output
+        echo "\n\nROOM DURATIONS TEST RESULTS\n";
+        echo "Midday (12 PM) durations: " . json_encode(array_keys($durations1)) . "\n";
+        echo "Evening (7 PM) durations: " . json_encode(array_keys($durations2)) . "\n";
+        echo "Late (9 PM) durations: " . json_encode(array_keys($durations3)) . "\n";
+        
+        // Test time far from closing - should offer full duration range
+        $this->assertArrayHasKey('0.5', $durations1, 'Should allow 30 min booking at midday');
+        $this->assertArrayHasKey('1', $durations1, 'Should allow 1 hour booking at midday');
+        $this->assertArrayHasKey('2', $durations1, 'Should allow 2 hour booking at midday');
+        $this->assertArrayHasKey('3', $durations1, 'Should allow 3 hour booking at midday');
+        $this->assertArrayHasKey('4', $durations1, 'Should allow max 4 hour booking at midday');
+        
+        // Test time 3 hours before closing - should only offer up to 3 hours
+        $this->assertArrayHasKey('0.5', $durations2, 'Should allow 30 min booking at 7 PM');
+        $this->assertArrayHasKey('1', $durations2, 'Should allow 1 hour booking at 7 PM');
+        $this->assertArrayHasKey('2', $durations2, 'Should allow 2 hour booking at 7 PM');
+        $this->assertArrayHasKey('3', $durations2, 'Should allow 3 hour booking at 7 PM');
+        $this->assertArrayNotHasKey('3.5', $durations2, 'Should not allow 3.5 hour booking at 7 PM');
+        $this->assertArrayNotHasKey('4', $durations2, 'Should not allow 4 hour booking at 7 PM');
+        
+        // Test time 1 hour before closing - should only offer up to 1 hour
+        $this->assertArrayHasKey('0.5', $durations3, 'Should allow 30 min booking at 9 PM');
+        $this->assertArrayHasKey('1', $durations3, 'Should allow 1 hour booking at 9 PM');
+        $this->assertArrayNotHasKey('1.5', $durations3, 'Should not allow 1.5 hour booking at 9 PM');
+        
+        // Clean up test state
+        Carbon::setTestNow();
+        
+        // This test focuses on the Room model's getAvailableDurations method,
+        // which is what ultimately determines which durations are available
+        // for a particular time slot.
+    }
 } 
