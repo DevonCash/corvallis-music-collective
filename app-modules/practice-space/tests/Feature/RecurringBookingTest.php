@@ -62,7 +62,6 @@ class RecurringBookingTest extends TestCase
             'room_category_id' => $this->roomCategory->id,
             'hourly_rate' => 25.00,
             'booking_policy' => $this->bookingPolicy,
-            'timezone' => 'America/Los_Angeles',
         ]);
         
         // Create the recurring booking service

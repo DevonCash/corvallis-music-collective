@@ -3,28 +3,39 @@
     wire:id="{{ $this->getId() }}"
 >
     <!-- Main Calendar Container -->
-    <div>
-        <!-- Header with title and booking button -->
-        <header class="flex justify-between items-center gap-4 mb-4">
-            <div>
-                <h2 class="text-xl font-bold">{{ __('practice-space::room_availability_calendar.calendar_title', ['room' => $this->selectedRoom?->name]) }}</h2>
-                        <!-- Room Policy Summary -->
-                @if($this->selectedRoom && !empty($policyInfo))
-                <div class="room-policy-summary text-sm">
-                    <p class="text-gray-700">{{ $policyInfo }}</p>
+    <div class="space-y-4">
+        <div class="flex justify-between items-center">
+            <h2 class="text-xl font-bold">{{ __('practice-space::room_availability_calendar.calendar_title', ['room' => $this->room->name]) }}</h2>
+            
+            @if($this->room && !empty($policyInfo))
+                <div class="text-sm text-gray-600">
+                    {{ $policyInfo }}
                 </div>
-                @endif
-                    
-            </div>
-            <div class="nowrap">
-                <x-filament::button class='calendar-button' wire:click="mountAction('createBooking', {'room_id': {{ $this->selectedRoom?->id ?? 'null' }}})">
+            @endif
+        </div>
+
+        <div class="flex justify-between items-center">
+            <div class="flex space-x-2">
+                <x-filament::button class='calendar-button' wire:click="mountAction('createBooking', {'room_id': {{ $this->room->id ?? 'null' }}})">
                     {{ __('practice-space::room_availability_calendar.create_booking') }}
                 </x-filament::button>
             </div>
-        </header>
-        
-        
-        
+            
+            <div class="flex space-x-2">
+                <x-filament::button class='calendar-button' wire:click="previousPeriod" :disabled="!$this->canNavigateToPreviousPeriod()">
+                    {{ __('practice-space::room_availability_calendar.previous_week') }}
+                </x-filament::button>
+                
+                <x-filament::button class='calendar-button' wire:click="today">
+                    {{ __('practice-space::room_availability_calendar.today') }}
+                </x-filament::button>
+                
+                <x-filament::button class='calendar-button' wire:click="nextPeriod" :disabled="!$this->canNavigateToNextPeriod()">
+                    {{ __('practice-space::room_availability_calendar.next_week') }}
+                </x-filament::button>
+            </div>
+        </div>
+
         <!-- Calendar Container -->
         <div class="calendar-container">
             <!-- Room Selection and Date Navigation -->
@@ -68,11 +79,13 @@
                 <!-- Calendar Container -->
                 <div class="w-fit">
                     <!-- Calendar Grid -->
-                    @if($this->cellData() && count($this->cellData()) > 0 && isset($this->cellData()[0]))
+                    @php($dayCount = $this->endDate->diffInDays($this->startDate))
+                    @php($timeSlotCount = $this->getSlotsInSpan($this->startDate, $this->startDate->endOfDay()))
+                    @if($this->getCalendarGrid())
                     <div class="calendar-grid" 
                         style="
-                            grid-template-columns: auto repeat({{ count($this->cellData()) }}, minmax(var(--width), 1fr));
-                            grid-template-rows: auto repeat({{ count($this->cellData()[0] ?? []) }}, var(--height));
+                            grid-template-columns: auto repeat({{ $dayCount }}, minmax(var(--width), 1fr));
+                            grid-template-rows: auto repeat({{ $timeSlotCount }}, var(--height));
                             grid-auto-flow: dense;
                         "
                         x-data="{
@@ -127,70 +140,43 @@
                         </div>
                         
                         <!-- Date Headers -->
-                        @foreach($this->cellData() as $dayIndex => $dayData)
-                            @php
-                                $date = $this->startDate->copy()->addDays($dayIndex);
-                            @endphp
+                        @for($dayIndex = 0; $dayIndex < $dayCount; $dayIndex++)
+                            @php($date = $this->startDate->addDays($dayIndex))
                             <div class="date-header" 
                                 style="grid-column: {{ $dayIndex + 2 }}; grid-row: 1;"
                                 data-header>
                                 {{ $date->format('D, M j') }}
                             </div>
-                        @endforeach
+                        @endfor
 
-                        <!-- Time Labels Column -->
-                        @foreach($this->cellData()[0] as $timeSlotIndex => $timeSlot)
-                            @if($timeSlotIndex % 2 === 1)
-                                @continue
-                            @endif
-                            @php 
-                                $timeString = $timeSlot['time'];
-                                $time = Carbon\Carbon::createFromFormat('H:i', $timeString);
-                            @endphp
+                        @for($timeSlotIndex = 0; $timeSlotIndex < $timeSlotCount; $timeSlotIndex++)
+                            @php($time = $this->startDate->addMinutes($timeSlotIndex * $this->timeSlotWidthInMinutes))
                             <div class="time-label" 
                                 style="grid-column: 1; grid-row: {{ ($timeSlotIndex) + 2 }} / span 2; height: calc(var(--height) * 2);"
                                 data-time-label>
                                 {{ $time->format(__('practice-space::room_availability_calendar.time_format')) }}
                             </div>
-                        @endforeach
+                        @endfor
 
                         <!-- Time Cells -->
-                        @foreach($this->cellData() as $dayIndex => $dayData)
-                            @foreach($dayData as $timeSlotIndex => $cell)
+                        @for($dayIndex = 0; $dayIndex < $dayCount; $dayIndex++)
+                            @for($timeSlotIndex = 0; $timeSlotIndex < $timeSlotCount; $timeSlotIndex++)
                                 @php
                                     // Determine cell style based on invalid reason
-                                    $cellStyle = '';
-                                    $reasonClass = '';
-                                    $tooltip = '';
-                                    
-                                    if ($cell['invalid_duration']) {
-                                        switch ($cell['invalid_reason']) {
-                                            case 'past':
-                                                $reasonClass = 'time-cell-past';
-                                                $tooltip = __('practice-space::room_availability_calendar.invalid_reason_past');
-                                                break;
-                                            case 'advance_notice':
-                                                $reasonClass = 'time-cell-advance-notice';
-                                                $tooltip = __('practice-space::room_availability_calendar.invalid_reason_advance_notice');
-                                                break;
-                                            case 'closing_time':
-                                                $reasonClass = 'time-cell-closing-time';
-                                                $tooltip = __('practice-space::room_availability_calendar.invalid_reason_closing_time');
-                                                break;
-                                            case 'adjacent_booking':
-                                                $reasonClass = 'time-cell-adjacent-booking';
-                                                $tooltip = __('practice-space::room_availability_calendar.invalid_reason_adjacent_booking');
-                                                break;
-                                            default:
-                                                $reasonClass = 'time-cell-striped';
-                                                $tooltip = __('practice-space::room_availability_calendar.unavailable_time_slot');
-                                        }
-                                    }
-                                    
-                                    // Set user booking style
-                                    if ($cell['booking_id'] && $cell['is_current_user_booking']) {
-                                        $cellStyle = 'background-color: rgba(229, 119, 30, 0.1);';
-                                    }
+                                    $is_valid = $this->isSlotValid($this->startDate->addDays($dayIndex), $timeSlotIndex);
+                                    $reasonClass = match($is_valid) {
+                                        true => '',
+                                        'advance_notice' => 'time-cell-advance-notice',
+                                        'closing_time' => 'time-cell-closing-time',
+                                        'adjacent_booking' => 'time-cell-adjacent-booking',
+                                        default => 'time-cell-striped',
+                                    };
+                                    $tooltip = match($is_valid) {
+                                        'advance_notice' => __('practice-space::room_availability_calendar.invalid_reason_advance_notice'),
+                                        'closing_time' => __('practice-space::room_availability_calendar.invalid_reason_closing_time'),
+                                        'adjacent_booking' => __('practice-space::room_availability_calendar.invalid_reason_adjacent_booking'),
+                                        default => __('practice-space::room_availability_calendar.unavailable_time_slot'),
+                                    };
                                 @endphp
                                 <div 
                                     class="time-cell {{ $cell['booking_id'] ? ($cell['is_current_user_booking'] ? 'time-cell-booked-by-user' : '') : '' }} {{ $reasonClass }}"
@@ -205,28 +191,24 @@
                                     data-invalid-duration="{{ $cell['invalid_duration'] ? 'true' : 'false' }}"
                                     data-invalid-reason="{{ $cell['invalid_reason'] ?? '' }}"
                                     title="{{ $cell['invalid_duration'] ? $tooltip : __('practice-space::room_availability_calendar.available_time_slot') }}"
-                                    @if($cell['booking_id'])
-                                        data-booking-id="{{ $cell['booking_id'] }}"
-                                        data-is-current-user="{{ $cell['is_current_user_booking'] ? 'true' : 'false' }}"
-                                    @endif
                                 ></div>
-                            @endforeach
-                        @endforeach
+                            @endfor
+                        @endfor
                     
                         <!-- Bookings -->
-                        @foreach(array_filter($this->bookings(), fn($booking) => $booking['is_current_user'] || Auth::user()->can('manage', \CorvMC\PracticeSpace\Models\Booking::class)) as $booking)
-                            <div 
-                                class="booking {{ $booking['is_current_user'] ? 'booking-by-user' : 'booking-by-other' }}"
-                                style="
-                                    grid-column: {{ $booking['date_index'] + 2 }};
-                                    grid-row: {{ $booking['time_index'] + 2 }} / span {{ $booking['slots'] }};
-                                    position: relative;
-                                    pointer-events: auto;
-                                "
-                            >
-                                <div class="booking-title">{{ $booking['title'] }}</div>
-                                <div>{{ $booking['time_range'] }}</div>
-                            </div>
+                        @foreach($this->getCalendarEvents() as $event)
+                        <div 
+                        class="booking {{ $booking['is_current_user'] ? 'booking-by-user' : 'booking-by-other' }}"
+                        style="
+                            grid-column: {{ $booking['date_index'] + 2 }};
+                            grid-row: {{ $booking['time_index'] + 2 }} / span {{ $booking['slots'] }};
+                            position: relative;
+                            pointer-events: auto;
+                        "
+                    >
+                        <div class="booking-title">{{ $booking['title'] }}</div>
+                        <div>{{ $booking['time_range'] }}</div>
+                    </div>
                         @endforeach
 
                         <!-- Cursor Element -->
@@ -261,4 +243,5 @@
         </div>
         <x-filament-actions::modals /> 
     </div>
+</div>
 </div>

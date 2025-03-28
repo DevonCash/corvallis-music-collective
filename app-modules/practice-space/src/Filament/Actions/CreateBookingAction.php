@@ -60,18 +60,18 @@ class CreateBookingAction
                             ->label('Date')
                             ->default(isset($arguments['booking_date']) ? $arguments['booking_date'] : null)
                             ->disabled(fn(Forms\Get $get) => $get('room_id') === null)
-                            ->timezone(function (Forms\Get $get) {
-                                $roomId = $get('room_id');
-                                if (!$roomId) return config('app.timezone');
-                                $room = Room::where('id', $roomId)->first();
-                                return $room->timezone;
-                            })
+                            // ->timezone(function (Forms\Get $get) {
+                            //     $roomId = $get('room_id');
+                            //     if (!$roomId) return config('app.timezone');
+                            //     $room = Room::where('id', $roomId)->first();
+                            //     return $room->timezone;
+                            // })
                             ->minDate(function (Forms\Get $get) {
                                 if (!$get('room_id')) return now();
 
                                 $roomId = $get('room_id');
                                 $room = Room::where('id', $roomId)->first();
-                                return $room->getMinimumBookingDate();
+                                return $room->getMinimumBookingDate()->startOfDay();
                             })
                             ->maxDate(function (Forms\Get $get) {
                                 if (!$get('room_id')) return now()->addDays(90);
@@ -177,8 +177,8 @@ class CreateBookingAction
                                 return $room->getAvailableDurations($startTime);
                             })
                     ]),
-                Step::make('Review & Confirm')
-                    ->description('Review booking details and confirm')
+                Step::make('Review & Reserve')
+                    ->description('Review booking details and reserve')
                     ->icon('heroicon-o-clipboard-document-check')
                     ->schema([
                         Forms\Components\Section::make('Booking Summary')

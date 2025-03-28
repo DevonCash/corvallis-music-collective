@@ -124,40 +124,35 @@ class BookingPolicy implements Arrayable, JsonSerializable, CastsAttributes
      * Get the opening time as a Carbon instance for a specific date
      *
      * @param string $date Date in Y-m-d format
-     * @param string|null $timezone Timezone for the returned Carbon instance
      * @return Carbon
      */
-    public function getOpeningTime(string $date, ?string $timezone = null): Carbon
+    public function getOpeningTime(string $date): Carbon
     {
-        $dateTime = Carbon::parse($date . ' ' . $this->openingTime, $timezone);
-        return $dateTime;
+        return Carbon::parse($date . ' ' . $this->openingTime);
     }
 
     /**
      * Get the closing time as a Carbon instance for a specific date
      *
      * @param string $date Date in Y-m-d format
-     * @param string|null $timezone Timezone for the returned Carbon instance
      * @return Carbon
      */
-    public function getClosingTime(string $date, ?string $timezone = null): Carbon
+    public function getClosingTime(string $date): Carbon
     {
-        $dateTime = Carbon::parse($date . ' ' . $this->closingTime, $timezone);
-        return $dateTime;
+        return Carbon::parse($date . ' ' . $this->closingTime);
     }
 
     /**
      * Get the operating hours for a specific date
      *
      * @param string $date Date in Y-m-d format
-     * @param string|null $timezone Timezone for the returned Carbon instances
      * @return array ['opening' => Carbon, 'closing' => Carbon]
      */
-    public function getOperatingHours(string $date, ?string $timezone = null): array
+    public function getOperatingHours(string $date): array
     {
         return [
-            'opening' => $this->getOpeningTime($date, $timezone),
-            'closing' => $this->getClosingTime($date, $timezone)
+            'opening' => $this->getOpeningTime($date),
+            'closing' => $this->getClosingTime($date)
         ];
     }
 
@@ -253,14 +248,45 @@ class BookingPolicy implements Arrayable, JsonSerializable, CastsAttributes
             return null;
         }
         
-        if (is_array($value)) {
-            $value = self::fromArray($value);
-        }
-        
-        if (!$value instanceof self) {
-            throw new \InvalidArgumentException('The given value is not a BookingPolicy instance.');
+        if ($value instanceof self) {
+            return json_encode($value->toArray());
         }
         
         return json_encode($value);
+    }
+
+    /**
+     * Get a human-readable summary of the booking policy
+     * 
+     * @return string
+     */
+    public function getSummary(): string
+    {
+        // Format opening hours using the localized time format
+        $policyTimeFormat = __('practice-space::room_availability_calendar.policy_time_format');
+        $openingTime = Carbon::createFromFormat('H:i', $this->openingTime)->format($policyTimeFormat);
+        $closingTime = Carbon::createFromFormat('H:i', $this->closingTime)->format($policyTimeFormat);
+        
+        // Build the natural language description
+        $summary = __('practice-space::room_availability_calendar.policy_open_hours', [
+            'opening_time' => $openingTime,
+            'closing_time' => $closingTime,
+            'max_duration' => $this->maxBookingDurationHours,
+        ]);
+        
+        $summary .= ' ' . __('practice-space::room_availability_calendar.policy_booking_window', [
+            'min_hours' => $this->minAdvanceBookingHours,
+            'max_days' => $this->maxAdvanceBookingDays,
+        ]);
+        
+        $summary .= ' ' . __('practice-space::room_availability_calendar.policy_cancellation', [
+            'hours' => $this->cancellationHours,
+        ]);
+        
+        $summary .= ' ' . __('practice-space::room_availability_calendar.policy_weekly_limit', [
+            'limit' => $this->maxBookingsPerWeek,
+        ]);
+        
+        return $summary;
     }
 } 

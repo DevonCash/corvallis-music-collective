@@ -12,6 +12,7 @@
         "php": "^8.2",
         "alpineio/model-states-for-filament": "dev-main",
         "awcodes/filament-table-repeater": "^3.1",
+        "coconutcraig/laravel-postmark": "^3.3",
         "corvmc/analytics-insights": "*",
         "corvmc/band-profiles": "*",
         "corvmc/commerce": "*",

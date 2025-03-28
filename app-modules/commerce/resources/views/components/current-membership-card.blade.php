@@ -1,31 +1,8 @@
-@php
-    $tierName = $tier['name'] ?? 'Unknown';
-    $price = $tier['current_price']['unit_amount'] ?? 0;
-    $interval = $tier['current_price']['recurring']['interval'] ?? 'month';
-    $formattedPrice = '$' . number_format($price / 100, 2);
-    $renewalDate = date('F j, Y', $renewalDate);
-    $component = $component ?? null;
-@endphp
-
-
-<div {!! $component ? $component->getExtraAttributeBag()->toHtml() : '' !!} class="bg-white rounded-lg shadow-sm overflow-hidden border border-gray-200">
-    <div class="px-4 py-3 bg-gray-50 border-b border-gray-200 flex justify-between items-center">
-        <h3 class="text-lg font-medium text-gray-900">{{ $heading }}</h3>
-        
-        @if($hasHeaderActions || ($component && !empty($component->getHeaderActions())))
-        <div class="flex items-center space-x-2">
-            @if(isset($headerActions))
-                {{ $headerActions }}
-            @elseif($component)
-                @foreach($component->getHeaderActions() as $action)
-                    {{ $action }}
-                @endforeach
-            @endif
-        </div>
-        @endif
-    </div>
-
-    <div class="p-4">
+@props(['subscription' => null, 'tier' => null])
+@if($subscription)
+<x-filament::section>
+    @dump($subscription, $tier)    
+    {{-- <div class="p-4">
         <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
                 <label class="text-sm font-medium text-gray-500">Current Tier</label>
@@ -37,7 +14,7 @@
                         />
                     </div>
                     <div>
-                        <span class="text-lg font-medium text-gray-900">{{ $tierName }}</span>
+                        <span class="text-lg font-medium text-gray-900">{{ $tier['name'] }}</span>
                     </div>
                 </div>
             </div>
@@ -72,5 +49,7 @@
                 </div>
             </div>
         </div>
-    </div>
-</div> 
+    </div> --}}
+</x-filament::section>
+
+@endif

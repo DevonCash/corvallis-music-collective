@@ -17,7 +17,6 @@ class RoomFactory extends Factory
             'capacity' => $this->faker->numberBetween(1, 20),
             'hourly_rate' => $this->faker->randomFloat(2, 10, 100),
             'is_active' => true,
-            'timezone' => $this->faker->randomElement(['America/Los_Angeles', 'America/New_York', 'America/Chicago', 'America/Denver']),
         ];
     }
 

@@ -35,11 +35,9 @@ class BookingTest extends TestCase
      */
     public function it_can_create_a_booking()
     {
-        $room = Room::factory()->create([
-            'timezone' => 'UTC', // Explicitly set timezone to UTC
-        ]);
+        $room = Room::factory()->create();
         
-        $startTime = Carbon::now()->addDay()->setTimezone('UTC'); // Explicitly use UTC
+        $startTime = Carbon::now()->addDay();
         $endTime = $startTime->copy()->addHours(2);
         
         $booking = Booking::factory()->create([
@@ -55,18 +53,16 @@ class BookingTest extends TestCase
             'room_id' => $room->id,
         ]);
         
-        // Use start_time_utc to compare with UTC time
         $this->assertEquals(
             $startTime->format('Y-m-d H:i'), 
-            $booking->start_time_utc->format('Y-m-d H:i'),
-            'Start time in UTC does not match the expected value'
+            $booking->start_time->format('Y-m-d H:i'),
+            'Start time does not match the expected value'
         );
         
-        // Use end_time_utc to compare with UTC time
         $this->assertEquals(
             $endTime->format('Y-m-d H:i'), 
-            $booking->end_time_utc->format('Y-m-d H:i'),
-            'End time in UTC does not match the expected value'
+            $booking->end_time->format('Y-m-d H:i'),
+            'End time does not match the expected value'
         );
         
         $this->assertEquals('scheduled', $booking->getRawOriginal('state'));

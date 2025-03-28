@@ -21,8 +21,12 @@ use CorvMC\PracticeSpace\Traits\LogsNotifications;
 use CorvMC\PracticeSpace\Traits\HasRecurringBookings;
 use Illuminate\Support\Facades\Log;
 use CorvMC\PracticeSpace\ValueObjects\BookingPolicy;
+use CorvMC\PracticeSpace\Contracts\CalendarEvent;
+use DateTime;
+use DateTimeImmutable;
+use Illuminate\Support\Facades\Auth;
 
-class Booking extends Model
+class Booking extends Model implements CalendarEvent
 {
     // Temporarily commented out HasPayments for testing
     use LogsActivity, HasFactory, SoftDeletes, HasPayments, LogsNotifications, HasRecurringBookings;
@@ -264,9 +268,14 @@ class Booking extends Model
      */
     protected function validateAdvanceNotice($policy, $override = null): bool
     {
-        $now = Carbon::now();
-        $hoursUntilBooking = $now->diffInMinutes($this->start_time, false) / 60;
-        $daysUntilBooking = $now->diffInDays($this->start_time, false);
+        // Get current time in UTC
+        $now = Carbon::now()->setTimezone('UTC');
+        
+        // Convert booking start time to UTC for comparison
+        $startTimeUtc = $this->start_time->copy()->setTimezone('UTC');
+        
+        $hoursUntilBooking = $now->diffInMinutes($startTimeUtc, false) / 60;
+        $daysUntilBooking = $now->diffInDays($startTimeUtc, false);
         
         $minHours = $override && isset($override['min_advance_booking_hours']) 
             ? $override['min_advance_booking_hours'] 
@@ -642,11 +651,8 @@ class Booking extends Model
         // Get the base Carbon instance from UTC storage
         $date = Carbon::parse($value);
         
-        // Get the room's timezone, fallback to app timezone if not found
-        $timezone = optional($this->room)->timezone ?? config('app.timezone');
-        
-        // Convert from UTC to room's timezone
-        return $date->setTimezone($timezone);
+        // Always use app timezone
+        return $date->setTimezone(config('app.timezone'));
     }
     
     /**
@@ -662,11 +668,8 @@ class Booking extends Model
         // Get the base Carbon instance from UTC storage
         $date = Carbon::parse($value);
         
-        // Get the room's timezone, fallback to app timezone if not found
-        $timezone = optional($this->room)->timezone ?? config('app.timezone');
-        
-        // Convert from UTC to room's timezone
-        return $date->setTimezone($timezone);
+        // Always use app timezone
+        return $date->setTimezone(config('app.timezone'));
     }
     
     /**
@@ -711,9 +714,8 @@ class Booking extends Model
             return;
         }
 
-        // If it's a string, parse it in the room's timezone then convert to UTC
-        $timezone = optional($this->room)->timezone ?? config('app.timezone');
-        $date = Carbon::parse($value, $timezone);
+        // Parse it in the app timezone then convert to UTC
+        $date = Carbon::parse($value, config('app.timezone'));
         $this->attributes['start_time'] = $date->setTimezone('UTC');
     }
     
@@ -737,20 +739,19 @@ class Booking extends Model
             return;
         }
 
-        // If it's a string, parse it in the room's timezone then convert to UTC
-        $timezone = optional($this->room)->timezone ?? config('app.timezone');
-        $date = Carbon::parse($value, $timezone);
+        // Parse it in the app timezone then convert to UTC
+        $date = Carbon::parse($value, config('app.timezone'));
         $this->attributes['end_time'] = $date->setTimezone('UTC');
     }
     
     /**
-     * Get the room timezone or fall back to app timezone
+     * Get the timezone to use for this booking
      *
      * @return string
      */
     public function getRoomTimezone(): string
     {
-        return optional($this->room)->timezone ?? config('app.timezone');
+        return config('app.timezone');
     }
     
     /**
@@ -820,5 +821,50 @@ class Booking extends Model
             'start' => $this->start_time_utc->format($format),
             'end' => $this->end_time_utc->format($format),
         ];
+    }
+
+    /**
+     * Scope a query to only include active bookings for a room within a date range.
+     *
+     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @param Room $room
+     * @param Carbon $startDate
+     * @param Carbon $endDate
+     * @return \Illuminate\Database\Eloquent\Builder
+     */
+    public function scopeForRoomInDateRange($query, Room $room, Carbon $startDate, Carbon $endDate)
+    {
+        return $query
+            ->where('state', '!=', 'cancelled')
+            ->where('room_id', $room->id)
+            ->whereBetween('start_time', [
+                $startDate->copy()->startOfDay(),
+                $endDate->copy()->endOfDay()
+            ])
+            ->with(['room', 'user']);
+    }
+
+    public function getEventId(): string|int {
+        return "booking:{$this->id}";
+    }
+
+    public function getStartTime(): DateTimeImmutable {
+        return $this->start_time;
+    }
+
+    public function getEndTime(): DateTimeImmutable {
+        return $this->end_time;
+    }
+
+    public function getEventTitle(): string {
+        return $this->user->name;
+    }
+
+    public function belongsToCurrentUser(): bool {
+        return $this->user->id === Auth::id();
+    }
+
+    public function getEventMetadata(): array {
+        return [];
     }
 } 

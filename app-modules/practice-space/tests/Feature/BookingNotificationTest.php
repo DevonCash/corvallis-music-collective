@@ -38,11 +38,10 @@ class BookingNotificationTest extends TestCase
             'capacity' => 5,
             'hourly_rate' => 25.00,
             'is_active' => true,
-            'timezone' => 'America/Los_Angeles',
         ]);
         
-        // Create a booking for tomorrow with UTC timestamp
-        $tomorrow = Carbon::tomorrow()->setHour(10)->setMinute(0)->setTimezone('UTC');
+        // Create a booking for tomorrow
+        $tomorrow = Carbon::tomorrow()->setHour(10)->setMinute(0);
         $this->booking = Booking::factory()->create([
             'room_id' => $this->room->id,
             'user_id' => $this->user->id,
@@ -77,8 +76,8 @@ class BookingNotificationTest extends TestCase
         // Reset notification fake to clear the confirmation notification
         Notification::fake();
         
-        // Set the booking time to be exactly 24 hours from now (using UTC)
-        $exactlyOneDayFromNow = Carbon::now()->addDay()->setTimezone('UTC');
+        // Set the booking time to be exactly 24 hours from now
+        $exactlyOneDayFromNow = Carbon::now()->addDay();
         $this->booking->update([
             'start_time' => $exactlyOneDayFromNow,
             'end_time' => $exactlyOneDayFromNow->copy()->addHours(2),
@@ -120,8 +119,8 @@ class BookingNotificationTest extends TestCase
         // Reset notification fake
         Notification::fake();
         
-        // Set the booking time to be exactly 24 hours from now (using UTC)
-        $exactlyOneDayFromNow = Carbon::now()->addDay()->setTimezone('UTC');
+        // Set the booking time to be exactly 24 hours from now
+        $exactlyOneDayFromNow = Carbon::now()->addDay();
         $this->booking->update([
             'start_time' => $exactlyOneDayFromNow,
             'end_time' => $exactlyOneDayFromNow->copy()->addHours(2),
@@ -146,13 +145,13 @@ class BookingNotificationTest extends TestCase
         // Reset notification fake
         Notification::fake();
         
-        // Set the booking time to be exactly 24 hours from now (using UTC)
-        $exactlyOneDayFromNow = Carbon::now()->addDay()->setTimezone('UTC');
+        // Set the booking time to be exactly 24 hours from now
+        $exactlyOneDayFromNow = Carbon::now()->addDay();
         $this->booking->update([
             'start_time' => $exactlyOneDayFromNow,
             'end_time' => $exactlyOneDayFromNow->copy()->addHours(2),
             'state' => 'cancelled',
-            'cancelled_at' => Carbon::now()->setTimezone('UTC'),
+            'cancelled_at' => Carbon::now(),
             'cancellation_reason' => 'Testing cancellation',
         ]);
         

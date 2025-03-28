@@ -129,7 +129,6 @@ class PracticeSpaceSeeder extends Seeder
                 'amenities' => ['Piano', 'Music Stand', 'Chair'],
                 'specifications' => ['Sound Isolation Rating: Medium', 'Natural Light: Yes'],
                 'photos' => ['practice_room_a_1.jpg', 'practice_room_a_2.jpg'],
-                'timezone' => 'America/Los_Angeles',
             ],
             [
                 'room_category_id' => $categoryModels[0]->id,
@@ -142,7 +141,6 @@ class PracticeSpaceSeeder extends Seeder
                 'amenities' => ['Grand Piano', 'Music Stands', 'Chairs'],
                 'specifications' => ['Sound Isolation Rating: High', 'Natural Light: Yes'],
                 'photos' => ['practice_room_b_1.jpg', 'practice_room_b_2.jpg'],
-                'timezone' => 'America/New_York',
             ],
             
             // Recording Studios
@@ -157,7 +155,6 @@ class PracticeSpaceSeeder extends Seeder
                 'amenities' => ['Pro Tools', 'Mixing Console', 'Microphones', 'Monitors'],
                 'specifications' => ['Sound Isolation Rating: Very High', 'Control Room: Yes', 'Live Room: Yes'],
                 'photos' => ['studio_1_1.jpg', 'studio_1_2.jpg'],
-                'timezone' => 'Asia/Tokyo',
             ],
             
             // Rehearsal Halls
@@ -172,7 +169,6 @@ class PracticeSpaceSeeder extends Seeder
                 'amenities' => ['PA System', 'Drum Kit', 'Piano', 'Chairs', 'Music Stands'],
                 'specifications' => ['Sound Isolation Rating: High', 'Stage Area: Yes'],
                 'photos' => ['main_hall_1.jpg', 'main_hall_2.jpg'],
-                'timezone' => 'Europe/London',
             ],
             
             // Teaching Studios
@@ -187,7 +183,6 @@ class PracticeSpaceSeeder extends Seeder
                 'amenities' => ['Piano', 'Whiteboard', 'Music Stand', 'Chairs'],
                 'specifications' => ['Sound Isolation Rating: Medium', 'Natural Light: Yes'],
                 'photos' => ['teaching_1_1.jpg', 'teaching_1_2.jpg'],
-                'timezone' => 'Australia/Sydney',
             ],
             
             // Percussion Rooms
@@ -202,7 +197,6 @@ class PracticeSpaceSeeder extends Seeder
                 'amenities' => ['Drum Kit', 'Congas', 'Bongos', 'Timpani', 'Xylophone'],
                 'specifications' => ['Sound Isolation Rating: Very High', 'Reinforced Floor: Yes'],
                 'photos' => ['percussion_1_1.jpg', 'percussion_1_2.jpg'],
-                'timezone' => 'Europe/Paris',
             ],
         ];
 
@@ -262,25 +256,25 @@ class PracticeSpaceSeeder extends Seeder
             [
                 'room_id' => $roomModels[0]->id,
                 'title' => 'Piano Tuning',
-                'start_time' => Carbon::now($roomModels[0]->timezone)->addDays(7)->setHour(8)->setMinute(0),
-                'end_time' => Carbon::now($roomModels[0]->timezone)->addDays(7)->setHour(10)->setMinute(0),
-                'description' => 'Piano tuning in ' . $roomModels[0]->timezone . ' timezone',
+                'start_time' => Carbon::now()->addDays(7)->setHour(8)->setMinute(0),
+                'end_time' => Carbon::now()->addDays(7)->setHour(10)->setMinute(0),
+                'description' => 'Piano tuning',
                 'status' => 'scheduled',
             ],
             [
                 'room_id' => $roomModels[2]->id,
                 'title' => 'Studio Equipment Maintenance',
-                'start_time' => Carbon::now($roomModels[2]->timezone)->addDays(14)->setHour(18)->setMinute(0),
-                'end_time' => Carbon::now($roomModels[2]->timezone)->addDays(14)->setHour(22)->setMinute(0),
-                'description' => 'Software updates and equipment maintenance in ' . $roomModels[2]->timezone . ' timezone',
+                'start_time' => Carbon::now()->addDays(14)->setHour(18)->setMinute(0),
+                'end_time' => Carbon::now()->addDays(14)->setHour(22)->setMinute(0),
+                'description' => 'Software updates and equipment maintenance',
                 'status' => 'scheduled',
             ],
             [
                 'room_id' => $roomModels[5]->id,
                 'title' => 'Drum Kit Maintenance',
-                'start_time' => Carbon::now($roomModels[5]->timezone)->addDays(10)->setHour(9)->setMinute(0),
-                'end_time' => Carbon::now($roomModels[5]->timezone)->addDays(10)->setHour(12)->setMinute(0),
-                'description' => 'Drum kit maintenance and replacement of drum heads in ' . $roomModels[5]->timezone . ' timezone',
+                'start_time' => Carbon::now()->addDays(10)->setHour(9)->setMinute(0),
+                'end_time' => Carbon::now()->addDays(10)->setHour(12)->setMinute(0),
+                'description' => 'Drum kit maintenance and replacement of drum heads',
                 'status' => 'scheduled',
             ],
         ];
@@ -299,11 +293,8 @@ class PracticeSpaceSeeder extends Seeder
             for ($i = 0; $i < 2; $i++) {
                 $randomRoom = $rooms->random();
                 
-                // Use the room's timezone for creating bookings
-                $roomTimezone = $randomRoom->timezone;
-                
-                // Create dates in the room's timezone
-                $startDate = Carbon::now($roomTimezone)
+                // Create dates
+                $startDate = Carbon::now()
                     ->addDays(rand(1, 30))
                     ->setHour(rand(9, 20))
                     ->setMinute(0)
@@ -311,14 +302,13 @@ class PracticeSpaceSeeder extends Seeder
                 
                 $endDate = $startDate->copy()->addHours(rand(1, 3));
                 
-                // Store dates in UTC in the database
                 Booking::create([
                     'room_id' => $randomRoom->id,
                     'user_id' => $user->id,
                     'start_time' => $startDate,
                     'end_time' => $endDate,
                     'state' => 'scheduled',
-                    'notes' => 'Booking for testing. Created in timezone: ' . $roomTimezone,
+                    'notes' => 'Booking for testing',
                     'total_price' => $randomRoom->hourly_rate * $startDate->diffInHours($endDate),
                 ]);
             }
@@ -344,10 +334,9 @@ class PracticeSpaceSeeder extends Seeder
         $this->command->info('Creating waitlist entries...');
         // Pick a popular time slot that's already booked
         $popularRoom = $roomModels[2]; // Studio 1
-        $popularRoomTimezone = $popularRoom->timezone;
         
-        // Create dates in the room's timezone
-        $popularStartTime = Carbon::now($popularRoomTimezone)
+        // Create dates
+        $popularStartTime = Carbon::now()
             ->addDays(3)
             ->setHour(18)
             ->setMinute(0);
@@ -359,7 +348,7 @@ class PracticeSpaceSeeder extends Seeder
             'user_id' => $users[0]->id,
             'start_time' => $popularStartTime,
             'end_time' => $popularEndTime,
-            'notes' => 'Popular time slot (timezone: ' . $popularRoomTimezone . ')',
+            'notes' => 'Popular time slot',
             'status' => 'reserved',
             'state' => 'scheduled',
             'total_price' => $popularRoom->hourly_rate * $popularStartTime->diffInHours($popularEndTime),
@@ -375,7 +364,7 @@ class PracticeSpaceSeeder extends Seeder
                 'preferred_date' => $popularStartTime->toDateString(),
                 'preferred_start_time' => $popularStartTime->format('H:i:s'),
                 'preferred_end_time' => $popularEndTime->format('H:i:s'),
-                'notes' => 'Hoping for a cancellation in ' . $popularRoomTimezone . ' timezone',
+                'notes' => 'Hoping for a cancellation',
                 'status' => 'waiting',
             ]);
         }

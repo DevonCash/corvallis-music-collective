@@ -9,13 +9,12 @@ use Illuminate\Support\Facades\Auth;
 use Stripe\StripeClient;
 use Filament\Notifications\Notification;
 use Filament\Actions\Action;
-use Filament\Forms\Form;
-use Filament\Forms\Components\{Grid, Tabs, Tabs\Tab, Section, View, ViewField};
 use Illuminate\Support\Collection;
 use Filament\Forms\Components\Actions\Action as FormAction;
 use Illuminate\Support\Facades\Cache;
 use Filament\Forms\Components\Placeholder;
 use Illuminate\Support\HtmlString;
+use Livewire\Attributes\Computed;
 
 class ManageMembership extends Page implements HasForms
 {
@@ -26,13 +25,88 @@ class ManageMembership extends Page implements HasForms
     protected static ?int $navigationSort = 10;
     protected static ?string $slug = 'membership';
 
-    protected Collection $tiers;
+    protected ?Collection $tiers = null;
     
     // Cache settings
     protected const MEMBERSHIP_TIERS_CACHE_KEY = 'membership_tiers';
-    protected const MEMBERSHIP_TIERS_CACHE_TTL = 3600; // 1 hour
+    protected const MEMBERSHIP_TIERS_CACHE_TTL = 86400; // 24 hours
+    protected const CHECKOUT_URL_CACHE_KEY = 'checkout_url_';
+    protected const CHECKOUT_URL_CACHE_TTL = 3600; // 1 hour
 
     public array $data = [];
+    
+    public Collection $monthlyTiers;
+    public Collection $yearlyTiers;
+
+    // Store subscription in property to avoid repeated calls
+    protected $currentSubscription = null;
+    protected $currentTier;
+    protected $checkoutUrls = [];
+
+    /**
+     * Property to store the Stripe subscription data (expensive to load)
+     */
+    protected $stripeSubscription = null;
+    
+
+    #[Computed]
+    public function currentTier()
+    {
+        return $this->currentSubscription && $this->getMembershipTiers()->get($this->currentSubscription?->stripe_price);
+    }
+
+    /**
+     * Get the current subscription (use only when needed)
+     * 
+     * @return mixed The subscription model or null if not found
+     */
+    protected function getCurrentSubscription()
+    {
+        if ($this->currentSubscription === null) {
+            /** @var \App\Models\User $user */
+            $user = Auth::user();
+            
+            // First check if user has a subscription before trying to use with()
+            $hasSubscription = $user->subscribed('default');
+            
+            if ($hasSubscription) {
+                // Only try to eager load if subscription exists
+                $this->currentSubscription = $user->subscription('default')
+                    ->with('items') // Eager load subscription items to reduce queries
+                    ->first();
+            } else {
+                // Mark as checked but not found
+                $this->currentSubscription = null;
+            }
+        }
+        
+        return $this->currentSubscription;
+    }
+    
+    /**
+     * Get the current subscription from Stripe (lazy loaded)
+     */
+    protected function getStripeSubscription()
+    {
+        // First make sure current subscription is loaded
+        $subscription = $this->getCurrentSubscription();
+        
+        // Only make the expensive Stripe API call when absolutely necessary
+        if ($this->stripeSubscription === null && $subscription && $subscription->stripe_status === 'active') {
+            // Cache the Stripe subscription at the user level to avoid repeated API calls
+            $cacheKey = 'stripe_subscription_' . $subscription->id;
+            $this->stripeSubscription = Cache::remember($cacheKey, 300, function() use ($subscription) {
+                return $subscription->asStripeSubscription();
+            });
+            
+            // Also lazily load the current tier if needed
+            if ($this->currentTier === null) {
+                $this->currentTier = $this->getMembershipTiers()->get($subscription->stripe_price);
+            }
+        }
+        
+        return $this->stripeSubscription;
+    }
 
     /**
      * Mount the component and handle status parameters
@@ -41,8 +115,25 @@ class ManageMembership extends Page implements HasForms
     {
         $this->handleStatusNotifications();
         $this->data = ['interval' => 'month'];
-        $this->form->fill($this->data);
-        $this->tiers = $this->getMembershipTiers();
+        
+        // Pre-load the tiers for display (needed regardless of subscription status)
+        $this->monthlyTiers = $this->getFilteredTiers('month');
+        $this->yearlyTiers = $this->getFilteredTiers('year');
+        
+        // Preload the subscription in the background
+        // This initiates the loading but doesn't wait for the result
+        // The data will be available when needed later
+        $this->prefetchSubscriptionData();
+    }
+    
+    /**
+     * Prefetch subscription data in the background to improve perceived performance
+     */
+    protected function prefetchSubscriptionData(): void
+    {
+        // Just call the getter, which will cache the result for later use
+        // but don't use the return value here
+        $this->getCurrentSubscription();
     }
 
     /**
@@ -75,24 +166,51 @@ class ManageMembership extends Page implements HasForms
      */
     public function getMembershipTiers(): Collection
     {
-        if(!isset($this->tiers)) {
+        // Return existing tiers if already loaded
+        if($this->tiers !== null) {
+            return $this->tiers;
+        }
+        
+        // Try to get from cache first
+        $this->tiers = Cache::get(self::MEMBERSHIP_TIERS_CACHE_KEY);
+        if ($this->tiers !== null) {
+            return $this->tiers;
+        }
+        
+        // If not in cache, fetch from Stripe and cache the results
         $this->tiers = Cache::remember(self::MEMBERSHIP_TIERS_CACHE_KEY, self::MEMBERSHIP_TIERS_CACHE_TTL, function () {
             $stripe = app(StripeClient::class);
-        
-            // Fetch all products with their prices expanded in a single API call
-            $products = collect($stripe->products->search([
-                'query' => '-metadata[\'membership_tier\']:null',
-                'limit' => 100,
-            ])->data)->keyBy('id');
-
-            $prices = $stripe->prices->search([
-                'query' => $products->map(fn($pr) => "product:\"{$pr->id}\"")->join(' OR '),
-                'limit' => 100,
-            ]);
             
-            $tiers = collect($prices->data)
-            ->map(function($price) use ($products) {
-                $product = $products->get($price->product);
+            // Get all membership products in a single API call with an efficient query
+            $products = collect($stripe->products->search([
+                'query' => '-metadata["membership_tier"]:null',
+                'limit' => 100,
+            ])->data);
+            
+            if($products->count() <= 0) {
+                return collect([]);
+            }
+
+            // Get all relevant price IDs from the products
+            $productIds = $products->pluck('id')->toArray();
+            
+            $query = implode(' OR ', array_map(fn($id) => "product:\"{$id}\"", $productIds));
+            
+            // Make a single price search query instead of multiple calls
+            $prices = collect($stripe->prices->search([
+                'query' => $query,
+                'limit' => 100,
+            ])->data);
+            
+            // Pre-index products for O(1) lookups instead of O(n) searches
+            $productsById = $products->keyBy('id');
+            
+            // Use optimized data extraction with minimal processing
+            $tiers = $prices->map(function($price) use ($productsById) {
+                $product = $productsById->get($price->product);
+                if (!$product) return null;
+                
+                // Extract only needed data to reduce memory usage
                 return [
                     'product_id' => $product->id,
                     'level' => (int) ($product->metadata->membership_tier ?? 0),
@@ -107,148 +225,36 @@ class ManageMembership extends Page implements HasForms
                         ],
                     ],
                 ];
-            } )->keyBy('current_price.id');
+            })->filter()->keyBy('current_price.id');
+            
             return $tiers;
         });
             
-        }
         return $this->tiers;
     }
 
-    /**
-     * Build the form with membership options
-     */
-    public function form(Form $form): Form
-    {
-        /** @var \App\Models\User $user */
-        $user = Auth::user();
-        $tiers = $this->getMembershipTiers();
-        $currentSubscription = $user->subscription('default')?->asStripeSubscription();
-        $currentTier = $tiers->get($currentSubscription?->plan->id);
-        $currentInterval = $currentTier['current_price']['recurring']['interval'] ?? 'month';
-        
-        return $form
-            ->statePath('data')
-            ->schema([
-                Section::make('Membership')
-                ->columns(3)
-                ->visible(fn() => $currentSubscription?->stripe_status === 'active')
-                ->headerActions([
-                    $currentSubscription ? $this->manageMembershipAction($currentSubscription->plan->id)
-                        ->label('Manage Membership') : null
-                ])
-                ->schema([
-                    Placeholder::make('tier')
-                    ->content(fn() => $currentTier['name'])
-                    ->extraAttributes([
-                        'class' => 'text-2xl font-bold',
-                    ]),
-                    Placeholder::make('price')
-                    ->content(fn() => '$' . number_format($currentTier['current_price']['unit_amount'] / 100, 2) . ' / ' . ($currentTier['current_price']['recurring']['interval'] === 'month' ? 'month' : 'year'))
-                    ->extraAttributes([
-                        'class' => 'text-2xl font-bold',
-                    ]),
-                    Placeholder::make('membership-period-ends')
-                    ->label('Next Billing Date')
-                    ->content(fn() => \Carbon\Carbon::parse($currentSubscription->current_period_end)->format('M d, Y'))
-                    ->extraAttributes([
-                        'class' => 'text-2xl font-bold',
-                    ]),
-                ]),
-                Tabs::make('Billing Cycle')
-                    ->contained(false)
-                    ->default($currentInterval)
-                    ->tabs([
-                        Tab::make('Monthly')->schema([$this->getPlansGrid('month')]),
-                        Tab::make('Yearly')
-                            ->badge('2 months free!')
-                            ->badgeColor('success')
-                            ->schema([
-                                $this->getPlansGrid('year')
-                            ]),
-                    ])
-            ]);
-    }
-    
-    /**
-     * Get the grid of plans for a specific interval
-     */
-    protected function getPlansGrid(string $interval): Grid
-    {
-        return Grid::make()
-            ->columns([
-                'default' => 1,
-                'lg' => 3
-            ])
-            ->schema($this->createPlanComponents($interval));
-    }
+    protected $filteredTiersByInterval = [];
 
     /**
-     * Create plan components for the form
+     * Get membership tiers filtered by interval with memoization
+     * 
+     * @param string $interval The interval to filter by ('month' or 'year')
+     * @return \Illuminate\Support\Collection
      */
-    protected function createPlanComponents(string $interval): array
+    protected function getFilteredTiers(string $interval): Collection
     {
-        $tiers = $this->getMembershipTiers();
-         // Get current user and subscription
-        /** @var \App\Models\User $user */
-        $user = Auth::user();
-        $currentSubscription = $user->subscription('default');
-        
-
-        
-        // Filter tiers for the requested interval and sort by level
-        return $tiers
-            ->filter(fn($tier) => $tier['current_price']['recurring']['interval'] === $interval)
-            ->sortBy('level')
-            ->values()  
-            ->map(function($tier) use ($currentSubscription) {
-                $isFreePlan = isset($tier['current_price']['unit_amount']) && 
-                              $tier['current_price']['unit_amount'] === 0;
-                
-                $isCurrentPlan = $currentSubscription?->stripe_status === 'active' && 
-                                $currentSubscription->stripe_price === $tier['current_price']['id'];
-                
-                $priceId = $tier['current_price']['id'];
-                $name = $tier['name'] ?? 'Unknown';
-                
-                // Create a Section with a View component instead of MembershipPlanCard
-                return Section::make($name)
-                    ->compact()
-                    ->columnSpan(1)
-                    ->columns(1)
-                    ->extraAttributes([
-                        'class' => $this->getPlanCardClasses($isCurrentPlan, $isFreePlan),
-                    ])
-                    ->headerActions([$this->subscribeAction($priceId)])
-                    ->schema([
-                        ViewField::make($priceId)
-                        ->view('commerce::components.membership-plan-details')
-                        ->viewData([
-                            'tier' => $tier,
-                            'isCurrentPlan' => $isCurrentPlan,
-                            'isFreePlan' => $isFreePlan,
-                        ])
-                    ]);
-            })
-            ->toArray();
-    }
-    
-    /**
-     * Get CSS classes for the plan card based on its status
-     */
-    protected function getPlanCardClasses(bool $isCurrentPlan, bool $isFreePlan): string
-    {
-        $classes = 'h-full flex flex-col border-4 rounded-xl shadow-sm';
-        
-        if ($isCurrentPlan) {
-            $classes .= ' border-primary bg-primary-50';
-        } elseif ($isFreePlan) {
-            $classes .= ' border-gray-300 bg-gray-50';
-        } else {
-            $classes .= ' border-gray-200';
+        // Return already calculated results if available (memoization)
+        if (isset($this->filteredTiersByInterval[$interval])) {
+            return $this->filteredTiersByInterval[$interval];
         }
         
-        return $classes;
+        // Calculate, store, and return the filtered tiers
+        $this->filteredTiersByInterval[$interval] = $this->getMembershipTiers()
+            ->filter(fn($tier) => $tier['current_price']['recurring']['interval'] === $interval)
+            ->sortBy('level')
+            ->values();
+        
+        return $this->filteredTiersByInterval[$interval];
     }
 
     /**
@@ -256,10 +262,15 @@ class ManageMembership extends Page implements HasForms
      */
     public function switchIntervalAction(string $priceId): FormAction
     {
-        /** @var \App\Models\User $user */
-        $user = Auth::user();
-        $currentSubscription = $user->subscription('default');
-        $currentPriceId = $currentSubscription->stripe_price;
+        // Get the necessary tier information - ensure subscription is initialized
+        $subscription = $this->getCurrentSubscription();
+        
+        // Safety check - redirect to subscribe if no active subscription
+        if (!$subscription || $subscription->stripe_status !== 'active') {
+            return $this->subscribeAction($this->getMembershipTiers()->get($priceId));
+        }
+        
+        $currentPriceId = $subscription->stripe_price;
         
         $tiers = $this->getMembershipTiers();
         $newPrice = $tiers->get($priceId);
@@ -277,8 +288,17 @@ class ManageMembership extends Page implements HasForms
         $newPriceFormatted = '$' . number_format($newAmount, 2) . ' / ' . 
             ($newInterval === 'month' ? 'month' : 'year');
             
-        // Get next billing date
-        $nextBillingDate = \Carbon\Carbon::parse($currentSubscription->asStripeSubscription()->current_period_end);
+        // Get next billing date if available
+        $nextBillingDate = null;
+        $stripeSubscription = $this->getStripeSubscription();
+        if ($stripeSubscription) {
+            $nextBillingDate = \Carbon\Carbon::parse($stripeSubscription->current_period_end);
+        }
+        
+        // If we couldn't get the exact date, use a fallback message
+        $billingDateMessage = $nextBillingDate 
+            ? 'on ' . $nextBillingDate->format('M d, Y')
+            : 'at the end of your current billing period';
         
         // Format intervals
         $currentIntervalFormatted = ucfirst($currentPrice['current_price']['recurring']['interval'] . 'ly');
@@ -322,11 +342,11 @@ class ManageMembership extends Page implements HasForms
                     ->extraAttributes(['class' => 'text-lg font-medium mt-6 mb-2']),
                 
                 Placeholder::make('billing_info')
-                    ->content(function() use ($isUpgrade, $nextBillingDate) {
+                    ->content(function() use ($isUpgrade, $billingDateMessage) {
                         if ($isUpgrade) {
                             return 'This is an upgrade. You will be charged immediately for the prorated amount, and your subscription will be updated right away.';
                         } else {
-                            return 'This change will take effect at the end of your current billing period on ' . $nextBillingDate->format('M d, Y') . '.';
+                            return 'This change will take effect ' . $billingDateMessage . '.';
                         }
                     })
                     ->extraAttributes([
@@ -334,15 +354,19 @@ class ManageMembership extends Page implements HasForms
                     ]),
             ])
             ->action(function() use ($priceId, $isUpgrade) {
+                /** @var \App\Models\User $user */
+                $user = Auth::user();
+                
                 if ($isUpgrade) {
                     // For upgrades, swap immediately
-                    /** @var \App\Models\User $user */
-                    $user = Auth::user();
                     $user->subscription('default')->swap($priceId);
                 } else {
                     // For downgrades, swap at end of cycle
-                    $this->switchMembership($priceId);
+                    $user->subscription('default')->swapNextCycle($priceId);
                 }
+                
+                // Clear caches after changing subscription
+                $this->clearAllCaches();
             });
     }
 
@@ -351,13 +375,11 @@ class ManageMembership extends Page implements HasForms
      */
     public function manageMembershipAction(string $priceId): FormAction
     {
-        /** @var \App\Models\User $user */
-        $user = Auth::user();
         return FormAction::make('manage_membership_'.$priceId)
             ->label('Manage')
             ->icon('heroicon-o-cog')
             ->size('sm')
-            ->url(fn() => $user->billingPortalUrl(route(self::getRouteName())));
+            ->url(fn() => $this->getBillingPortalUrl());
     }
 
     /**
@@ -367,7 +389,32 @@ class ManageMembership extends Page implements HasForms
     {
         /** @var \App\Models\User $user */
         $user = Auth::user();
-        $endOfBillingPeriod = \Carbon\Carbon::parse($user->subscription('default')->ends_at);
+        $subscription = $this->getCurrentSubscription();
+        
+        // Safety check - redirect to home if no active subscription
+        if (!$subscription || $subscription->stripe_status !== 'active') {
+            return FormAction::make('no_subscription')
+                ->label('No Subscription')
+                ->disabled()
+                ->tooltip('You don\'t have an active subscription to cancel');
+        }
+        
+        // If we have an end date from the subscription, use that
+        $endDate = $subscription->ends_at;
+        
+        // Otherwise, get from Stripe subscription if available
+        if (!$endDate) {
+            $stripeSubscription = $this->getStripeSubscription();
+            if ($stripeSubscription) {
+                $endDate = \Carbon\Carbon::parse($stripeSubscription->current_period_end);
+            }
+        }
+        
+        // Format the date for display
+        $endDateMessage = $endDate 
+            ? 'on ' . \Carbon\Carbon::parse($endDate)->format('M d, Y')
+            : 'at the end of your billing period';
+        
         return FormAction::make('cancel_membership')
             ->label('Switch to Free')
             ->icon('heroicon-o-arrow-down')
@@ -375,25 +422,31 @@ class ManageMembership extends Page implements HasForms
             ->requiresConfirmation()
             ->modalHeading('Switch to Free')
             ->size('sm')
-            ->modalDescription("At the end of your billing period, your subscription will be cancelled and you will have access to the free tier. This goes into effect on " . $endOfBillingPeriod->format('M d, Y'). ".")
+            ->modalDescription("At the end of your billing period, your subscription will be cancelled and you will have access to the free tier. This goes into effect {$endDateMessage}.")
             ->action(function() use ($user) {
                 $user->subscription('default')->cancel();
+                
+                // Clear caches after cancelling subscription
+                $this->clearAllCaches();
             });
     }
 
     /**
      * Action to switch tier
      */
-    public function switchTierAction(string $priceId): FormAction
+    public function switchTierAction(array $currentTier, array $newTier): FormAction
     {
         /** @var \App\Models\User $user */
         $user = Auth::user();
-        $currentSubscription = $user->subscription('default');
-        $currentPriceId = $currentSubscription->stripe_price;
         
-        $tiers = $this->getMembershipTiers();
-        $newTier = $tiers->get($priceId);
-        $currentTier = $tiers->get($currentPriceId);
+        // Safety check - redirect to subscribe if not valid tier change
+        if (!$currentTier || !$newTier) {
+            return FormAction::make('invalid_tier_change')
+                ->label('Error')
+                ->color('danger')
+                ->disabled()
+                ->tooltip('Cannot change tiers: invalid tier information');
+        }
         
         // Calculate price difference
         $currentAmount = $currentTier['current_price']['unit_amount'] / 100;
@@ -405,10 +458,25 @@ class ManageMembership extends Page implements HasForms
             ($currentTier['current_price']['recurring']['interval'] === 'month' ? 'month' : 'year');
         $newPriceFormatted = '$' . number_format($newAmount, 2) . ' / ' . 
             ($newTier['current_price']['recurring']['interval'] === 'month' ? 'month' : 'year');
-            
-        // Get next billing date
-        $nextBillingDate = \Carbon\Carbon::parse($currentSubscription->asStripeSubscription()->current_period_end);
+        $priceId = $newTier['current_price']['id'];
+
+        // Get next billing date if available
+        $nextBillingDate = null;
+        $subscription = $this->getCurrentSubscription();
         
+        // Only fetch stripe subscription if we have an active subscription
+        if ($subscription && $subscription->stripe_status === 'active') {
+            $stripeSubscription = $this->getStripeSubscription();
+            if ($stripeSubscription) {
+                $nextBillingDate = \Carbon\Carbon::parse($stripeSubscription->current_period_end);
+            }
+        }
+        
+        // If we couldn't get the exact date, use a fallback message
+        $billingDateMessage = $nextBillingDate 
+            ? 'on ' . $nextBillingDate->format('M d, Y')
+            : 'at the end of your current billing period';
+
         // Format intervals
         $currentIntervalFormatted = ucfirst($currentTier['current_price']['recurring']['interval'] . 'ly');
         $newIntervalFormatted = ucfirst($newTier['current_price']['recurring']['interval'] . 'ly');
@@ -448,76 +516,76 @@ class ManageMembership extends Page implements HasForms
                     HTML)),
                 
                 Placeholder::make('billing_info')
-                    ->content(function() use ($isUpgrade, $nextBillingDate) {
+                    ->content(function() use ($isUpgrade, $billingDateMessage) {
                         if ($isUpgrade) {
                             return 'This is an upgrade. You will be charged immediately for the prorated amount, and your subscription will be updated right away with the new features.';
                         } else {
-                            return 'This is a downgrade. The change will take effect at the end of your current billing period on ' . $nextBillingDate->format('M d, Y') . '.';
+                            return 'This is a downgrade. The change will take effect ' . $billingDateMessage . '.';
                         }
                     })
                     ->extraAttributes([
                         'class' => $isUpgrade ? 'text-warning-600 p-2 bg-warning-50 rounded' : 'text-success-600 p-2 bg-success-50 rounded'
                     ]),
             ])
-            ->action(function() use ($priceId, $isUpgrade) {
+            ->action(function() use ($priceId, $isUpgrade, $user) {
                 if ($isUpgrade) {
                     // For upgrades, swap immediately
-                    /** @var \App\Models\User $user */
-                    $user = Auth::user();
                     $user->subscription('default')->swap($priceId);
                 } else {
                     // For downgrades, swap at end of cycle
-                    $this->switchMembership($priceId);
+                    $user->subscription('default')->swapNextCycle($priceId);
                 }
+                
+                // Clear caches after changing subscription
+                $this->clearAllCaches();
             });
     }
 
     /**
      * Main subscribe action that determines the appropriate action based on context
      */
-    public function subscribeAction(string $priceId): FormAction
+    public function subscribeAction(array $tier): FormAction
     {
         /** @var \App\Models\User $user */
         $user = Auth::user();
-        $currentSubscription = $user->subscription('default');
-        $isCurrentSubscription = $currentSubscription && 
-                                $currentSubscription->stripe_status === 'active' && 
-                                $currentSubscription->stripe_price === $priceId;
-        $tier = $this->getMembershipTiers()->get($priceId);
-
-        if($currentSubscription?->stripe_status === 'active') {
-        // Manage current subscription
-        if($isCurrentSubscription) {
+        $priceId = $tier['current_price']['id'];
+        
+        // Get subscription status - use method call to ensure proper initialization
+        $subscription = $this->getCurrentSubscription();
+        
+        // Default to checkout for new subscriptions
+        if (!$subscription || $subscription->stripe_status !== 'active') {
+            return FormAction::make('subscribe_'.$priceId)
+                ->label('Subscribe')
+                ->icon('heroicon-o-cog')
+                ->color('primary')
+                ->size('sm')
+                ->url($this->getCheckoutUrl($priceId));
+        }
+        
+        // Check for existing subscription matches
+        $isCurrentSubscription = $subscription->stripe_price === $priceId;
+        $isSameProduct = $tier['product_id'] === $subscription->stripe_product;
+        
+        // Path 1: Already subscribed to this exact plan - show manage action
+        if ($isCurrentSubscription) {
             return $this->manageMembershipAction($priceId);
         }
-
-        // Downgrade to free plan
-        if(!$isCurrentSubscription && $tier['current_price']['unit_amount'] === 0) {
+        
+        // Path 2: Downgrading to free plan
+        if ($tier['current_price']['unit_amount'] === 0) {
             return $this->cancelMembershipAction();
         }
-
-        // Product is the same, price is different
-        if($tier['product_id'] === $currentSubscription->stripe_product) {
+        
+        // Path 3: Same product but different price (interval change)
+        if ($isSameProduct) {
             return $this->switchIntervalAction($priceId);
         }
-
-        // Product is different
-        if($tier['product_id'] !== $currentSubscription->stripe_product) {
-            return $this->switchTierAction($priceId);
-        }
-    }
-
-        // Otherwise, show confirmation modal for subscription change
-        return FormAction::make('subscribe_'.$priceId)
-            ->label('Subscribe')
-            ->icon('heroicon-o-cog')
-            ->color('primary')
-            ->size('sm')
-            ->url($user->newSubscription('default', $priceId)
-            ->checkout([
-                'success_url' => route(self::getRouteName(), ['status' => 'success']),
-                'cancel_url' => route(self::getRouteName(), ['status' => 'cancelled']),
-            ])->url);
+        
+        // Path 4: Different product (tier change)
+        // Get current tier details only when needed (lazy loading)
+        $currentTier = $this->getMembershipTiers()->get($subscription->stripe_price);
+        return $this->switchTierAction($currentTier, $tier);
     }
 
     /**
@@ -526,6 +594,45 @@ class ManageMembership extends Page implements HasForms
     public function clearMembershipTiersCache(): void
     {
         Cache::forget(self::MEMBERSHIP_TIERS_CACHE_KEY);
+        // Also clear filtered tiers
+        $this->filteredTiersByInterval = [];
+    }
+    
+    /**
+     * Clear all related caches for a user
+     */
+    public function clearAllCaches(): void
+    {
+        // Clear membership tiers
+        $this->clearMembershipTiersCache();
+        
+        // Clear checkout URLs
+        /** @var \App\Models\User $user */
+        $user = Auth::user();
+        if ($user) {
+            // Clear billing portal cache
+            Cache::forget('billing_portal_' . $user->id);
+            
+            // Clear checkout URL caches - only if we have already loaded tiers
+            if ($this->tiers) {
+                foreach ($this->tiers as $tier) {
+                    $priceId = $tier['current_price']['id'];
+                    Cache::forget(self::CHECKOUT_URL_CACHE_KEY . $user->id . '_' . $priceId);
+                }
+            }
+            
+            // Clear subscription cache - only if we have already loaded subscription
+            if ($this->currentSubscription) {
+                Cache::forget('stripe_subscription_' . $this->currentSubscription->id);
+            }
+        }
+        
+        // Reset instances
+        $this->tiers = null;
+        $this->currentSubscription = null;
+        $this->stripeSubscription = null;
+        $this->currentTier = null;
+        $this->checkoutUrls = [];
     }
     
     /**
@@ -537,21 +644,37 @@ class ManageMembership extends Page implements HasForms
     }
     
     /**
-     * Create a checkout session for a product
+     * Create or retrieve a cached checkout URL
      */
-    public function createCheckout(string $priceId)
+    protected function getCheckoutUrl(string $priceId): string
     {
         /** @var \App\Models\User $user */
         $user = Auth::user();
+        $cacheKey = self::CHECKOUT_URL_CACHE_KEY . $user->id . '_' . $priceId;
         
-        // Clear the cache after checkout is created
-        $this->clearMembershipTiersCache();
+        // Check if we already generated this URL in this request
+        if (isset($this->checkoutUrls[$priceId])) {
+            return $this->checkoutUrls[$priceId];
+        }
         
-        return redirect($user->newSubscription('default', $priceId)
-        ->checkout([
-            'success_url' => route(self::getRouteName(), ['status' => 'success']),
-            'cancel_url' => route(self::getRouteName(), ['status' => 'cancelled']),
-        ])->url);
+        // Check if URL is in the cache
+        $url = Cache::get($cacheKey);
+        if ($url) {
+            $this->checkoutUrls[$priceId] = $url;
+            return $url;
+        }
+        
+        // Generate and cache the URL
+        $url = $user->newSubscription('default', $priceId)
+            ->checkout([
+                'success_url' => route(self::getRouteName(), ['status' => 'success']),
+                'cancel_url' => route(self::getRouteName(), ['status' => 'cancelled']),
+            ])->url;
+            
+        Cache::put($cacheKey, $url, self::CHECKOUT_URL_CACHE_TTL);
+        $this->checkoutUrls[$priceId] = $url;
+        
+        return $url;
     }
     
     /**
@@ -559,11 +682,9 @@ class ManageMembership extends Page implements HasForms
      */
     public function manageMembership()
     {
-        /** @var \App\Models\User $user */
-        $user = Auth::user();
         return Action::make('manage-membership')
             ->label('Manage')
-            ->url(fn() => $user->billingPortalUrl(route(self::getRouteName())));
+            ->url(fn() => $this->getBillingPortalUrl());
     }
 
     /**
@@ -573,6 +694,43 @@ class ManageMembership extends Page implements HasForms
     {
         /** @var \App\Models\User $user */
         $user = Auth::user();
+        
+        // Clear caches after changing subscription
+        $this->clearAllCaches();
+        
         return $user->subscription('default')->swapNextCycle($priceId);
+    }
+
+    /**
+     * Create a checkout session for a product
+     */
+    public function createCheckout(string $priceId)
+    {
+        // Clear the cache after checkout is created
+        $this->clearMembershipTiersCache();
+        
+        return redirect($this->getCheckoutUrl($priceId));
+    }
+    
+    /**
+     * Get a cached billing portal URL
+     */
+    protected function getBillingPortalUrl(): string
+    {
+        /** @var \App\Models\User $user */
+        $user = Auth::user();
+        $cacheKey = 'billing_portal_' . $user->id;
+        
+        // Check if URL is in the cache 
+        $url = Cache::get($cacheKey);
+        if ($url) {
+            return $url;
+        }
+        
+        // Generate and cache the URL
+        $url = $user->billingPortalUrl(route(self::getRouteName()));
+        Cache::put($cacheKey, $url, 300); // Cache for 5 minutes
+        
+        return $url;
     }
 }

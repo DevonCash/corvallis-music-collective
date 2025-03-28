@@ -35,7 +35,6 @@ class RoomAvailabilityCalendarTest extends TestCase
                 'max_advance_booking_days' => 30,
                 'allowed_days_of_week' => [1, 2, 3, 4, 5, 6, 7],
             ],
-            'timezone' => 'UTC',
         ]);
     }
 
@@ -43,7 +42,7 @@ class RoomAvailabilityCalendarTest extends TestCase
     public function it_prints_time_slots_for_debugging()
     {
         // Use a specific date in the future to avoid issues with the current time
-        $testDate = Carbon::tomorrow($this->room->timezone);
+        $testDate = Carbon::tomorrow();
         
         // Get available time slots for the test date
         $availableSlots = $this->room->getAvailableTimeSlots($testDate);
@@ -59,14 +58,14 @@ class RoomAvailabilityCalendarTest extends TestCase
     public function it_displays_room_availability_with_hourly_resolution()
     {
         // Use a future date to avoid same-day booking restrictions
-        $futureDate = Carbon::tomorrow($this->room->timezone);
+        $futureDate = Carbon::tomorrow();
         
-        // Create a booking from 10 AM to 12 PM in the room's timezone
+        // Create a booking from 10 AM to 12 PM
         Booking::factory()->create([
             'room_id' => $this->room->id,
             'user_id' => $this->user->id,
-            'start_time' => $futureDate->copy()->setHour(10)->setMinute(0)->setTimezone('UTC'),
-            'end_time' => $futureDate->copy()->setHour(12)->setMinute(0)->setTimezone('UTC'),
+            'start_time' => $futureDate->copy()->setHour(10)->setMinute(0),
+            'end_time' => $futureDate->copy()->setHour(12)->setMinute(0),
             'state' => 'confirmed',
         ]);
         
@@ -92,15 +91,15 @@ class RoomAvailabilityCalendarTest extends TestCase
     public function it_shows_fully_booked_dates_in_calendar()
     {
         // Use a future date to avoid same-day booking restrictions
-        $futureDate = Carbon::tomorrow($this->room->timezone);
+        $futureDate = Carbon::tomorrow();
         $operatingHours = $this->room->getOperatingHours($futureDate->format('Y-m-d'));
         
         // Create a booking that spans the entire operating hours
         Booking::factory()->create([
             'room_id' => $this->room->id,
             'user_id' => $this->user->id,
-            'start_time' => Carbon::parse($operatingHours['opening'], $this->room->timezone)->setTimezone('UTC'),
-            'end_time' => Carbon::parse($operatingHours['closing'], $this->room->timezone)->setTimezone('UTC'),
+            'start_time' => Carbon::parse($operatingHours['opening']),
+            'end_time' => Carbon::parse($operatingHours['closing']),
             'state' => 'confirmed',
         ]);
         
@@ -118,14 +117,14 @@ class RoomAvailabilityCalendarTest extends TestCase
     public function it_provides_hourly_resolution_for_room_availability()
     {
         // Use a future date to avoid same-day booking restrictions
-        $futureDate = Carbon::tomorrow($this->room->timezone);
+        $futureDate = Carbon::tomorrow();
         
-        // Create a booking from 2 PM to 4 PM in the room's timezone
+        // Create a booking from 2 PM to 4 PM
         Booking::factory()->create([
             'room_id' => $this->room->id,
             'user_id' => $this->user->id,
-            'start_time' => $futureDate->copy()->setHour(14)->setMinute(0)->setTimezone('UTC'),
-            'end_time' => $futureDate->copy()->setHour(16)->setMinute(0)->setTimezone('UTC'),
+            'start_time' => $futureDate->copy()->setHour(14)->setMinute(0),
+            'end_time' => $futureDate->copy()->setHour(16)->setMinute(0),
             'state' => 'confirmed',
         ]);
         

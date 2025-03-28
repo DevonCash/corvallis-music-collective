@@ -5,20 +5,32 @@ alwaysApply: true
 ---
 # Corvallis Music Collective
 
-- Tech Stack:
+## Tech Stack:
     - Tailwind CSS / DaisyUI
     - AlpineJS
     - Livewire
     - Filament 3
     - Laravel 11
     - PostgreSQL
-- The project is divided into modules, each in the `app-modules` directory.
-- The main app module (in the `app` directory) covers the following features:
+
+## Module Development
+The project is divided into modules, each in the `app-modules` 
+
+The main app module (in the `app` directory) covers the following features:
     - User authentication
     - Laravel Policies
     - Filament Panel Registration
-    Any other features should be implemented in separate modules.
-- Follow the principles of Test-Driven Development (TDD) when writing code.
+
+Any other features should be implemented in separate modules.
+
+Tables for each module should be prepended with the module name, e.g. `practice_space` => [`practice_space_rooms`, `practice_space_bookings`]
+
+## Test Driven Development
+
+Follow the principles of Test-Driven Development (TDD) when writing code.
+
+- When creating a new feature, first write a test for its smallest unit, then implement that. Iterate this process until the feature is complete.
+- When debugging an issue, first write a test which reproduces the issue, then modify the code to fix the issue. These tests should go in a separate category called "Regressions"
 
 - Use the command `php artisan spec:test-coverage` to check tests against the specification.
 

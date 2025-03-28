@@ -48,7 +48,6 @@ class CalendarClosingTimeTest extends TestCase
         
         $room = Room::factory()->create([
             'name' => 'Test Room for Closing Time',
-            'timezone' => 'America/Los_Angeles',
             'is_active' => true,
         ]);
         
@@ -57,7 +56,7 @@ class CalendarClosingTimeTest extends TestCase
         
         // We'll test against the test date (a future date relative to system)
         // Use Carbon::now plus 10 years, then add one day to avoid "today" issues
-        $testDate = Carbon::now('America/Los_Angeles')->addYears(10)->addDay()->setTime(12, 0, 0);
+        $testDate = Carbon::now()->addYears(10)->addDay()->setTime(12, 0, 0);
         $testDateString = $testDate->format('Y-m-d');
         // Make it available as a global for testing
         $GLOBALS['testDateString'] = $testDateString;

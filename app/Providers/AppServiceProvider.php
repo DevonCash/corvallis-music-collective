@@ -7,6 +7,8 @@ use Laravel\Cashier\Cashier;
 use Laravel\Folio\Folio;
 use Snelling\FolioMarkdown\Facades\FolioMarkdown;
 use Stripe\StripeClient;
+use Carbon\Carbon;
+use Illuminate\Support\Facades\Date;
 
 use App\Models\User;
 
@@ -41,5 +43,8 @@ class AppServiceProvider extends ServiceProvider
         ]);
 
         FolioMarkdown::register();
+
+        // Set default timezone for all date/time operations
+        date_default_timezone_set(config('app.timezone'));
     }
 }
