@@ -7,7 +7,7 @@
         </div>
         
         <div>
-            @livewire('room-availability-calendar')
+            @livewire('room-availability-calendar', ['room' => \CorvMC\PracticeSpace\Models\Room::find(1)])
         </div>
     </div>
 </x-filament-panels::page> 

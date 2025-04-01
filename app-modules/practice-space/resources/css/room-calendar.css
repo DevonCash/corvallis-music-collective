@@ -1,144 +1,150 @@
 /* Room Availability Calendar Styles */
-  /* Layout */
-  .calendar-container {
+/* Layout */
+.calendar-container {
     @apply overflow-hidden bg-gray-100 dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700;
-  }
+}
 
-  .calendar-header {
-    @apply p-2 bg-gray-100 dark:bg-gray-800 border-b dark:border-gray-700 flex md:flex-row flex-col w-full gap-4 p-4 md:items-center;
-  }
+.calendar-header {
+    @apply bg-gray-100 dark:bg-gray-800 border-b dark:border-gray-700 flex md:flex-row flex-col w-full gap-4 p-4 md:items-center;
+}
 
-  .calendar-header-title {
+.calendar-header-title {
     @apply text-lg font-semibold dark:text-gray-200;
-  }
+}
 
-  .calendar-nav-button {
+.calendar-nav-button {
     @apply px-3 py-1 bg-white dark:bg-gray-700 border border-neutral-400 dark:border-gray-600 rounded-md text-gray-800 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed;
-  }
+}
 
-  .calendar-grid {
+.calendar-grid {
     @apply grid relative;
-  }
+}
 
-  /* Date Headers */
-  .date-header {
+/* Date Headers */
+.date-header {
     @apply sticky top-0 border-b-2 dark:border-gray-600 p-2 text-center font-medium bg-gray-100 dark:bg-gray-800;
-  }
+}
 
-  .date-header-today {
+.date-header-today {
     @apply text-primary-600 bg-primary-50 dark:bg-primary-500/20 dark:text-primary-400 border-primary-600 dark:border-primary-400;
-  }
+}
 
-  .date-header-today-label {
+.date-header-today-label {
     @apply text-xs text-primary-600 dark:text-primary-400;
-  }
-  /* Time Column */
-  .time-column-header {
+}
+/* Time Column */
+.time-column-header {
     @apply sticky top-0 left-0 border-b dark:border-gray-600 border-r-gray-400 dark:border-r-gray-500 p-2 font-medium flex justify-center text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-800;
     z-index: 1;
-  }
+}
 
-  .time-label {
+.time-label {
     @apply sticky left-0 border-b dark:border-gray-600 border-r-gray-400 dark:border-r-gray-500 p-2 text-sm text-gray-500 dark:text-gray-400 bg-white dark:bg-gray-900 flex items-center justify-center;
     z-index: 1;
-  }
+}
 
-  /* Time Cells */
-  .time-cell {
+/* Time Cells */
+.time-cell {
     @apply relative bg-white dark:bg-gray-900;
     border: 1px solid;
     border-left: 0px;
     border-top: 0px;
-    border-color: rgb(var(--gray-300)) rgb(var(--gray-400)) rgb(var(--gray-300)) rgb(var(--gray-400));
-  }
+    border-color: rgb(var(--gray-300)) rgb(var(--gray-400)) rgb(var(--gray-300))
+        rgb(var(--gray-400));
+}
 
-  .time-cell:not(.time-cell-striped):not(.time-cell-past):not(.time-cell-advance-notice):not(.time-cell-closing-time):not(.time-cell-adjacent-booking) {
+.time-cell:not(.time-cell-striped):not(.time-cell-past):not(
+        .time-cell-advance-notice
+    ):not(.time-cell-closing-time):not(.time-cell-adjacent-booking) {
     cursor: pointer;
-  }
+}
 
-  .time-cell-striped {
-    --stripe-color: rgb(var(--gray-300)); 
-    background-image: linear-gradient(45deg, var(--stripe-color) 25%, transparent 25%, transparent 50%, var(--stripe-color) 50%, var(--stripe-color) 75%, transparent 75%, transparent);
+.time-cell-striped {
+    --stripe-color: rgb(var(--gray-300));
+    background-image: linear-gradient(
+        45deg,
+        var(--stripe-color) 25%,
+        transparent 25%,
+        transparent 50%,
+        var(--stripe-color) 50%,
+        var(--stripe-color) 75%,
+        transparent 75%,
+        transparent
+    );
     background-size: 32px 32px;
-  }
+}
 
-  .time-cell-striped:is(.dark *){
+.time-cell-striped:is(.dark *) {
     --stripe-color: rgb(var(--gray-600));
-  }
+}
 
-  /* Past time slots - gray */
-  .time-cell-past {
+/* Past time slots - gray */
+.time-cell.time_in_past {
     @apply time-cell-striped;
     background-color: rgba(200, 200, 200, 0.3);
     --stripe-color: rgba(130, 130, 130, 0.1);
-  }
+}
 
-  /* Advance notice requirement - yellow */
-  .time-cell-advance-notice {
+/* Advance notice requirement - yellow */
+.time-cell.advance_notice {
     @apply time-cell-striped;
     background-color: rgba(255, 236, 179, 0.3);
     --stripe-color: rgba(255, 193, 7, 0.1);
-  }
+}
 
-  /* Closing time - blue */
-  .time-cell-closing-time {
+/* Closing time - blue */
+.time-cell.too_close_to_close {
     @apply time-cell-striped;
     background-color: rgba(179, 229, 252, 0.3);
     --stripe-color: rgba(3, 169, 244, 0.1);
-  }
+}
 
-  /* Adjacent to existing booking - purple */
-  .time-cell-adjacent-booking {
+/* Adjacent to existing booking - purple */
+.time-cell.slot_booked {
+    @apply time-cell-striped;
+    --stripe-color: rgba(123, 31, 162, 0.1);
     background-color: rgba(209, 196, 233, 0.3);
-    background-image: repeating-linear-gradient(
-        45deg,
-        rgba(123, 31, 162, 0.1),
-        rgba(123, 31, 162, 0.1) 5px,
-        rgba(123, 31, 162, 0.2) 5px,
-        rgba(123, 31, 162, 0.2) 10px
-    );
-  }
+}
 
-  .time-cell-booked-by-user {
+.time-cell-booked-by-user {
     @apply bg-primary-500 bg-opacity-10 dark:bg-primary-500/20;
-  }
+}
 
-  /* Bookings */
-  .booking {
-    @apply border rounded-md p-2 text-xs m-1 shadow-sm;
-  }
+/* Bookings */
+.booking {
+    @apply border rounded-md p-2 text-xs m-1 shadow-sm relative pointer-events-auto;
+}
 
-  .booking-by-user {
+.booking-by-user {
     @apply bg-primary-500 border-primary-500 text-white;
-  }
+}
 
-  .booking-by-other {
+.booking-by-other {
     @apply bg-white dark:bg-gray-800 border-neutral-400 dark:border-gray-600 dark:text-gray-200;
-  }
+}
 
-  .booking-title {
+.booking-title {
     @apply font-medium;
-  }
+}
 
-  /* Cursor */
-  .calendar-cursor {
+/* Cursor */
+.calendar-cursor {
     @apply z-10 pointer-events-none flex items-center justify-center border-2 border-primary-600 dark:border-primary-400 bg-primary-500/20 w-full h-full relative;
-  }
+}
 
-  .calendar-cursor-icon {
+.calendar-cursor-icon {
     @apply w-8 h-8 text-primary-600 dark:text-primary-400 flex items-center justify-center;
-  }
+}
 
-  /* Empty State */
-  .calendar-empty-state {
+/* Empty State */
+.calendar-empty-state {
     @apply p-8 text-center text-gray-500 dark:text-gray-400;
-  }
+}
 
-  .calendar-button .fi-btn-label {
+.calendar-button .fi-btn-label {
     @apply text-nowrap;
-  }
+}
 
-  .calendar-header-title .timezone {
+.calendar-header-title .timezone {
     @apply text-sm text-gray-600/50;
-  }
-
+}

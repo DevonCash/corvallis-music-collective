@@ -3,6 +3,7 @@
 namespace CorvMC\PracticeSpace\Filament\Actions;
 
 use Carbon\Carbon;
+use Carbon\CarbonImmutable;
 use Filament\Forms;
 use Filament\Notifications\Notification;
 use Filament\Actions\Action;
@@ -14,6 +15,8 @@ use Illuminate\Support\HtmlString;
 use Closure;
 use Filament\Forms\Components\Hidden;
 use CorvMC\PracticeSpace\Filament\Forms\Components\SelectRoom;
+use Filament\Forms\Components\Component;
+
 class CreateBookingAction
 {
     /**
@@ -44,6 +47,8 @@ class CreateBookingAction
                     ->icon('heroicon-o-home')
                     ->columns(2)
                     ->schema([
+                        Hidden::make('start_time'),
+                        Hidden::make('end_time'),
                         SelectRoom::make('room_id')
                             ->preload()
                             ->required()
@@ -109,19 +114,18 @@ class CreateBookingAction
 
                                 // Convert to Carbon if it's a string date
                                 if (is_string($bookingDate)) {
-                                    $bookingDate = Carbon::parse($bookingDate . ' ' . $room->timezone);
+                                    $bookingDate = CarbonImmutable::parse($bookingDate . ' ' . $room->timezone);
                                 }
-                                
-                                $startTime = $bookingDate->copy()->startOfDay();
+
+                                $startTime = $bookingDate->startOfDay();
                                 $timeSlots = $room->getAvailableTimeSlots($startTime);
                                 return $timeSlots;
                             })->afterStateUpdated(function (Forms\Set $set, Forms\Get $get) {
-                                // Instead of clearing duration, set it to the first available option
                                 if (!$get('room_id') || !$get('booking_date') || !$get('booking_time')) {
                                     $set('duration_hours', null);
                                     return;
                                 }
-                                
+
                                 $roomId = $get('room_id');
                                 $room = Room::where('id', $roomId)->first();
                                 if (!$room) {
@@ -131,17 +135,18 @@ class CreateBookingAction
 
                                 $bookingDate = $get('booking_date');
                                 $bookingTime = $get('booking_time');
-                                
+
                                 // Ensure we have proper date and time strings
                                 if (is_string($bookingDate) && is_string($bookingTime)) {
                                     $startTime = Carbon::createFromFormat('Y-m-d H:i', $bookingDate . ' ' . $bookingTime, $room->timezone);
+                                    $set('start_time', $startTime->format('Y-m-d H:i'));
                                 } else {
                                     $set('duration_hours', null);
                                     return;
                                 }
-                                
+
                                 $availableDurations = $room->getAvailableDurations($startTime);
-                                
+
                                 if (is_array($availableDurations) && !empty($availableDurations)) {
                                     // Get the first available duration option (first key in the array)
                                     $firstDuration = array_key_first($availableDurations);
@@ -155,26 +160,28 @@ class CreateBookingAction
                             ->label('Duration')
                             ->live()
                             ->disabled(fn(Forms\Get $get) => !$get('room_id') || !$get('booking_date') || !$get('booking_time'))
-                            ->options(function (Forms\Get $get) {
+                            ->default(fn(Component $component) => array_key_first($component->getOptions()))
+                            ->options(function (Forms\Get $get, Forms\Set $set) {
                                 if (!$get('room_id') || !$get('booking_date') || !$get('booking_time')) {
                                     return [];
                                 }
-                                
+
                                 $roomId = $get('room_id');
                                 $room = Room::where('id', $roomId)->first();
                                 if (!$room) return [];
 
                                 $bookingDate = $get('booking_date');
                                 $bookingTime = $get('booking_time');
-                                
+
                                 // Ensure we have proper date and time strings
                                 if (is_string($bookingDate) && is_string($bookingTime)) {
                                     $startTime = Carbon::createFromFormat('Y-m-d H:i', $bookingDate . ' ' . $bookingTime, $room->timezone);
+                                    $set('start_time', $startTime->format('Y-m-d H:i'));
                                 } else {
                                     return [];
                                 }
-                                
-                                return $room->getAvailableDurations($startTime);
+                                $options = $room->getAvailableDurations($startTime);
+                                return $options;
                             })
                     ]),
                 Step::make('Review & Reserve')
@@ -200,14 +207,14 @@ class CreateBookingAction
 
                                             $bookingDate = $get('booking_date');
                                             $bookingTime = $get('booking_time');
-                                            
+
                                             // Ensure we have proper date and time strings
                                             if (is_string($bookingDate) && is_string($bookingTime)) {
                                                 $start_time = Carbon::createFromFormat('Y-m-d H:i', $bookingDate . ' ' . $bookingTime, $room->timezone);
                                             } else {
                                                 return 'Invalid date or time format.';
                                             }
-                                            
+
                                             $end_time = $start_time->copy()->addHours(floatVal($get('duration_hours')));
                                             $booking = new Booking([
                                                 'room_id' => $roomId,
@@ -235,14 +242,23 @@ class CreateBookingAction
             ->action(function (array $data): void {
                 try {
                     // Create the booking directly
-                    $room = Room::where('id', $data['room_id'])->first();
-                    $startDateTime = Carbon::createFromFormat('Y-m-d H:i', $data['booking_date'] . ' ' . $data['booking_time'], $room->timezone);
-                    $endDateTime = $startDateTime->copy()->addHours(floatVal($data['duration_hours']));
+                    $room = Room::find($data['room_id'])->first();
+
+                    $startDateTime = CarbonImmutable::createFromFormat('Y-m-d H:i', $data['booking_date'] . ' ' . $data['booking_time']);
+                    $endDateTime = $startDateTime->addHours(floatVal($data['duration_hours']));
+
+                    if($room->bookings()
+                        ->where('start_time', '<=', $endDateTime)
+                        ->where('end_time', '>=', $startDateTime)
+                        ->exists()) {
+                        throw new \Exception('Room is already booked for the selected time.');
+                    }
+
                     $booking =  new Booking([
                         'room_id' => $data['room_id'],
                         'user_id' => Auth::id(),
-                        'start_time' => $startDateTime,
-                        'end_time' => $endDateTime,
+                        'start_time' => $startDateTime->setTimezone('UTC')->format('Y-m-d H:i:s'),
+                        'end_time' => $endDateTime->setTimezone('UTC')->format('Y-m-d H:i:s'),
                         'notes' => $data['notes'] ?? null,
                     ]);
 

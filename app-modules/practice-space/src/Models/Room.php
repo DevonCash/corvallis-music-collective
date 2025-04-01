@@ -4,6 +4,7 @@ namespace CorvMC\PracticeSpace\Models;
 
 use App\Models\User;
 use Carbon\Carbon;
+use Carbon\CarbonImmutable;
 use CorvMC\Finance\Models\Product;
 use CorvMC\PracticeSpace\ValueObjects\BookingPolicy;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -18,29 +19,30 @@ class Room extends Model
 {
     use HasFactory;
 
-    protected $table = 'practice_space_rooms';
+    protected $table = "practice_space_rooms";
 
     protected $fillable = [
-        'room_category_id',
-        'name',
-        'description',
-        'capacity',
-        'hourly_rate',
-        'is_active',
-        'photos',
-        'specifications',
-        'booking_policy',
+        "room_category_id",
+        "name",
+        "description",
+        "capacity",
+        "hourly_rate",
+        "is_active",
+        "photos",
+        "specifications",
+        "booking_policy",
     ];
 
     protected $casts = [
-        'capacity' => 'integer',
-        'hourly_rate' => 'decimal:2',
-        'is_active' => 'boolean',
-        'photos' => 'array',
-        'specifications' => 'array',
-        'size_sqft' => 'integer',
-        'amenities' => 'array',
-        'booking_policy' => \CorvMC\PracticeSpace\ValueObjects\BookingPolicy::class,
+        "capacity" => "integer",
+        "hourly_rate" => "decimal:2",
+        "is_active" => "boolean",
+        "photos" => "array",
+        "specifications" => "array",
+        "size_sqft" => "integer",
+        "amenities" => "array",
+        "booking_policy" =>
+        \CorvMC\PracticeSpace\ValueObjects\BookingPolicy::class,
     ];
 
     /**
@@ -48,7 +50,7 @@ class Room extends Model
      */
     public function category(): BelongsTo
     {
-        return $this->belongsTo(RoomCategory::class, 'room_category_id');
+        return $this->belongsTo(RoomCategory::class, "room_category_id");
     }
 
     /**
@@ -68,17 +70,18 @@ class Room extends Model
      */
     public function bookingsIntersecting(Carbon $start, Carbon $end)
     {
-        return $this->bookings()
-            ->where(function ($query) use ($start, $end) {
-                $query->whereBetween('start_time', [$start, $end])
-                    ->orWhereBetween('end_time', [$start, $end])
-                    ->orWhere(function ($query) use ($start, $end) {
-                        $query->where('start_time', '<=', $start)
-                            ->where('end_time', '>=', $end);
-                    });
-            });
+        return $this->bookings()->where(function ($query) use ($start, $end) {
+            $query
+                ->whereBetween("start_time", [$start, $end])
+                ->orWhereBetween("end_time", [$start, $end])
+                ->orWhere(function ($query) use ($start, $end) {
+                    $query
+                        ->where("start_time", "<=", $start)
+                        ->where("end_time", ">=", $end);
+                });
+        });
     }
-    
+
     /**
      * Get bookings that fall on a specific date.
      *
@@ -89,7 +92,7 @@ class Room extends Model
     {
         $startOfDay = $date->copy()->startOfDay();
         $endOfDay = $date->copy()->endOfDay();
-        
+
         return $this->bookingsIntersecting($startOfDay, $endOfDay);
     }
 
@@ -117,17 +120,17 @@ class Room extends Model
     public function product()
     {
         // This relationship will only work if the Finance module is installed
-        if (class_exists('CorvMC\Finance\Models\Product')) {
-            return $this->belongsTo('CorvMC\Finance\Models\Product');
+        if (class_exists("CorvMC\Finance\Models\Product")) {
+            return $this->belongsTo("CorvMC\Finance\Models\Product");
         }
 
         // Return a null relationship if the Finance module is not installed
-        return $this->belongsTo(self::class, 'id', 'id')->whereNull('id');
+        return $this->belongsTo(self::class, "id", "id")->whereNull("id");
     }
 
     public function getHourlyRateAttribute()
     {
-        return $this->product?->price ?? $this->attributes['hourly_rate'];
+        return $this->product?->price ?? $this->attributes["hourly_rate"];
     }
 
     /**
@@ -137,11 +140,16 @@ class Room extends Model
      * @param \Carbon\Carbon $endDateTime
      * @return bool
      */
-    public function isAvailable(Carbon $startDateTime, Carbon $endDateTime): bool
-    {
+    public function isAvailable(
+        Carbon $startDateTime,
+        Carbon $endDateTime
+    ): bool {
         // The bookingsIntersecting method now handles timezone conversion internally
-        $conflictingBookings = $this->bookingsIntersecting($startDateTime, $endDateTime)
-            ->where('state', '!=', 'cancelled')
+        $conflictingBookings = $this->bookingsIntersecting(
+            $startDateTime,
+            $endDateTime
+        )
+            ->where("state", "!=", "cancelled")
             ->count();
 
         return $conflictingBookings === 0;
@@ -150,65 +158,27 @@ class Room extends Model
     /**
      * Get available time slots for this room on a specific date
      *
-     * @param \Carbon\Carbon $date
+     * @param \Carbon\CarbonImmutable $date
      * @return array
      */
-    public function getAvailableTimeSlots(Carbon $date): array
+    public function getAvailableTimeSlots(CarbonImmutable $start): array
     {
-        $openingTime = $this->booking_policy->getOpeningTime($date->format('Y-m-d'));
-        $closingTime = $this->booking_policy->getClosingTime($date->format('Y-m-d'));
-
-        // Get all bookings for this room on this date
-        $startTime = max($openingTime, now());
-        $endTime = $closingTime;
-        $slotLengthMinutes = 30; // Fixed 30-minute slots
-        
-        $timeSlots = [];
-        // Generate all possible time slots
-        for ($slot = $openingTime->copy(); $slot->lt($endTime); $slot->addMinutes($slotLengthMinutes)) {
-            // Skip slots that are in the past
-            if ($slot->lt(now()) && $slot->isSameDay(now())) {
-                continue;
-            }
-            $timeSlots[$slot->format('H:i')] = $slot->format('g:i A');
-        }
-
-        // Get all non-cancelled bookings for this date
-        $bookings = $this->bookings()
-            ->where('state', '!=', 'cancelled')
-            ->where(function ($query) use ($date) {
-                $query->whereDate('start_time', $date)
-                    ->orWhereDate('end_time', $date);
-            })
-            ->get();
-
-        // Remove booked slots
-        foreach ($bookings as $booking) {
-            $bookingStart = $booking->start_time;
-            $bookingEnd = $booking->end_time;
-
-            // If booking spans multiple days, adjust start/end times
-            if ($bookingStart->format('Y-m-d') < $date->format('Y-m-d')) {
-                $bookingStart = $openingTime;
-            }
-            if ($bookingEnd->format('Y-m-d') > $date->format('Y-m-d')) {
-                $bookingEnd = $closingTime;
-            }
-
-            // Remove slots that overlap with this booking
-            for ($slot = $bookingStart->copy(); 
-                 $slot->lte($bookingEnd); 
-                 $slot->addMinutes($slotLengthMinutes)) {
-                unset($timeSlots[$slot->format('H:i')]);
-            }
-        }
-
-        return $timeSlots;
+        $openingTime = $this->booking_policy->getOpeningTime($start);
+        $options = collect($this->getValidSlots($start))
+            ->mapWithKeys(function ($item, $key) use ($openingTime, $start) {
+                if ($item !== true) return [null => null];
+                $time = $openingTime->copy()->addMinutes($key * 30);
+                if ($time->isBefore($start)) return [null => null];
+                return [
+                    $time->format('H:i') => $time->format('g:i a')
+                ];
+            })->filter(fn($val) => $val !== null)->toArray();
+        return $options;
     }
 
     /**
      * Get the booking policy for this room
-     * 
+     *
      * If the room has a specific policy, it will be returned.
      * Otherwise, the category's default policy will be used.
      * If neither exists, a new default policy will be returned.
@@ -218,16 +188,22 @@ class Room extends Model
     public function getBookingPolicyAttribute(): BookingPolicy
     {
         // First check if this room has a specific booking policy
-        if (isset($this->attributes['booking_policy']) && $this->attributes['booking_policy']) {
+        if (
+            isset($this->attributes["booking_policy"]) &&
+            $this->attributes["booking_policy"]
+        ) {
             // Use the cast to convert the JSON to a BookingPolicy object
-            return $this->castAttribute('booking_policy', $this->attributes['booking_policy']);
+            return $this->castAttribute(
+                "booking_policy",
+                $this->attributes["booking_policy"]
+            );
         }
-        
+
         // If no room-specific policy, fall back to the category's default policy
         if ($this->category && $this->category->default_booking_policy) {
             return $this->category->default_booking_policy;
         }
-        
+
         // If no policy found, return a default BookingPolicy
         return new BookingPolicy();
     }
@@ -240,7 +216,10 @@ class Room extends Model
      */
     public function getAvailableDurations(Carbon $startTime): array
     {
-        $closingTime = $startTime->copy()->startOfDay()->modify($this->booking_policy->closingTime);
+        $closingTime = $startTime
+            ->copy()
+            ->startOfDay()
+            ->modify($this->booking_policy->closingTime);
 
         // Return empty array if start time is after closing time
         if ($startTime->gt($closingTime)) {
@@ -254,14 +233,14 @@ class Room extends Model
 
         // Get the next booking after this start time
         $nextBooking = $this->bookings()
-            ->where('start_time', '>', $startTime)
-            ->where('start_time', '<=', $closingTime)
-            ->whereNotIn('status', ['cancelled'])
-            ->orderBy('start_time')
+            ->where("start_time", ">", $startTime)
+            ->where("start_time", "<=", $closingTime)
+            ->whereNotIn("status", ["cancelled"])
+            ->orderBy("start_time")
             ->first();
 
         // Calculate maximum end time based on closing time and next booking
-        $maxEndTime = $nextBooking 
+        $maxEndTime = $nextBooking
             ? min($closingTime, $nextBooking->start_time)
             : $closingTime;
 
@@ -273,7 +252,9 @@ class Room extends Model
         );
 
         // If max duration is less than minimum booking duration, return empty array
-        if ($maxDurationHours < $this->booking_policy->minBookingDurationHours) {
+        if (
+            $maxDurationHours < $this->booking_policy->minBookingDurationHours
+        ) {
             return [];
         }
 
@@ -282,14 +263,10 @@ class Room extends Model
 
         while ($currentDuration <= $maxDurationHours) {
             // Format key as string, ensuring whole numbers don't have decimal point
-            $key = (floor($currentDuration) == $currentDuration) 
-                ? (string)$currentDuration 
-                : number_format($currentDuration, 1);
+            $key = number_format($currentDuration, 1);
 
             // Format label with proper pluralization
-            $label = $currentDuration == 1 
-                ? '1 hour' 
-                : $key . ' hours';
+            $label = $currentDuration == 1 ? "1 hour" : $key . " hours";
 
             $durations[$key] = $label;
             $currentDuration += 0.5;
@@ -314,36 +291,55 @@ class Room extends Model
         $closingTime = $this->booking_policy->getClosingTime($date);
 
         return [
-            'opening' => $openingTime->format('Y-m-d H:i:s'),
-            'closing' => $closingTime->format('Y-m-d H:i:s'),
+            "opening" => $openingTime->format("Y-m-d H:i:s"),
+            "closing" => $closingTime->format("Y-m-d H:i:s"),
         ];
     }
 
-    public function getFullyBookedDates(Carbon $startDate, Carbon $endDate): array
+    public function getValidSlots(CarbonImmutable $day): array
     {
-        $fullyBookedDates = [];
-        $currentDate = $startDate->copy()->startOfDay();
-        $endDate = $endDate->copy()->endOfDay();
+        $policy = $this->booking_policy;
+        $openingTime = $policy->getOpeningTime($day);
+        $closingTime = $policy->getClosingTime($day);
+        $bookings = $this->bookingsOn(Carbon::parse($day))->get();
+        $slots = [];
 
-        while ($currentDate->lte($endDate)) {
-            $dateStr = $currentDate->format('Y-m-d');
-            $openingTime = $this->booking_policy->getOpeningTime($dateStr);
-            $closingTime = $this->booking_policy->getClosingTime($dateStr);
-
-            // Get all bookings for this date
-            $bookings = $this->bookingsOn($currentDate)
-                ->where('state', '!=', 'cancelled')
-                ->get();
-
-            // Check if there are any available time slots
-            $availableSlots = $this->getAvailableTimeSlots($currentDate);
-            if (empty($availableSlots)) {
-                $fullyBookedDates[] = $dateStr;
+        for (
+            $mins = 0;
+            $mins < $openingTime->diffInMinutes($closingTime);
+            $mins += 30
+        ) {
+            $time = $openingTime->addMinutes($mins);
+            if ($time->isPast()) {
+                $slots[] = "time_in_past";
+            } elseif (
+                $time->lt(
+                    Carbon::now()->addHours($policy->minAdvanceBookingHours)
+                )
+            ) {
+                $slots[] = "advance_notice";
+            } elseif (
+                $time
+                ->addHours($policy->minBookingDurationHours)
+                ->gt($closingTime)
+            ) {
+                $slots[] = "too_close_to_close";
+            } elseif (
+                $bookings->first(
+                    fn($b) => $time->between(
+                        $b->start_time
+                            ->subHours($policy->minBookingDurationHours)
+                            ->addMinutes(1),
+                        $b->end_time->subMinutes(1) // Allow next-hour bookings
+                    )
+                )
+            ) {
+                $slots[] = "slot_booked";
+            } else {
+                $slots[] = true;
             }
-
-            $currentDate->addDay();
         }
 
-        return $fullyBookedDates;
+        return $slots;
     }
 }

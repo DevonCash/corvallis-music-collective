@@ -3,6 +3,7 @@
 namespace CorvMC\PracticeSpace\ValueObjects;
 
 use Carbon\Carbon;
+use Carbon\CarbonImmutable;
 use Illuminate\Contracts\Database\Eloquent\CastsAttributes;
 use Illuminate\Contracts\Support\Arrayable;
 use JsonSerializable;
@@ -126,9 +127,12 @@ class BookingPolicy implements Arrayable, JsonSerializable, CastsAttributes
      * @param string $date Date in Y-m-d format
      * @return Carbon
      */
-    public function getOpeningTime(string $date): Carbon
+    public function getOpeningTime(string|CarbonImmutable $date): CarbonImmutable
     {
-        return Carbon::parse($date . ' ' . $this->openingTime);
+        if ($date instanceof CarbonImmutable) {
+            return $date->setTimeFrom($this->openingTime);
+        }
+        return CarbonImmutable::parse($date . ' ' . $this->openingTime);
     }
 
     /**
@@ -137,9 +141,12 @@ class BookingPolicy implements Arrayable, JsonSerializable, CastsAttributes
      * @param string $date Date in Y-m-d format
      * @return Carbon
      */
-    public function getClosingTime(string $date): Carbon
-    {
-        return Carbon::parse($date . ' ' . $this->closingTime);
+    public function getClosingTime(string|CarbonImmutable $date): CarbonImmutable
+    {   
+        if ($date instanceof CarbonImmutable) {
+            return $date->setTimeFrom($this->closingTime);
+        }
+        return CarbonImmutable::parse($date . ' ' . $this->closingTime);
     }
 
     /**
