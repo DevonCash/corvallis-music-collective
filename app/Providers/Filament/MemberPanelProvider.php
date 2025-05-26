@@ -2,8 +2,10 @@
 
 namespace App\Providers\Filament;
 
+use CorvMC\CommunityCalendar\Filament\CommunityCalendarPlugin;
 use CorvMC\PracticeSpace\Filament\PracticeSpacePluginProvider;
 use CorvMC\Commerce\Filament\CommercePluginProvider;
+use CorvMC\CommunityCalendar\Filament\CommunityEventsPluginProvider;
 use Filament\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\DisableBladeIconComponents;
 use Filament\Http\Middleware\DispatchServingFilamentEvent;
@@ -43,23 +45,23 @@ class MemberPanelProvider extends PanelProvider
         /** @var \App\Models\User $user */
         $user = Auth::user();
         $sponsorships = $user->sponsors;
-        if($sponsorships->isEmpty()) { 
+        if ($sponsorships->isEmpty()) {
             return [];
         }
-        return [NavigationGroup::make('Business Sponsorships')->items($sponsorships->map(fn($sponsorship) => NavigationItem::make($sponsorship->name)->url("/sponsor/{$sponsorship->id}")))]    ;
-    }            
+        return [NavigationGroup::make('Business Sponsorships')->items($sponsorships->map(fn($sponsorship) => NavigationItem::make($sponsorship->name)->url("/sponsor/{$sponsorship->id}")))];
+    }
 
     protected function getBandsGroup(): array
     {
         if (!Auth::check()) {
             return [];
         }
-        
+
         /** @var \App\Models\User $user */
         $user = Auth::user();
-        
+
         $items = [];
-        
+
         // Add band items
         foreach ($user->bands as $band) {
             $items[] = NavigationItem::make($band->name)
@@ -68,7 +70,7 @@ class MemberPanelProvider extends PanelProvider
                 ->icon('heroicon-o-musical-note')
                 ->group('My Bands');
         }
-        
+
         // Add sponsor items
         foreach ($user->sponsors as $sponsor) {
             $items[] = NavigationItem::make($sponsor->name)
@@ -77,7 +79,7 @@ class MemberPanelProvider extends PanelProvider
                 ->icon('heroicon-o-building-office-2')
                 ->group('Business Sponsorships');
         }
-        
+
         return [NavigationGroup::make('My Bands')->items($items)];
     }
 
@@ -119,6 +121,7 @@ class MemberPanelProvider extends PanelProvider
             ])
             ->plugins([
                 PracticeSpacePluginProvider::member(),
+                CommunityCalendarPlugin::member(),
                 CommercePluginProvider::make(),
             ])
             ->widgets([

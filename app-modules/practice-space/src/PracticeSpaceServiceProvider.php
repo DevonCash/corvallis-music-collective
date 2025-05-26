@@ -2,6 +2,7 @@
 
 namespace CorvMC\PracticeSpace;
 
+use Carbon\Carbon;
 use CorvMC\PracticeSpace\Console\Commands\SendBookingConfirmationRequests;
 use CorvMC\PracticeSpace\Console\Commands\SendBookingReminders;
 use CorvMC\PracticeSpace\Console\Commands\SendConfirmationReminders;
@@ -24,6 +25,7 @@ class PracticeSpaceServiceProvider extends ServiceProvider
     {
         // Register module-specific services
         $this->app->register(RecurringBookingServiceProvider::class);
+
     }
 
     /**
@@ -33,25 +35,25 @@ class PracticeSpaceServiceProvider extends ServiceProvider
     {
         // Load routes
         $this->loadRoutesFrom(__DIR__ . '/../routes/web.php');
-        
+
         // Load views
         $this->loadViewsFrom(__DIR__ . '/../resources/views', 'practice-space');
-        
+
         // Load migrations
         $this->loadMigrationsFrom(__DIR__ . '/../database/migrations');
-        
+
         // Load translations
         $this->loadTranslationsFrom(__DIR__ . '/../resources/lang', 'practice-space');
-        
+
         // Register Livewire components
         Livewire::component('room-availability-calendar', RoomAvailabilityCalendar::class);
-        
+
         // Register event listeners
         Event::listen(
             WebhookReceived::class,
             StripeSubscriptionUpdatedListener::class
         );
-        
+
         // Register commands
         if ($this->app->runningInConsole()) {
             $this->commands([
@@ -59,13 +61,12 @@ class PracticeSpaceServiceProvider extends ServiceProvider
                 SendBookingReminders::class,
                 SendConfirmationReminders::class,
                 ProcessExpiredConfirmations::class,
-                RecalculateBookingPrices::class,
             ]);
-            
+
             // Publish views
             $this->publishes([
                 __DIR__ . '/../resources/views' => resource_path('views/vendor/practice-space'),
             ], 'practice-space-views');
         }
     }
-} 
+}

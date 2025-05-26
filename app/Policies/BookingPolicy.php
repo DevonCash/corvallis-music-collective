@@ -103,4 +103,6 @@ class BookingPolicy
         // Only admins can mark bookings as no-show
         return $user->can('manage', Booking::class);
     }
-} 
+
+
+}

@@ -11,8 +11,6 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use CorvMC\PracticeSpace\Database\Factories\BookingFactory;
-// Temporarily commented out for testing
-// Import from Finance module instead of Payments module
 use CorvMC\PracticeSpace\Models\States\BookingState;
 use CorvMC\StateManagement\Casts\State;
 use Spatie\Activitylog\LogOptions;
@@ -20,10 +18,7 @@ use Spatie\Activitylog\Traits\LogsActivity;
 use CorvMC\Finance\Concerns\HasPayments;
 use CorvMC\PracticeSpace\Traits\LogsNotifications;
 use CorvMC\PracticeSpace\Traits\HasRecurringBookings;
-use Illuminate\Support\Facades\Log;
-use CorvMC\PracticeSpace\ValueObjects\BookingPolicy;
 use CorvMC\PracticeSpace\Contracts\CalendarEvent;
-use DateTime;
 use DateTimeImmutable;
 use Illuminate\Support\Facades\Auth;
 
@@ -34,7 +29,6 @@ class Booking extends Model implements CalendarEvent
         HasFactory,
         SoftDeletes,
         HasPayments,
-        LogsNotifications,
         HasRecurringBookings;
 
     protected $table = "practice_space_bookings";
@@ -96,7 +90,6 @@ class Booking extends Model implements CalendarEvent
         "recurring_booking_id",
         "check_in_time",
         "check_out_time",
-        "total_price",
         "payment_status",
         "state",
         "confirmation_requested_at",
@@ -108,32 +101,10 @@ class Booking extends Model implements CalendarEvent
         "payment_completed",
     ];
 
-    /**
-     * Boot the model.
-     */
-    protected static function boot()
+    protected static function booted(): void
     {
-        parent::boot();
-
-        static::creating(function ($booking) {
-            // Calculate total price if not set and room exists
-            if (empty($booking->total_price) && $booking->room_id) {
-                $room = Room::find($booking->room_id);
-                if ($room && $booking->start_time && $booking->end_time) {
-                    $hours = $booking->start_time->diffInHours(
-                        $booking->end_time
-                    );
-                    $booking->total_price = $room->hourly_rate * $hours;
-                }
-            }
-
-            // Apply membership discount if applicable
-            if ($booking->user_id) {
-                $booking->applyMembershipDiscount();
-            }
-
-            // Set confirmation window based on booking policy
-            $booking->setConfirmationWindow();
+        static::addGlobalScope('uncancelled', function ($builder) {
+            $builder->whereNot('state', 'cancelled');
         });
     }
 
@@ -161,13 +132,6 @@ class Booking extends Model implements CalendarEvent
         return $this->hasMany(EquipmentRequest::class);
     }
 
-    /**
-     * Create a new factory instance for the model.
-     */
-    protected static function newFactory()
-    {
-        return BookingFactory::new();
-    }
 
     /**
      * Get the activity log options for the model.
@@ -206,131 +170,32 @@ class Booking extends Model implements CalendarEvent
     }
 
     /**
-     * Get the booking policy for this booking.
-     */
-    public function getBookingPolicy()
-    {
-        return $this->room->booking_policy ??
-            new \CorvMC\PracticeSpace\ValueObjects\BookingPolicy();
-    }
-
-    /**
      * Get the duration of the booking in hours.
      */
     public function getDurationInHours(): float
     {
-        return $this->start_time->diffInMinutes($this->end_time) / 60;
+        return $this->start_time->diffInHours($this->end_time);
     }
 
-    /**
-     * Validate the booking against the applicable booking policy.
-     */
-    public function validateAgainstPolicy(): bool
+    // Price including discounts
+    public function getFinalPriceAttribute(): float
     {
-        $policy = $this->getBookingPolicy();
-
-        if (!$policy) {
-            return true; // No policy to validate against
-        }
-
-        // Check for user-specific policy override
-        $override = $policy->getOverrideForUser($this->user_id);
-
-        // Validate duration
-        if (!$this->validateDuration($policy, $override)) {
-            return false;
-        }
-
-        // Validate advance notice
-        if (!$this->validateAdvanceNotice($policy, $override)) {
-            return false;
-        }
-
-        // Validate weekly booking limit
-        if (!$this->validateWeeklyLimit($policy, $override)) {
-            return false;
-        }
-
-        return true;
+        return $this->room->hourly_rate;
     }
 
-    /**
-     * Validate the booking duration against the policy.
-     */
-    protected function validateDuration($policy, $override = null): bool
+    // Final Price * duration
+    public function getTotalCostAttribute(): float
     {
-        $duration = $this->getDurationInHours();
-
-        $maxDuration =
-            $override && isset($override["max_booking_duration_hours"])
-                ? $override["max_booking_duration_hours"]
-                : $policy->maxBookingDurationHours;
-
-        $minDuration =
-            $override && isset($override["min_booking_duration_hours"])
-                ? $override["min_booking_duration_hours"]
-                : $policy->minBookingDurationHours;
-
-        return $duration <= $maxDuration && $duration >= $minDuration;
+        return $this->final_price * $this->duration;
     }
 
-    /**
-     * Validate the booking advance notice against the policy.
-     */
-    protected function validateAdvanceNotice($policy, $override = null): bool
-    {
-        // Get current time in UTC
-        $now = Carbon::now()->setTimezone("UTC");
-
-        // Convert booking start time to UTC for comparison
-        $startTimeUtc = $this->start_time->copy()->setTimezone("UTC");
-
-        $hoursUntilBooking = $now->diffInMinutes($startTimeUtc, false) / 60;
-        $daysUntilBooking = $now->diffInDays($startTimeUtc, false);
-
-        $minHours =
-            $override && isset($override["min_advance_booking_hours"])
-                ? $override["min_advance_booking_hours"]
-                : $policy->minAdvanceBookingHours;
-
-        $maxDays =
-            $override && isset($override["max_advance_booking_days"])
-                ? $override["max_advance_booking_days"]
-                : $policy->maxAdvanceBookingDays;
-
-        return $hoursUntilBooking >= $minHours && $daysUntilBooking <= $maxDays;
-    }
-
-    /**
-     * Validate the booking against the weekly limit in the policy.
-     */
-    protected function validateWeeklyLimit($policy, $override = null): bool
-    {
-        $maxBookingsPerWeek =
-            $override && isset($override["max_bookings_per_week"])
-                ? $override["max_bookings_per_week"]
-                : $policy->maxBookingsPerWeek;
-
-        // Get the start and end of the current week
-        $weekStart = Carbon::now()->startOfWeek();
-        $weekEnd = Carbon::now()->endOfWeek();
-
-        // Count bookings by this user in the current week
-        $bookingsThisWeek = self::where("user_id", $this->user_id)
-            ->where("id", "!=", $this->id) // Exclude this booking if it's already saved
-            ->whereBetween("start_time", [$weekStart, $weekEnd])
-            ->count();
-
-        // Check if adding this booking would exceed the weekly limit
-        return $bookingsThisWeek + 1 <= $maxBookingsPerWeek;
-    }
 
     /**
      * Check if the booking can be cancelled with a refund.
      */
     public function canCancelWithRefund(): bool
     {
-        $policy = $this->getBookingPolicy();
+        $policy = $this->room->booking_policy();
 
         if (!$policy) {
             return true; // No policy, so allow cancellation with refund
@@ -364,122 +229,9 @@ class Booking extends Model implements CalendarEvent
         return (int) round($hours * $hourlyRateInCents);
     }
 
-    /**
-     * Calculate the total price for this booking
-     *
-     * @return float
-     */
-    public function calculateTotalPrice(): float
-    {
-        return $this->calculateTotalPriceInCents() / 100;
-    }
-
-    /**
-     * Apply a discount to the booking's total price
-     *
-     * @param float $discountPercent Percentage discount (0-100)
-     * @param string|null $reason Reason for the discount
-     * @return self
-     */
-    public function applyDiscount(
-        float $discountPercent,
-        string $reason = null
-    ): self {
-        if ($discountPercent <= 0 || $discountPercent > 100) {
-            return $this;
-        }
-
-        // Calculate in cents to avoid floating point issues
-        $originalPriceInCents = $this->calculateTotalPriceInCents();
-        $discountAmountInCents = (int) round(
-            $originalPriceInCents * ($discountPercent / 100)
-        );
-        $discountedPriceInCents =
-            $originalPriceInCents - $discountAmountInCents;
-
-        // Convert back to dollars for storage
-        $discountedPrice = $discountedPriceInCents / 100;
-
-        $this->update([
-            "total_price" => $discountedPrice,
-            "notes" =>
-                $this->notes .
-                "\nDiscount applied: {$discountPercent}% " .
-                ($reason ? "($reason)" : ""),
-        ]);
-
-        return $this;
-    }
-
     public function getDurationAttribute(): float
     {
         return $this->start_time->diffInHours($this->end_time);
-    }
-
-    /**
-     * Apply discount based on user's membership tier
-     *
-     * @param \App\Models\User|null $userOverride Optional user object to use instead of looking up by ID
-     * @return self
-     */
-    public function applyMembershipDiscount(?User $userOverride = null): self
-    {
-        // Skip if no user or no total price
-        if (!$this->user_id || empty($this->total_price)) {
-            return $this;
-        }
-
-        try {
-            $user = $userOverride ?? User::find($this->user_id);
-
-            if (!$user) {
-                return $this;
-            }
-
-            // Apply discount based on membership tier
-            switch ($user->membership_tier) {
-                case "CD":
-                    $this->applyDiscount(25, "CD Tier Membership");
-                    break;
-                case "Vinyl":
-                    $this->applyDiscount(50, "Vinyl Tier Membership");
-                    break;
-                default:
-                    // No discount for Radio tier
-                    break;
-            }
-        } catch (\Exception $e) {
-            // Log the error but don't break the booking process
-            \Illuminate\Support\Facades\Log::error(
-                "Error applying membership discount: " . $e->getMessage()
-            );
-        }
-
-        return $this;
-    }
-
-    /**
-     * Recalculate the price with membership discount for an existing booking
-     * This is useful when a user upgrades their membership after making a booking
-     *
-     * @param \App\Models\User|null $userOverride Optional user object to use instead of looking up by ID
-     * @return self
-     */
-    public function recalculatePrice(?User $userOverride = null): self
-    {
-        // Reset to original price based on room rate and duration
-        if ($this->room_id) {
-            $hours = $this->getDurationAttribute();
-            $this->total_price = $this->room->hourly_rate * $hours;
-
-            // Apply membership discount
-            $this->applyMembershipDiscount($userOverride);
-
-            // Save the changes
-            $this->save();
-        }
-
-        return $this;
     }
 
     /**
@@ -487,18 +239,14 @@ class Booking extends Model implements CalendarEvent
      */
     public function setConfirmationWindow(): self
     {
-        $policy = $this->getBookingPolicy();
+        $policy = $this->room->booking_policy;
 
         if (!$policy || !$this->start_time) {
             return $this;
         }
 
-        // Work with the start_time in UTC for consistency
-        $startTimeUtc = $this->start_time_utc;
-
         // Calculate when confirmation should be requested
-        $confirmationWindowStart = $startTimeUtc
-            ->copy()
+        $confirmationWindowStart = $this->start_time
             ->subDays($policy->confirmationWindowDays);
 
         // Only set if it's in the future
@@ -510,8 +258,7 @@ class Booking extends Model implements CalendarEvent
         }
 
         // Calculate the confirmation deadline
-        $this->confirmation_deadline = $startTimeUtc
-            ->copy()
+        $this->confirmation_deadline = $this->start_time
             ->subDays($policy->autoConfirmationDeadlineDays);
 
         return $this;
@@ -668,7 +415,7 @@ class Booking extends Model implements CalendarEvent
     /**
      * Cancel the booking.
      */
-    public function cancel(string $reason): self
+    public function cancel(?string $reason = null): self
     {
         if (
             !(
@@ -682,238 +429,12 @@ class Booking extends Model implements CalendarEvent
         }
 
         $this->cancelled_at = now();
-        $this->cancellation_reason = $reason;
+        $this->cancellation_reason = $reason ?? 'No reason provided';
 
         $this->state = new BookingState\CancelledState($this);
         $this->save();
 
         return $this;
-    }
-
-    /**
-     * Get the start time with the room's timezone applied.
-     *
-     * @param string $value
-     * @return \Carbon\CarbonImmutable
-     */
-    public function getStartTimeAttribute($value)
-    {
-        if (!$value) {
-            return null;
-        }
-
-        // Get the base Carbon instance from UTC storage
-        $date = CarbonImmutable::parse($value);
-
-        // Always use app timezone
-        return $date->setTimezone(config("app.timezone"));
-    }
-
-    /**
-     * Get the end time with the room's timezone applied.
-     *
-     * @param string $value
-     * @return \Carbon\CarbonImmutable
-     */
-    public function getEndTimeAttribute($value)
-    {
-        if (!$value) {
-            return null;
-        }
-
-        // Get the base Carbon instance from UTC storage
-        $date = CarbonImmutable::parse($value);
-
-        // Always use app timezone
-        return $date->setTimezone(config("app.timezone"));
-    }
-
-    /**
-     * Get the start time in UTC.
-     *
-     * @return \Carbon\CarbonImmutable|null
-     */
-    public function getStartTimeUtcAttribute()
-    {
-        if (!$this->attributes["start_time"]) {
-            return null;
-        }
-        return CarbonImmutable::parse(
-            $this->attributes["start_time"]
-        )->setTimezone("UTC");
-    }
-
-    /**
-     * Get the end time in UTC.
-     *
-     * @return \Carbon\CarbonImmutable|null
-     */
-    public function getEndTimeUtcAttribute()
-    {
-        if (!$this->attributes["end_time"]) {
-            return null;
-        }
-        return CarbonImmutable::parse(
-            $this->attributes["end_time"]
-        )->setTimezone("UTC");
-    }
-
-    /**
-     * Set the start_time attribute, converting to UTC for storage.
-     *
-     * @param mixed $value
-     * @return void
-     */
-    public function setStartTimeAttribute($value)
-    {
-        if (!$value) {
-            $this->attributes["start_time"] = null;
-            return;
-        }
-
-        // If value is already a Carbon instance
-        if ($value instanceof Carbon) {
-            // Store in UTC
-            $this->attributes["start_time"] = $value
-                ->copy()
-                ->setTimezone("UTC");
-            return;
-        }
-
-        // Parse it in the app timezone then convert to UTC
-        $date = Carbon::parse($value, config("app.timezone"));
-        $this->attributes["start_time"] = $date->setTimezone("UTC");
-    }
-
-    /**
-     * Set the end_time attribute, converting to UTC for storage.
-     *
-     * @param mixed $value
-     * @return void
-     */
-    public function setEndTimeAttribute($value)
-    {
-        if (!$value) {
-            $this->attributes["end_time"] = null;
-            return;
-        }
-
-        // If value is already a Carbon instance
-        if ($value instanceof Carbon) {
-            // Store in UTC
-            $this->attributes["end_time"] = $value->copy()->setTimezone("UTC");
-            return;
-        }
-
-        // Parse it in the app timezone then convert to UTC
-        $date = Carbon::parse($value, config("app.timezone"));
-        $this->attributes["end_time"] = $date->setTimezone("UTC");
-    }
-
-    /**
-     * Get the timezone to use for this booking
-     *
-     * @return string
-     */
-    public function getRoomTimezone(): string
-    {
-        return config("app.timezone");
-    }
-
-    /**
-     * Check if this booking overlaps with a given time range.
-     * All times are assumed to be in the room's timezone.
-     *
-     * @param \Carbon\Carbon $start Start time in room's timezone
-     * @param \Carbon\Carbon $end End time in room's timezone
-     * @return bool
-     */
-    public function overlapsWithTimeRange(Carbon $start, Carbon $end): bool
-    {
-        // Convert to UTC for comparison
-        $startUtc = $start->copy()->setTimezone("UTC");
-        $endUtc = $end->copy()->setTimezone("UTC");
-
-        // Compare with booking times in UTC
-        return $this->start_time_utc->lte($endUtc) &&
-            $this->end_time_utc->gte($startUtc);
-    }
-
-    /**
-     * Check if this booking falls on a specific date.
-     * The date is assumed to be in the room's timezone.
-     *
-     * @param \Carbon\Carbon|string $date Date in room's timezone (can be string like '2023-04-15')
-     * @return bool
-     */
-    public function isOnDate($date): bool
-    {
-        // Parse the date in room's timezone
-        $timezone = $this->getRoomTimezone();
-        if (!$date instanceof Carbon) {
-            $date = Carbon::parse($date, $timezone);
-        }
-
-        // Create start and end of day in room's timezone
-        $startOfDay = $date->copy()->startOfDay();
-        $endOfDay = $date->copy()->endOfDay();
-
-        // Check if booking overlaps with this day
-        return $this->overlapsWithTimeRange($startOfDay, $endOfDay);
-    }
-
-    /**
-     * Format the booking times in the room's timezone with a given format.
-     *
-     * @param string $format The date format
-     * @return array
-     */
-    public function formatTimesInRoomTimezone(
-        string $format = "Y-m-d H:i:s"
-    ): array {
-        return [
-            "start" => $this->start_time->format($format),
-            "end" => $this->end_time->format($format),
-        ];
-    }
-
-    /**
-     * Format the booking times in UTC with a given format.
-     *
-     * @param string $format The date format
-     * @return array
-     */
-    public function formatTimesInUtc(string $format = "Y-m-d H:i:s"): array
-    {
-        return [
-            "start" => $this->start_time_utc->format($format),
-            "end" => $this->end_time_utc->format($format),
-        ];
-    }
-
-    /**
-     * Scope a query to only include active bookings for a room within a date range.
-     *
-     * @param \Illuminate\Database\Eloquent\Builder $query
-     * @param Room $room
-     * @param Carbon $startDate
-     * @param Carbon $endDate
-     * @return \Illuminate\Database\Eloquent\Builder
-     */
-    public function scopeForRoomInDateRange(
-        $query,
-        Room $room,
-        Carbon $startDate,
-        Carbon $endDate
-    ) {
-        return $query
-            ->where("state", "!=", "cancelled")
-            ->where("room_id", $room->id)
-            ->whereBetween("start_time", [
-                $startDate->copy()->startOfDay(),
-                $endDate->copy()->endOfDay(),
-            ])
-            ->with(["room", "user"]);
     }
 
     public function getEventId(): string|int
@@ -923,12 +444,12 @@ class Booking extends Model implements CalendarEvent
 
     public function getStartTime(): DateTimeImmutable
     {
-        return CarbonImmutable::parse($this->start_time);
+        return CarbonImmutable::createFromMutable($this->start_time);
     }
 
     public function getEndTime(): DateTimeImmutable
     {
-        return CarbonImmutable::parse($this->end_time);
+        return CarbonImmutable::createFromMutable($this->end_time);
     }
 
     public function getEventTitle(): string

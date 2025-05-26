@@ -17,24 +17,25 @@ use CorvMC\PracticeSpace\Models\States\BookingState\{ConfirmedState, ScheduledSt
 class UserBookings extends Page implements HasTable
 {
     use InteractsWithTable;
-    
+
     protected static ?string $navigationIcon = 'heroicon-o-calendar-days';
     protected static ?string $navigationLabel = 'Practice Space';
     // protected static ?string $navigationGroup = 'Practice Space';
     protected static ?string $title = 'Practice Space';
     protected static ?string $slug = 'practice-space/my-bookings';
     protected static ?int $navigationSort = 1;
-    
+
     protected static string $view = 'practice-space::filament.pages.user-bookings';
-    
+
     public function mount(): void
     {
         // No need to fill a form on mount anymore
     }
-    
+
     public function table(Table $table): Table
     {
         return $table
+            ->poll()
             ->query(
                 Booking::query()
                     ->where('user_id', Auth::id())
@@ -75,4 +76,4 @@ class UserBookings extends Page implements HasTable
             ->emptyStateDescription('Once you book a practice room, your reservations will appear here.')
             ->emptyStateIcon('heroicon-o-calendar');
     }
-} 
+}

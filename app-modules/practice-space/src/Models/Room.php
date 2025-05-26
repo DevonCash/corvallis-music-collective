@@ -2,18 +2,13 @@
 
 namespace CorvMC\PracticeSpace\Models;
 
-use App\Models\User;
 use Carbon\Carbon;
 use Carbon\CarbonImmutable;
-use CorvMC\Finance\Models\Product;
 use CorvMC\PracticeSpace\ValueObjects\BookingPolicy;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Database\Eloquent\Relations\MorphOne;
-use Illuminate\Support\Facades\Log;
-use CorvMC\PracticeSpace\Database\Factories\RoomFactory;
 
 class Room extends Model
 {
@@ -41,8 +36,7 @@ class Room extends Model
         "specifications" => "array",
         "size_sqft" => "integer",
         "amenities" => "array",
-        "booking_policy" =>
-        \CorvMC\PracticeSpace\ValueObjects\BookingPolicy::class,
+        "booking_policy" => BookingPolicy::class,
     ];
 
     /**
@@ -66,7 +60,6 @@ class Room extends Model
      *
      * @param Carbon $start Start time
      * @param Carbon $end End time
-     * @return \Illuminate\Database\Eloquent\Builder
      */
     public function bookingsIntersecting(Carbon $start, Carbon $end)
     {
@@ -80,20 +73,6 @@ class Room extends Model
                         ->where("end_time", ">=", $end);
                 });
         });
-    }
-
-    /**
-     * Get bookings that fall on a specific date.
-     *
-     * @param Carbon $date Date
-     * @return \Illuminate\Database\Eloquent\Builder
-     */
-    public function bookingsOn(Carbon $date)
-    {
-        $startOfDay = $date->copy()->startOfDay();
-        $endOfDay = $date->copy()->endOfDay();
-
-        return $this->bookingsIntersecting($startOfDay, $endOfDay);
     }
 
     /**
@@ -126,11 +105,6 @@ class Room extends Model
 
         // Return a null relationship if the Finance module is not installed
         return $this->belongsTo(self::class, "id", "id")->whereNull("id");
-    }
-
-    public function getHourlyRateAttribute()
-    {
-        return $this->product?->price ?? $this->attributes["hourly_rate"];
     }
 
     /**
@@ -275,33 +249,12 @@ class Room extends Model
         return $durations;
     }
 
-    public function getMaximumBookingDate(): Carbon
-    {
-        return now()->addDays($this->booking_policy->maxAdvanceBookingDays);
-    }
-
-    public function getMinimumBookingDate(): Carbon
-    {
-        return now()->addHours($this->booking_policy->minAdvanceBookingHours);
-    }
-
-    public function getOperatingHours(string $date): array
-    {
-        $openingTime = $this->booking_policy->getOpeningTime($date);
-        $closingTime = $this->booking_policy->getClosingTime($date);
-
-        return [
-            "opening" => $openingTime->format("Y-m-d H:i:s"),
-            "closing" => $closingTime->format("Y-m-d H:i:s"),
-        ];
-    }
-
     public function getValidSlots(CarbonImmutable $day): array
     {
         $policy = $this->booking_policy;
         $openingTime = $policy->getOpeningTime($day);
         $closingTime = $policy->getClosingTime($day);
-        $bookings = $this->bookingsOn(Carbon::parse($day))->get();
+        $bookings = $this->bookings->whereBetween('start_time', [$openingTime, $closingTime]);
         $slots = [];
 
         for (
@@ -341,5 +294,21 @@ class Room extends Model
         }
 
         return $slots;
+    }
+
+    public function validateBooking(Booking $booking): bool
+    {
+        if (!$this->booking_policy) return true;
+        return $this->booking_policy->validateBooking($booking);
+    }
+
+    public function getMaximumBookingDate(): CarbonImmutable
+    {
+        return CarbonImmutable::now()->addDays($this->booking_policy->maxAdvanceBookingDays);
+    }
+
+    public function getMinimumBookingDate(): CarbonImmutable
+    {
+        return CarbonImmutable::now()->addHours($this->booking_policy->minAdvanceBookingHours);
     }
 }

@@ -19,7 +19,7 @@ class TransitionTableActions
         ->icon($state::getIcon())
         ->color($state::getColor())
         ->form($state::getForm())
-        ->action(fn (Model $record, array $data) => $record->{$stateColumn}->transitionTo($record, $state, $data));
+        ->action(fn (Model $record, array $data) => $record->{$stateColumn}->transitionTo($state, $data));
     }
 
     return $actions;

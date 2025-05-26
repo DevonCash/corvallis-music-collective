@@ -42,9 +42,9 @@ class BookingCompletedNotification extends Notification implements ShouldQueue
         $endTime = $this->booking->end_time->format('g:i A');
         $checkInTime = $this->booking->check_in_time->format('g:i A');
         $checkOutTime = $this->booking->check_out_time->format('g:i A');
-        $duration = $this->booking->getDurationInHours();
+        $duration = $this->booking->duration;;
         $totalPrice = $this->booking->total_price ? number_format($this->booking->total_price, 2) : null;
-        
+
         return (new MailMessage)
             ->subject("Booking Completed: {$roomName}")
             ->markdown('practice-space::emails.bookings.completed', [
@@ -79,7 +79,7 @@ class BookingCompletedNotification extends Notification implements ShouldQueue
             'total_price' => $this->booking->total_price,
         ];
     }
-    
+
     /**
      * Get the Filament representation of the notification.
      */
@@ -87,7 +87,7 @@ class BookingCompletedNotification extends Notification implements ShouldQueue
     {
         $roomName = $this->booking->room->name;
         $duration = $this->booking->getDurationInHours();
-        
+
         return [
             'title' => "Booking Completed: {$roomName}",
             'icon' => 'heroicon-o-check-badge',
@@ -105,7 +105,7 @@ class BookingCompletedNotification extends Notification implements ShouldQueue
             ],
         ];
     }
-    
+
     /**
      * Get the database representation of the notification.
      */
@@ -116,15 +116,15 @@ class BookingCompletedNotification extends Notification implements ShouldQueue
         $checkInTime = $this->booking->check_in_time->format('g:i A');
         $checkOutTime = $this->booking->check_out_time->format('g:i A');
         $duration = $this->booking->getDurationInHours();
-        
+
         $message = "Your {$duration}-hour session in {$roomName} on {$startTime} has been completed. You checked in at {$checkInTime} and checked out at {$checkOutTime}.";
-        
+
         if ($this->booking->total_price) {
             $message .= " Total cost: $" . number_format($this->booking->total_price, 2) . ".";
         }
-        
+
         $message .= " Thank you for using our practice spaces!";
-        
+
         return [
             'title' => "Booking Completed: {$roomName}",
             'icon' => 'heroicon-o-check-badge',
@@ -142,4 +142,4 @@ class BookingCompletedNotification extends Notification implements ShouldQueue
             ],
         ];
     }
-} 
+}

@@ -8,7 +8,6 @@ use Filament\Resources\Pages\EditRecord;
 use Filament\Forms;
 use Filament\Forms\Components\{Section, Tabs, Grid, TextInput, Select, Toggle, FileUpload, Textarea};
 use CorvMC\PracticeSpace\Filament\Forms\Components\BookingPolicyForm;
-use CorvMC\PracticeSpace\Filament\Forms\Components\TimezoneSelect;
 
 
 class EditRoom extends EditRecord
@@ -25,7 +24,7 @@ class EditRoom extends EditRecord
                 ->modalSubmitActionLabel('Yes, delete room')
                 ->modalCancelActionLabel('No, keep room')
                 ->color('danger'),
-            
+
             Actions\Action::make('toggle_active')
                 ->label(fn($record) => $record->is_active ? 'Disable Booking' : 'Enable Booking')
                 ->action(fn($record) => $record->update(['is_active' => !$record->is_active]))
@@ -48,7 +47,7 @@ class EditRoom extends EditRecord
                     ->contained(false)
                     ->tabs([
                     Tabs\Tab::make('Details')
-                        
+
                         ->icon('heroicon-o-information-circle')
                         ->schema([
                             Section::make('Basic Information')
@@ -60,7 +59,7 @@ class EditRoom extends EditRecord
                                         ->maxLength(255)
                                         ->placeholder('e.g., Studio A, Practice Room 101')
                                         ->columnSpan(['sm' => 6,'md'=>8]),
-                                    
+
                                     Select::make('room_category_id')
                                         ->label('Category')
                                         ->relationship('category', 'name')
@@ -84,7 +83,7 @@ class EditRoom extends EditRecord
                                         ->helperText('Markdown formatting is supported')
                                         ->columnSpanFull(),
                                 ]),
-                            
+
                             Section::make('Room Details')
                                 ->description('Provide specific information about the room')
                                 ->schema([
@@ -98,7 +97,7 @@ class EditRoom extends EditRecord
                                                 ->placeholder('10')
                                                 ->helperText('Maximum number of people allowed')
                                                 ->columnSpan(['md' => 6]),
-                                            
+
                                             TextInput::make('hourly_rate')
                                                 ->required()
                                                 ->numeric()
@@ -108,7 +107,7 @@ class EditRoom extends EditRecord
                                                 ->placeholder('25.00')
                                                 ->helperText('Price per hour for booking this room')
                                                 ->columnSpan(['md' => 6]),
-                                            
+
                                             TextInput::make('size_sqft')
                                                 ->label('Size')
                                                 ->numeric()
@@ -117,10 +116,7 @@ class EditRoom extends EditRecord
                                                 ->placeholder('400')
                                                 ->helperText('Room size in square feet')
                                                 ->columnSpan(['md' => 6]),
-                                            
-                                            TimezoneSelect::make()
-                                                ->columnSpan(['md' => 6]),
-                                            
+
                                             Select::make('amenities')
                                                 ->multiple()
                                                 ->options([
@@ -138,7 +134,7 @@ class EditRoom extends EditRecord
                                         ->columns(12),
                                 ]),
                         ]),
-                    
+
                     Tabs\Tab::make('Media')
                         ->icon('heroicon-o-photo')
                         ->schema([
@@ -158,7 +154,7 @@ class EditRoom extends EditRecord
                                         ->columnSpanFull(),
                                 ]),
                         ]),
-                    
+
                     Tabs\Tab::make('Specifications')
                         ->icon('heroicon-o-clipboard-document-list')
                         ->schema([
@@ -175,7 +171,7 @@ class EditRoom extends EditRecord
                                         ->columnSpanFull(),
                                 ]),
                         ]),
-                    
+
                     Tabs\Tab::make('Booking Policy')
                         ->icon('heroicon-o-clock')
                         ->schema([
@@ -191,4 +187,4 @@ class EditRoom extends EditRecord
             ->statePath('data')
             ->inlineLabel(false);
     }
-} 
+}

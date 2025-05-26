@@ -14,6 +14,10 @@
   background: var(--stripe);
 }
 
+.hide-steps .fi-fo-wizard-header {
+    display: none;
+}
+
 :root {
   --cmc-orange: #e5771e;
   --cmc-yellow: #ffe28a;

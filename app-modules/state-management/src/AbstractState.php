@@ -2,13 +2,15 @@
 
 namespace CorvMC\StateManagement;
 
+use CorvMC\StateManagement\Casts\State;
 use CorvMC\StateManagement\Contracts\StateInterface;
+use Illuminate\Contracts\Database\Eloquent\CastsAttributes;
 use Illuminate\Database\Eloquent\Model;
 
 abstract class AbstractState implements StateInterface
 {
-  // list of all states, numerically indexed
-  protected Model $model;
+    // list of all states, numerically indexed
+    protected Model $model;
     protected static string $name = '';
     protected static ?string $verb = null;
     protected static string $label;
@@ -35,19 +37,17 @@ abstract class AbstractState implements StateInterface
     public function __construct(Model $model)
     {
         $this->model = $model;
-
-        $parent = get_parent_class(static::class);
     }
 
     public static function addChild(string $child)
     {
         static::$children[] = $child;
     }
-    
+
 
     public static function getName(): string
     {
-        if(static::$name === '') {
+        if (static::$name === '') {
             throw new \Exception('State name is not set: ' . static::class);
         }
         return static::$name;
@@ -70,7 +70,7 @@ abstract class AbstractState implements StateInterface
 
     /**
      * Get the form schema for transitioning to this state.
-     * 
+     *
      * @return array<\Filament\Forms\Components\Component>
      */
     public static function getForm(): array
@@ -78,22 +78,16 @@ abstract class AbstractState implements StateInterface
         // Default form schema - can be overridden by specific states
         return [];
     }
-    
-    public static function getAllowedTransitions(): array
-    {
-        return static::$allowedTransitions;
-    }
+
     /**
      * Check if this state can transition to another state.
      */
-    public static function canTransitionTo(string $stateClass): bool
+    public function canTransitionTo(string $stateClass): bool
     {
         // Get the state name from the class
-        $stateName = $stateClass::getName();
-        
-        return in_array($stateClass, static::getAllowedTransitions());
+        return false;
     }
-    
+
 
     public static function getVerb(): string
     {
@@ -103,17 +97,34 @@ abstract class AbstractState implements StateInterface
     /**
      * Transition a model from this state to another state.
      */
-    public static function transitionTo(Model $model, string $stateClass, array $data = []): Model
+    public function transitionTo(string $stateClass, array $data = []): Model
     {
-        if (!static::canTransitionTo($stateClass)) {
+        if (!$this->canTransitionTo($stateClass)) {
             throw new \InvalidArgumentException(
                 sprintf('Cannot transition from "%s" to "%s"', static::getName(), $stateClass::getName())
             );
         }
+
+        $stateClass::onTransitionTo($this->model, $data);
         // Update the model state
-        $model->state = $stateClass::getName();
-        $model->save();
-        
-        return $model;
+        $this->model->state = $stateClass::getName();
+        $this->model->save();
+
+        return $this->model;
     }
-} 
+
+    public static function onTransitionTo(Model $model, array $data = []): void
+    {
+        // Default implementation - can be overridden by specific states
+    }
+
+
+    /**
+     * Cast method for Laravel.
+     */
+    public static function castUsing(array $arguments): CastsAttributes
+    {
+        return new State(static::class);
+    }
+
+}

@@ -26,7 +26,7 @@ abstract class BookingState extends AbstractState
         // 'cancelled' => CancelledState::class,
         // 'no_show' => NoShowState::class,
     ];
-    
+
     /**
      * Resolve a state class from a state name.
      */
@@ -34,7 +34,7 @@ abstract class BookingState extends AbstractState
     {
         return static::$states[$state] ?? static::$states['scheduled'];
     }
-    
+
     /**
      * Get all available states.
      */
@@ -42,7 +42,7 @@ abstract class BookingState extends AbstractState
     {
         return static::$states;
     }
-    
+
     /**
      * Cast method for Laravel.
      */
@@ -50,4 +50,5 @@ abstract class BookingState extends AbstractState
     {
         return new State(static::class);
     }
-} 
+
+}

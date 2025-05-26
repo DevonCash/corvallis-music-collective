@@ -27,11 +27,8 @@ trait HasCalendarGrid
         return $date->endOfDay();
     }
 
-    public function isSlotValid(
-        CarbonImmutable $dayStart,
-        int $timeIndex,
-        int $slots
-    ): string|true {
+    public function isSlotValid(CarbonImmutable $dayStart, int $timeIndex, int $slots): string|true
+    {
         return true;
     }
 

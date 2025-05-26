@@ -4,6 +4,7 @@ namespace CorvMC\PracticeSpace\ValueObjects;
 
 use Carbon\Carbon;
 use Carbon\CarbonImmutable;
+use CorvMC\PracticeSpace\Models\Booking;
 use Illuminate\Contracts\Database\Eloquent\CastsAttributes;
 use Illuminate\Contracts\Support\Arrayable;
 use JsonSerializable;
@@ -79,16 +80,16 @@ class BookingPolicy implements Arrayable, JsonSerializable, CastsAttributes
         if ($this->maxBookingsPerWeek < 0) {
             throw new \InvalidArgumentException("Maximum bookings per week must be greater than or equal to 0.");
         }
-        
+
         // Validate confirmation window values
         if ($this->confirmationWindowDays < 0) {
             throw new \InvalidArgumentException("Confirmation window days must be greater than or equal to 0.");
         }
-        
+
         if ($this->autoConfirmationDeadlineDays < 0) {
             throw new \InvalidArgumentException("Auto-confirmation deadline days must be greater than or equal to 0.");
         }
-        
+
         if ($this->autoConfirmationDeadlineDays >= $this->confirmationWindowDays) {
             throw new \InvalidArgumentException("Auto-confirmation deadline must be less than the confirmation window.");
         }
@@ -129,10 +130,7 @@ class BookingPolicy implements Arrayable, JsonSerializable, CastsAttributes
      */
     public function getOpeningTime(string|CarbonImmutable $date): CarbonImmutable
     {
-        if ($date instanceof CarbonImmutable) {
-            return $date->setTimeFrom($this->openingTime);
-        }
-        return CarbonImmutable::parse($date . ' ' . $this->openingTime);
+        return CarbonImmutable::create($date)->setTimeFrom($this->openingTime);
     }
 
     /**
@@ -142,11 +140,8 @@ class BookingPolicy implements Arrayable, JsonSerializable, CastsAttributes
      * @return Carbon
      */
     public function getClosingTime(string|CarbonImmutable $date): CarbonImmutable
-    {   
-        if ($date instanceof CarbonImmutable) {
-            return $date->setTimeFrom($this->closingTime);
-        }
-        return CarbonImmutable::parse($date . ' ' . $this->closingTime);
+    {
+        return CarbonImmutable::create($date)->setTimeFrom($this->closingTime);
     }
 
     /**
@@ -195,32 +190,6 @@ class BookingPolicy implements Arrayable, JsonSerializable, CastsAttributes
     }
 
     /**
-     * Get the policy override for a specific user
-     * 
-     * @param int $userId
-     * @return array|null
-     */
-    public function getOverrideForUser(int $userId): ?array
-    {
-        // Since we're using a value object now, we don't have database-backed overrides
-        // Return null to indicate no override
-        return null;
-    }
-    
-    /**
-     * Create a policy override for a specific user
-     * 
-     * @param int $userId
-     * @param array $overrideData
-     * @return void
-     */
-    public function createOverrideForUser(int $userId, array $overrideData): void
-    {
-        // Since we're using a value object now, we don't have database-backed overrides
-        // This is a no-op method for compatibility with tests
-    }
-
-    /**
      * Cast the given value.
      *
      * @param  \Illuminate\Database\Eloquent\Model  $model
@@ -234,9 +203,9 @@ class BookingPolicy implements Arrayable, JsonSerializable, CastsAttributes
         if ($value === null) {
             return new self();
         }
-        
+
         $data = is_array($value) ? $value : json_decode($value, true);
-        
+
         return self::fromArray($data);
     }
 
@@ -254,17 +223,17 @@ class BookingPolicy implements Arrayable, JsonSerializable, CastsAttributes
         if ($value === null) {
             return null;
         }
-        
+
         if ($value instanceof self) {
             return json_encode($value->toArray());
         }
-        
+
         return json_encode($value);
     }
 
     /**
      * Get a human-readable summary of the booking policy
-     * 
+     *
      * @return string
      */
     public function getSummary(): string
@@ -273,27 +242,117 @@ class BookingPolicy implements Arrayable, JsonSerializable, CastsAttributes
         $policyTimeFormat = __('practice-space::room_availability_calendar.policy_time_format');
         $openingTime = Carbon::createFromFormat('H:i', $this->openingTime)->format($policyTimeFormat);
         $closingTime = Carbon::createFromFormat('H:i', $this->closingTime)->format($policyTimeFormat);
-        
+
         // Build the natural language description
         $summary = __('practice-space::room_availability_calendar.policy_open_hours', [
             'opening_time' => $openingTime,
             'closing_time' => $closingTime,
             'max_duration' => $this->maxBookingDurationHours,
         ]);
-        
+
         $summary .= ' ' . __('practice-space::room_availability_calendar.policy_booking_window', [
             'min_hours' => $this->minAdvanceBookingHours,
             'max_days' => $this->maxAdvanceBookingDays,
         ]);
-        
+
         $summary .= ' ' . __('practice-space::room_availability_calendar.policy_cancellation', [
             'hours' => $this->cancellationHours,
         ]);
-        
+
         $summary .= ' ' . __('practice-space::room_availability_calendar.policy_weekly_limit', [
             'limit' => $this->maxBookingsPerWeek,
         ]);
-        
+
         return $summary;
     }
-} 
+
+
+    /**
+     * Validate the booking against the applicable booking policy.
+     */
+    public function validateBooking(Booking $booking): bool
+    {
+        // Validate booking time against opening and closing hours
+        $openingTime = $this->getOpeningTime($booking->start_time);
+        $closingTime = $this->getClosingTime($booking->start_time);
+        if ($booking->start_time < $openingTime || $booking->end_time > $closingTime) {
+            return false;
+        }
+
+        // Validate duration
+        if (!$this->validateDuration($booking)) {
+            return false;
+        }
+
+        // Validate advance notice
+        if (!$this->validateAdvanceNotice($booking)) {
+            return false;
+        }
+
+        // Validate weekly booking limit
+        if (!$this->validateWeeklyLimit($booking)) {
+            return false;
+        }
+
+        // Validate booking time against existing bookings
+        $existingBookings = $booking->room->bookings()
+            ->where('start_time', '<', $booking->end_time)
+            ->where('end_time', '>', $booking->start_time)
+            ->where('id', '!=', $booking->id) // Exclude the current booking
+            ->exists();
+        if ($existingBookings) {
+            return false;
+        }
+
+        return true;
+    }
+
+    /**
+     * Validate the booking duration against the policy.
+     */
+    protected function validateDuration(Booking $booking): bool
+    {
+        $duration = $booking->getDurationInHours();
+
+        return $duration <= $this->maxBookingDurationHours && $duration >= $this->minBookingDurationHours;
+    }
+
+    /**
+     * Validate the booking advance notice against the policy.
+     */
+    protected function validateAdvanceNotice(Booking $booking): bool
+    {
+        $now = Carbon::now();
+        $startTime = $booking->start_time->copy();
+
+        $hoursUntilBooking = $now->diffInHours($startTime, false);
+        $daysUntilBooking = $now->diffInDays($startTime, false);
+
+        $minHours = $this->minAdvanceBookingHours;
+        $maxDays = $this->maxAdvanceBookingDays;
+
+        return $hoursUntilBooking >= $minHours && $daysUntilBooking <= $maxDays;
+    }
+
+    /**
+     * Validate the booking against the weekly limit in the policy.
+     */
+    protected function validateWeeklyLimit(Booking $booking): bool
+    {
+
+        $maxBookingsPerWeek = $this->maxBookingsPerWeek;
+
+        // Get the start and end of the current week
+        $weekStart = Carbon::now(config('app.timezone'))->startOfWeek();
+        $weekEnd = Carbon::now(config('app.timezone'))->endOfWeek();
+
+        // Count bookings by this user in the current week
+        $bookingsThisWeek = $booking->room->bookings->where("user_id", $booking->user_id)
+            ->where("id", "!=", $booking->id) // Exclude this booking if it's already saved
+            ->whereBetween("start_time", [$weekStart, $weekEnd])
+            ->count();
+
+        // Check if adding this booking would exceed the weekly limit
+        return $bookingsThisWeek + 1 <= $maxBookingsPerWeek;
+    }
+}

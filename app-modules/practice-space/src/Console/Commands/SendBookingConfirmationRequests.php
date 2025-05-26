@@ -9,6 +9,8 @@ use CorvMC\PracticeSpace\Models\States\BookingState\ScheduledState;
 use CorvMC\PracticeSpace\Notifications\BookingConfirmationRequestNotification;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Log;
+use Spatie\Activitylog\ActivityLogger;
+use Spatie\Activitylog\Facades\LogBatch;
 
 class SendBookingConfirmationRequests extends Command
 {
@@ -32,72 +34,85 @@ class SendBookingConfirmationRequests extends Command
      */
     public function handle()
     {
+
         $isDryRun = $this->option('dry-run');
-        
+
         $this->info("Finding bookings that have entered the confirmation window...");
-        
+
         // Find bookings that:
         // 1. Are in the Scheduled state
         // 2. Have a confirmation_requested_at date that is today or in the past
         // 3. Have not been confirmed yet
         // 4. Have not been cancelled
         // 5. Have not had a confirmation request sent yet
-        
+
         $bookings = Booking::query()
             ->where('state', ScheduledState::$name)
-            ->whereNotNull('confirmation_requested_at')
-            ->where('confirmation_requested_at', '<=', now())
-            ->whereNull('confirmed_at')
-            ->whereNull('cancelled_at')
-            ->get()
-            ->filter(function ($booking) {
-                // Check if this notification has already been sent using the activity log
-                return !$booking->hasNotificationBeenSent(BookingConfirmationRequestNotification::class);
-            });
-        
+            ->where('start_time', '<=', Carbon::now()->addDays(3))
+            ->with('activities')
+            ->get();
+
         $this->info("Found {$bookings->count()} bookings that need confirmation requests.");
-        
-        if ($isDryRun) {
-            $this->warn("DRY RUN: No notifications will be sent.");
-            
-            foreach ($bookings as $booking) {
-                $user = User::find($booking->user_id);
-                $this->info("Would send confirmation request to {$user->email} for booking #{$booking->id}");
-            }
-            
-            return;
-        }
-        
+
+
+
         $bar = $this->output->createProgressBar($bookings->count());
         $bar->start();
-        
+
+        LogBatch::startBatch();
         foreach ($bookings as $booking) {
-            $user = User::find($booking->user_id);
-            
-            try {
-                // Send the notification
-                $user->notify(new BookingConfirmationRequestNotification($booking));
-                
-                // Log the notification in the activity log
-                $booking->logNotificationSent(BookingConfirmationRequestNotification::class, [
-                    'confirmation_deadline' => $booking->confirmation_deadline,
-                ]);
-                
-                Log::info("Sent booking confirmation request to user {$user->id} for booking {$booking->id}");
-            } catch (\Exception $e) {
-                $this->error("Failed to send confirmation request for booking #{$booking->id}: {$e->getMessage()}");
-                Log::error("Failed to send booking confirmation request: {$e->getMessage()}", [
-                    'booking_id' => $booking->id,
-                    'user_id' => $user->id,
-                    'exception' => $e,
-                ]);
-            }
-            
             $bar->advance();
+
+            // Check if the confirmation request has already been sent
+            $confirmationRequestSent = $booking->activities()
+                ->where('event', 'confirmation.sent')
+                ->exists();
+
+            if ($confirmationRequestSent) {
+                $this->info("Confirmation request already sent for booking #{$booking->id}. Skipping.");
+                continue;
+            }
+
+            if ($isDryRun) {
+                $this->info("DRY RUN: Would send confirmation request to {$booking->user->email} for booking #{$booking->id}");
+                continue;
+            }
+
+            $this->notifyUserForBooking($booking);
         }
-        
+        LogBatch::endBatch();
+
         $bar->finish();
         $this->newLine();
-        $this->info("Booking confirmation requests sent successfully!");
+
+        if ($isDryRun) {
+            $this->info("DRY RUN: No actual notifications were sent.");
+        } else {
+            $this->info("All notifications sent successfully.");
+        }
     }
-} 
+
+    private function notifyUserForBooking(Booking $booking)
+    {
+        try {
+            $user = $booking->user;
+
+            $user->notify(new BookingConfirmationRequestNotification($booking));
+
+            activity('notification')
+                ->performedOn($booking)
+                ->event('confirmation.sent')
+                ->log("Sent booking confirmation request to user {$user->id} for booking {$booking->id}");
+
+            // Send the notification
+            $this->info("Sent confirmation request to {$user->email} for booking #{$booking->id}");
+        } catch (\Exception $e) {
+            $this->error("Failed to send confirmation request for booking #{$booking->id}: {$e->getMessage()}");
+            Log::error("Failed to send booking confirmation request: {$e->getMessage()}", [
+                'booking_id' => $booking->id,
+                'user_id' => $user->id,
+                'exception' => $e,
+            ]);
+        }
+    }
+}

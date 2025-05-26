@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\Model;
 
 /**
  * Scheduled State
- * 
+ *
  * This is the initial state for all new bookings.
  * Bookings in this state need to be confirmed by the member within the confirmation window.
  */
@@ -18,8 +18,7 @@ class ScheduledState extends BookingState
     public static string $label = 'Scheduled';
     public static string $icon = 'heroicon-o-clock';
     public static string $color = 'warning';
-    public static array $allowedTransitions = [ConfirmedState::class, CancelledState::class];
-    
+
     /**
      * Get the form schema for transitioning to this state.
      */
@@ -32,24 +31,31 @@ class ScheduledState extends BookingState
                 ->required(false),
         ];
     }
-    
+
+    public function canTransitionTo(string $stateClass): bool
+    {
+        return match ($stateClass) {
+            ConfirmedState::class => $this->canBeConfirmed(),
+            CancelledState::class => true,
+            default => false,
+        };
+    }
+
     /**
      * Check if the booking can be confirmed.
      */
     public function canBeConfirmed(): bool
     {
-        if (!$this->model->isInConfirmationWindow()) {
-            throw new \InvalidArgumentException('Booking cannot be confirmed outside the confirmation window.');
-        }
-        
+        $room = $this->model->room;
+        $bookingPolicy = $room->booking_policy;
+
+        // Make sure the booking is in the future
+        if ($this->model->start_time->isPast()) return false;
+
+        // Check if the booking window is open
+        $window = $this->model->start_time->subDays($bookingPolicy->confirmationWindowDays);
+        if ($window->isFuture()) return false;
+
         return true;
     }
-    
-    /**
-     * Check if the booking should be auto-cancelled.
-     */
-    public function shouldBeAutoCancelled(): bool
-    {
-        return $this->model->isConfirmationDeadlinePassed();
-    }
-} 
+}

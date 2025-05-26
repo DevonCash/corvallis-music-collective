@@ -14,6 +14,7 @@ use CorvMC\PracticeSpace\Traits\HasCalendarGrid;
 use CorvMC\PracticeSpace\Traits\HasCalendarPaging;
 use CorvMC\PracticeSpace\Traits\HasBookings;
 use Carbon\CarbonImmutable;
+use CorvMC\PracticeSpace\Filament\Actions\ManageBookingAction;
 use Illuminate\Database\Eloquent\Collection;
 
 class RoomAvailabilityCalendar extends Component implements HasForms, HasActions
@@ -34,7 +35,7 @@ class RoomAvailabilityCalendar extends Component implements HasForms, HasActions
 
         // Set initial date range to current week, always starting on Monday
         $this->startDate = CarbonImmutable::now()->startOfWeek(\Carbon\CarbonInterface::MONDAY);
-        $this->endDate = $this->startDate->copy()->addDays(6); // Sunday
+        $this->endDate = $this->startDate->copy()->addDays(7); // Sunday
     }
 
     public function getDayStart(CarbonImmutable $date): CarbonImmutable
@@ -51,8 +52,8 @@ class RoomAvailabilityCalendar extends Component implements HasForms, HasActions
     {
         return $this->room
             ->bookings()
-            ->where("start_time", ">=", $this->startDate)
-            ->where("end_time", "<=", $this->endDate)
+            ->where("start_time", ">=", $this->startDate->timezone('UTC'))
+            ->where("end_time", "<=", $this->endDate->timezone('UTC'))
             ->get();
     }
 
@@ -87,6 +88,14 @@ class RoomAvailabilityCalendar extends Component implements HasForms, HasActions
         return CreateBookingAction::make()
         ->label(
             __("practice-space::room_availability_calendar.create_booking")
+        );
+    }
+
+    public function manageBookingAction()
+    {
+        return ManageBookingAction::make()
+        ->label(
+            __("practice-space::room_availability_calendar.manage_booking")
         );
     }
 }

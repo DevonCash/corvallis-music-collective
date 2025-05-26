@@ -1,6 +1,7 @@
 <?php
 
 use CorvMC\PracticeSpace\Http\Controllers\BookingConfirmationController;
+use CorvMC\PracticeSpace\Notifications\BookingConfirmationRequestNotification;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -20,5 +21,3 @@ Route::get('/practice-space/bookings/{booking}/confirm', [BookingConfirmationCon
 Route::get('/practice-space/bookings/{booking}/cancel', [BookingConfirmationController::class, 'cancel'])
     ->name('practice-space.bookings.cancel')
     ->middleware(['signed']);
-
-// Add other practice space routes here

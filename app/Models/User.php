@@ -63,7 +63,7 @@ class User extends Authenticatable implements FilamentUser, HasTenants
 
     public function isAdmin(): bool
     {
-        return $this->hasRole('admin');
+        return $this->hasRole('admin') || Str::endsWith('@corvmc.org', $this->email);
     }
 
     public function canAccessPanel(Panel $panel): bool

@@ -7,6 +7,8 @@ use CorvMC\StateManagement\Casts\State;
 use Illuminate\Contracts\Database\Eloquent\CastsAttributes;
 use Filament\Tables\Actions\Action;
 use CorvMC\PracticeSpace\Models\Booking;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Auth;
 
 /**
  * BookingState Base Class
@@ -36,13 +38,17 @@ abstract class BookingState extends AbstractState
         BookingState\CancelledState::class,
         BookingState\NoShowState::class,
     ];
-    
-    /**
-     * Cast method for Laravel.
-     */
-    public static function castUsing(array $arguments): CastsAttributes
-    {
-        return new State(static::class);
-    }
 
-} 
+
+    public static function onTransitionTo(Model $model, array $data = []): void {
+        activity('booking_state_transition')
+        ->performedOn($model)
+        ->causedBy(Auth::user())
+        ->withProperties([
+            'old' => $model->state->getName(),
+            'new' => static::getName(),
+            'data' => $data,
+        ])
+        ->log("Transitioned booking #{$model->id} to " . static::getName());
+    }
+}

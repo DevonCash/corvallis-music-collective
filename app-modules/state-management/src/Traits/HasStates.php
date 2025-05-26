@@ -27,7 +27,7 @@ trait HasStates
             // Record initial state
             $stateClass = static::getStates()[$model->state_type];
             $state = new $stateClass($model);
-            
+
             // Create initial state history entry
             $model->stateHistory()->create([
                 'from_state' => null,
@@ -35,15 +35,6 @@ trait HasStates
                 'reason' => 'Initial state',
             ]);
         });
-    }
-
-    /**
-     * Get the state history for this model.
-     */
-    public function stateHistory(): MorphMany
-    {
-        return $this->morphMany(StateHistory::class, 'model')
-            ->orderBy('created_at', 'desc');
     }
 
     /**
@@ -57,7 +48,7 @@ trait HasStates
 
     /**
      * Get all registered states.
-     * 
+     *
      * @return array<string, class-string<StateInterface>>
      */
     public static function getStates(): array
@@ -73,7 +64,7 @@ trait HasStates
 
     /**
      * Get all possible transitions from the current state.
-     * 
+     *
      * @return array<string, string>
      */
     public function getPossibleTransitions(): array
@@ -112,15 +103,15 @@ trait HasStates
     public function getStateTransitionActions(): ActionGroup
     {
         $actions = [];
-        
+
         foreach ($this->getPossibleTransitions() as $state => $label) {
             $stateClass = static::getStates()[$state];
             $actions[] = $stateClass::getTableAction($this->state_type);
         }
-        
+
         return ActionGroup::make($actions)
             ->label('Change Status')
             ->icon('heroicon-o-arrow-path')
             ->button();
     }
-} 
+}

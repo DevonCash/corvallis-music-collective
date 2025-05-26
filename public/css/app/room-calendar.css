@@ -45,8 +45,7 @@
 
 /* Time Cells */
 .time-cell {
-  @apply relative bg-white dark:bg-gray-900 cursor-pointer;
-  border: 1px solid;
+  @apply relative bg-white dark:bg-gray-900 cursor-pointer border;
   border-left: 0px;
   border-top: 0px;
   border-color: rgb(var(--gray-300)) rgb(var(--gray-400)) rgb(var(--gray-300)) rgb(var(--gray-400));
@@ -62,8 +61,8 @@
 }
 
 /* Bookings */
-.booking {
-  @apply border rounded-md p-2 text-xs m-1 shadow-sm;
+[data-booking] {
+  @apply border rounded-md p-2 text-xs m-1 shadow-sm cursor-pointer;
 }
 
 .booking-by-user {
@@ -96,4 +95,4 @@
   .time-cell {
     border-color: rgb(var(--gray-600)) rgb(var(--gray-500)) rgb(var(--gray-600)) rgb(var(--gray-500));
   }
-} 
+}
