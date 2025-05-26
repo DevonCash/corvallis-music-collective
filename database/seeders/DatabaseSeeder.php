@@ -23,6 +23,7 @@ class DatabaseSeeder extends Seeder
         $this->call([
             \CorvMC\PracticeSpace\Database\Seeders\DatabaseSeeder::class,
             \CorvMC\Sponsorship\Database\Seeders\DatabaseSeeder::class,
+            \CorvMC\Productions\Database\Seeders\ProductionSeeder::class,
         ]);
 
         // Create roles

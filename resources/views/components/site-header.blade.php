@@ -12,6 +12,7 @@
         <li>
           <a class="link" href="/about">About Us</a>
         </li>
+        <li><a class="link" href={{ route('productions.index') }}>Shows</a></li>
         <li><a class="link" href="/about/contribute">Contribute</a></li>
         <li><a class="link" href="/about/volunteer">Volunteer</a></li>
       </ul>

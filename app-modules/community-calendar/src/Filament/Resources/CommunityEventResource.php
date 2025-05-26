@@ -18,7 +18,9 @@ class CommunityEventResource extends Resource
 {
     protected static ?string $model = CommunityEvent::class;
 
-    protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
+    protected static ?string $modelLabel = 'Event';
+
+    protected static ?string $navigationIcon = 'heroicon-o-calendar';
 
     public static function form(Form $form): Form
     {

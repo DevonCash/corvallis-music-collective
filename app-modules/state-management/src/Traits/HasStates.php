@@ -10,28 +10,38 @@ use Illuminate\Database\Eloquent\Relations\MorphMany;
 trait HasStates
 {
     /**
+     * Get the state column name.
+     */
+    public function getStateColumn(): string
+    {
+        return 'state_type';
+    }
+
+    /**
      * Boot the trait.
      */
     public static function bootHasStates()
     {
         static::creating(function ($model) {
-            if (!isset($model->state_type)) {
+            $stateColumn = $model->getStateColumn();
+            if (!isset($model->{$stateColumn})) {
                 // Set default state if not already set
                 $states = static::getStates();
                 $defaultState = array_key_first($states);
-                $model->state_type = $defaultState;
+                $model->{$stateColumn} = $defaultState;
             }
         });
 
         static::created(function ($model) {
             // Record initial state
-            $stateClass = static::getStates()[$model->state_type];
+            $stateColumn = $model->getStateColumn();
+            $stateClass = static::getStates()[$model->{$stateColumn}];
             $state = new $stateClass($model);
 
             // Create initial state history entry
             $model->stateHistory()->create([
                 'from_state' => null,
-                'to_state' => $model->state_type,
+                'to_state' => $model->{$stateColumn},
                 'reason' => 'Initial state',
             ]);
         });
@@ -42,7 +52,8 @@ trait HasStates
      */
     public function getStateAttribute(): StateInterface
     {
-        $stateClass = static::getStates()[$this->state_type] ?? array_values(static::getStates())[0];
+        $stateColumn = $this->getStateColumn();
+        $stateClass = static::getStates()[$this->{$stateColumn}] ?? array_values(static::getStates())[0];
         return new $stateClass($this);
     }
 
@@ -69,7 +80,8 @@ trait HasStates
      */
     public function getPossibleTransitions(): array
     {
-        $stateClass = static::getStates()[$this->state_type];
+        $stateColumn = $this->getStateColumn();
+        $stateClass = static::getStates()[$this->{$stateColumn}];
         return $stateClass::getAllowedTransitions();
     }
 
@@ -85,8 +97,9 @@ trait HasStates
         }
 
         if (!$this->state->canTransitionTo($state)) {
+            $stateColumn = $this->getStateColumn();
             throw new \InvalidArgumentException(
-                sprintf('Cannot transition from "%s" to "%s"', $this->state_type, $state)
+                sprintf('Cannot transition from "%s" to "%s"', $this->{$stateColumn}, $state)
             );
         }
 
@@ -103,10 +116,11 @@ trait HasStates
     public function getStateTransitionActions(): ActionGroup
     {
         $actions = [];
+        $stateColumn = $this->getStateColumn();
 
         foreach ($this->getPossibleTransitions() as $state => $label) {
             $stateClass = static::getStates()[$state];
-            $actions[] = $stateClass::getTableAction($this->state_type);
+            $actions[] = $stateClass::getTableAction($this->{$stateColumn});
         }
 
         return ActionGroup::make($actions)

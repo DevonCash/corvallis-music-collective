@@ -17,9 +17,7 @@ class CommunityCalendarPlugin implements Plugin
         return 'community-calendar';
     }
 
-    public function boot(Panel $panel): void
-    {
-    }
+    public function boot(Panel $panel): void {}
 
     public function resources(array $resources): static
     {
@@ -50,8 +48,7 @@ class CommunityCalendarPlugin implements Plugin
     public static function admin()
     {
         return static::make()
-            ->resources([
-            ]);
+            ->resources([]);
     }
 
     public function register(Panel $panel): void
@@ -64,6 +61,7 @@ class CommunityCalendarPlugin implements Plugin
 
     public static function make()
     {
-        return new (static::class)();
+        return (new (static::class)());
+
     }
 }

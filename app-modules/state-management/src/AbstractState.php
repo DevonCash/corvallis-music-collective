@@ -107,7 +107,10 @@ abstract class AbstractState implements StateInterface
 
         $stateClass::onTransitionTo($this->model, $data);
         // Update the model state
-        $this->model->state = $stateClass::getName();
+        $column = method_exists($this->model, 'getStateColumn') 
+            ? $this->model->getStateColumn() 
+            : 'state';
+        $this->model->{$column} = $stateClass::getName();
         $this->model->save();
 
         return $this->model;

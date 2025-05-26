@@ -22,7 +22,7 @@ class EditCommunityEvent extends EditRecord
     #[On('navigating')]
     public function handleNavigation($path)
     {
-        Log::info('Navigating to: ' . $path);
+        dd('Navigating to: ' . $path);
         return;
 
         // This will be called when Livewire navigation is about to happen

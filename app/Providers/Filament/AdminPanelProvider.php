@@ -20,6 +20,7 @@ use Illuminate\View\Middleware\ShareErrorsFromSession;
 use Filament\View\PanelsRenderHook;
 use Rmsramos\Activitylog\ActivitylogPlugin;
 use CorvMC\PracticeSpace\Filament\PracticeSpacePluginProvider;
+use CorvMC\Productions\Filament\ProductionsPluginProvider;
 
 class AdminPanelProvider extends PanelProvider
 {
@@ -57,7 +58,7 @@ class AdminPanelProvider extends PanelProvider
             ])
             ->renderHook(
                 PanelsRenderHook::SIDEBAR_NAV_START,
-                fn () => view('filament.components.back-to-member-link')
+                fn() => view('filament.components.back-to-member-link')
             )
             ->font('Lexend')
             ->viteTheme('resources/css/filament/member/theme.css')
@@ -66,6 +67,7 @@ class AdminPanelProvider extends PanelProvider
                 ActivitylogPlugin::make()
                     ->navigationItem(false),
                 PracticeSpacePluginProvider::admin(),
+                ProductionsPluginProvider::admin(),
             ])
             ->databaseTransactions()
             ->maxContentWidth('full');

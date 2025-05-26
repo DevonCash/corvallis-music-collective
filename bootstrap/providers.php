@@ -7,4 +7,5 @@ return [
     App\Providers\Filament\BandPanelProvider::class,
     App\Providers\Filament\MemberPanelProvider::class,
     App\Providers\Filament\SponsorPanelProvider::class,
+    CorvMC\CommunityCalendar\Providers\CommunityCalendarServiceProvider::class,
 ];

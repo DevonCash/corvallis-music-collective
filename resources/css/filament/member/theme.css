@@ -1,6 +1,7 @@
 @import '../../../../vendor/filament/filament/resources/css/base.css';
 @import '../../common.css';
 @import '../../../../app-modules/practice-space/resources/css/room-calendar.css';
+@import '../../../../app-modules/productions/src/resources/css/productions.css';
 
 @tailwind base;
 @tailwind components;
@@ -14,10 +15,10 @@
   @apply justify-end;
 }
 
-.fi-fo-wizard-header{
+.fi-fo-wizard-header {
   @apply flex flex-col sm:flex-row;
 }
 
-.fi-fo-wizard-header-step{
+.fi-fo-wizard-header-step {
   flex: 1;
 }

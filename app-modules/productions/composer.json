@@ -1,10 +1,10 @@
 {
 	"name": "corvmc/productions",
-	"description": "",
-	"type": "library",
-	"version": "1.0",
-	"license": "proprietary",
-	"require": {},
+	"description": "Productions module for managing music concerts and events",
+	"type": "laravel-module",
+	"require": {
+		"php": "^8.1"
+	},
 	"autoload": {
 		"psr-4": {
 			"CorvMC\\Productions\\": "src/",
@@ -13,12 +13,13 @@
 			"CorvMC\\Productions\\Database\\Seeders\\": "database/seeders/"
 		}
 	},
-	"minimum-stability": "stable",
 	"extra": {
 		"laravel": {
 			"providers": [
-				"CorvMC\\Productions\\Providers\\ProductionsServiceProvider"
+				"CorvMC\\Productions\\ProductionsServiceProvider"
 			]
 		}
-	}
+	},
+	"minimum-stability": "dev",
+	"prefer-stable": true
 }

@@ -1,10 +1,9 @@
-
-<footer class="footer flex justify-around py-8 bg-base-300 mt-8 gap-8 px-8">
+<footer class="footer flex flex-col md:flex-row justify-around py-8 bg-base-300 mt-8 gap-8 px-8">
   <aside class="flex flex-col gap-2 items-center">
-    <h2>Corvallis<br />Music<br />Collective</h2>
+    <h2 class="hidden md:block">Corvallis<br />Music<br />Collective</h2>
     <x-theme-selector />
   </aside>
-  <div class="flex flex-col gap-1">
+  <div class="flex flex-col gap-1 items-center md:items-start">
     <h6 class="footer-title">Contact</h6>
     <a class="link flex items-center gap-2">
       <x-filament::icon icon="heroicon-o-map-pin" class="size-5"></x-filament::icon>
@@ -30,16 +29,16 @@
       @corvmc
     </a>
   </div>
-  <nav>
+  <nav class="flex flex-col items-center md:items-start">
     <h6 class="footer-title">About</h6>
-    <ul>
+    <ul class="flex flex-col items-center md:items-start">
       <li><a class="link" href="/about/programs">Programs</a></li>
       <li><a class="link" href="/about/contribute">Contribute</a></li>
       <li><a class="link" href="/about/donate">Donate</a></li>
       <li><a class="link" href="/about/volunteer">Volunteer</a></li>
     </ul>
   </nav>
-  <div>
+  <div class="hidden md:flex justify-center">
     <x-logo class="size-48 opacity-50 -scale-x-100 -mt-6" />
   </div>
 </footer>
