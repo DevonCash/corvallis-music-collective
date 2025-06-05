@@ -25,17 +25,25 @@ class RoomAvailabilityCalendar extends Component implements HasForms, HasActions
     use HasCalendarPaging;
 
     /**
-     * The room being displayed in the calendar
+     * The ID of the room being displayed in the calendar
      */
-    public Room $room;
+    public int $room_id;
 
     public function mount(Room $room): void
     {
-        $this->room = $room;
+        $this->room_id = $room->id;
 
         // Set initial date range to current week, always starting on Monday
         $this->startDate = CarbonImmutable::now()->startOfWeek(\Carbon\CarbonInterface::MONDAY);
         $this->endDate = $this->startDate->copy()->addDays(7); // Sunday
+    }
+
+    /**
+     * Get the Room model with bookings loaded
+     */
+    public function getRoomProperty()
+    {
+        return Room::with('bookings')->find($this->room_id);
     }
 
     public function getDayStart(CarbonImmutable $date): CarbonImmutable
@@ -80,7 +88,8 @@ class RoomAvailabilityCalendar extends Component implements HasForms, HasActions
 
     public function render()
     {
-        return view("practice-space::livewire.room-availability-calendar");
+        $room = $this->room; // Uses getRoomProperty()
+        return view("practice-space::livewire.room-availability-calendar", compact('room'));
     }
 
     public function createBookingAction()

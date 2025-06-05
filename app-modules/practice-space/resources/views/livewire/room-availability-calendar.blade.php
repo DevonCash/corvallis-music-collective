@@ -28,11 +28,12 @@
         <div class="overflow-x-auto relative" style="--width: 10rem; --height: 2rem; overscroll-behavior-x: none;"
             x-data="{ hasScroll: false, scrollLeft: 0, scrollRight: false }" x-init="">
             <!-- Calendar Container -->
-            <div class="w-fit" wire:replace>
+            <div class="w-fit">
                 <!-- Calendar Grid -->
                 @php($dayCount = $this->startDate->diffInDays($this->endDate) + 1)
                 @php($timeSlotCount = $this->getSlotsInSpan($this->getDayStart($this->startDate), $this->getDayEnd($this->startDate)))
                 <div class="calendar-grid"
+                    wire:key="calendar-grid-{{ $this->startDate->format('Y-m-d') }}"
                     style="
                             grid-template-columns: auto repeat({{ $dayCount }}, minmax(var(--width), 1fr));
                             grid-template-rows: auto repeat({{ $timeSlotCount }}, var(--height));

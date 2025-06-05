@@ -2,6 +2,8 @@
 
 namespace CorvMC\Productions\Filament\Resources\ProductionResource\RelationManagers;
 
+use Livewire\Features\SupportFileUploads\FileUploadController;
+
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\RelationManagers\RelationManager;

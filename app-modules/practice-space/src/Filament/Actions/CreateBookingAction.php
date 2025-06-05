@@ -40,16 +40,17 @@ class CreateBookingAction
             ->model(Booking::class)
             ->modalHeading('Schedule a Practice Room')
             ->modalDescription('Book a practice room for your rehearsal or practice session')
+            ->modalWidth('xl')
             ->steps(function (array $arguments) {
                 return [
                     Step::make('Room & Time')
-                        ->description('Select a room and booking time')
                         ->icon('heroicon-o-home')
-                        ->columns(2)
+                        ->columns(3)
                         ->schema([
                             Hidden::make('start_time'),
                             Hidden::make('end_time'),
                             SelectRoom::make('room_id')
+                                ->columnSpanFull()
                                 ->preload()
                                 ->required()
                                 ->default($arguments['room_id'])
@@ -62,6 +63,7 @@ class CreateBookingAction
                             Hidden::make('start_time'),
                             Forms\Components\DatePicker::make('booking_date')
                                 ->required()
+                                ->columnSpan(1)
                                 ->label('Date')
                                 ->default(isset($arguments['booking_date']) ? $arguments['booking_date'] : null)
                                 ->disabled(fn(Forms\Get $get) => $get('room_id') === null)
@@ -94,6 +96,7 @@ class CreateBookingAction
                             Forms\Components\Select::make('booking_time')
                                 ->required()
                                 ->label('Start Time')
+                                ->columnSpan(1)
                                 ->live()
                                 ->default(isset($arguments['booking_time']) ? $arguments['booking_time'] : null)
                                 ->disabled(fn(Forms\Get $get) => $get('booking_date') === null)
@@ -153,6 +156,7 @@ class CreateBookingAction
                                 ->required()
                                 ->label('Duration')
                                 ->live()
+                                ->columnSpan(1)
                                 ->disabled(fn(Forms\Get $get) => !$get('room_id') || !$get('booking_date') || !$get('booking_time'))
                                 ->default(fn(Component $component) => array_key_first($component->getOptions()))
                                 ->options(function (Forms\Get $get, Forms\Set $set) {
@@ -179,85 +183,81 @@ class CreateBookingAction
                                 })
                         ]),
                     Step::make('Review & Reserve')
-                        ->description('Review booking details and reserve')
                         ->icon('heroicon-o-clipboard-document-check')
                         ->schema([
-                            Forms\Components\Section::make('Booking Summary')
-                                ->schema([
-                                    Forms\Components\Placeholder::make('room_details')
-                                        ->hiddenLabel()
-                                        ->content(function (Forms\Get $get) {
-                                            // If we don't have all the required data, show a message
-                                            if (!$get('room_id') || !$get('booking_date') || !$get('booking_time') || !$get('duration_hours')) {
-                                                return 'Please select a room and time on the previous step.';
-                                            }
+                            Forms\Components\Placeholder::make('room_details')
+                                ->hiddenLabel()
+                                ->content(function (Forms\Get $get) {
+                                    // If we don't have all the required data, show a message
+                                    if (!$get('room_id') || !$get('booking_date') || !$get('booking_time') || !$get('duration_hours')) {
+                                        return 'Please select a room and time on the previous step.';
+                                    }
 
-                                            try {
-                                                $roomId = $get('room_id');
-                                                $room = Room::where('id', $roomId)->first();
-                                                if (!$room) {
-                                                    return 'Invalid room selection.';
-                                                }
+                                    try {
+                                        $roomId = $get('room_id');
+                                        $room = Room::where('id', $roomId)->first();
+                                        if (!$room) {
+                                            return 'Invalid room selection.';
+                                        }
 
-                                                $bookingDate = $get('booking_date');
-                                                $bookingTime = $get('booking_time');
+                                        $bookingDate = $get('booking_date');
+                                        $bookingTime = $get('booking_time');
 
-                                                // Ensure we have proper date and time strings
-                                                if (is_string($bookingDate) && is_string($bookingTime)) {
-                                                    $start_time = Carbon::createFromFormat('Y-m-d H:i', $bookingDate . ' ' . $bookingTime);
-                                                } else {
-                                                    return 'Invalid date or time format.';
-                                                }
+                                        // Ensure we have proper date and time strings
+                                        if (is_string($bookingDate) && is_string($bookingTime)) {
+                                            $start_time = Carbon::createFromFormat('Y-m-d H:i', $bookingDate . ' ' . $bookingTime);
+                                        } else {
+                                            return 'Invalid date or time format.';
+                                        }
 
-                                                $end_time = $start_time->copy()->addHours(floatVal($get('duration_hours')));
-                                                $booking = new Booking([
-                                                    'room_id' => $roomId,
-                                                    'start_time' => $start_time,
-                                                    'end_time' => $end_time,
-                                                    'user_id' => Auth::id(), // Default to current user
-                                                    'notes' => $get('notes') ?? null,
-                                                ]);
+                                        $end_time = $start_time->copy()->addHours(floatVal($get('duration_hours')));
+                                        $booking = new Booking([
+                                            'room_id' => $roomId,
+                                            'start_time' => $start_time,
+                                            'end_time' => $end_time,
+                                            'user_id' => Auth::id(), // Default to current user
+                                            'notes' => $get('notes') ?? null,
+                                        ]);
 
-                                                return new HtmlString(view('practice-space::filament.forms.booking-summary', [
-                                                    'booking' => $booking,
-                                                ])->render());
-                                            } catch (\Exception $e) {
-                                                // If there's an error, show a message
-                                                return new HtmlString('<div class="text-danger-500">' . $e->getMessage() . '</div>');
-                                            }
-                                        }),
-                                    Forms\Components\Textarea::make('notes')
-                                        ->label('Notes')
-                                        ->placeholder('Any special requirements or notes for your booking')
-                                        ->maxLength(1000),
-                                ]),
+                                        return new HtmlString(view('practice-space::filament.forms.booking-summary', [
+                                            'booking' => $booking,
+                                        ])->render());
+                                    } catch (\Exception $e) {
+                                        // If there's an error, show a message
+                                        return new HtmlString('<div class="text-danger-500">' . $e->getMessage() . '</div>');
+                                    }
+                                }),
+                            Forms\Components\Textarea::make('notes')
+                                ->label('Notes')
+                                ->placeholder('Any special requirements or notes for your booking')
+                                ->maxLength(1000),
                         ]),
                 ];
             })
             ->action(function (array $data): void {
                 // try {
-                    // Create the booking directly
-                    $room = Room::find($data['room_id'])->first();
+                // Create the booking directly
+                $room = Room::find($data['room_id'])->first();
 
-                    $startDateTime = CarbonImmutable::createFromFormat('Y-m-d H:i', $data['booking_date'] . ' ' . $data['booking_time'], config('app.timezone'));
-                    $endDateTime = $startDateTime->addHours(floatVal($data['duration_hours']));
+                $startDateTime = CarbonImmutable::createFromFormat('Y-m-d H:i', $data['booking_date'] . ' ' . $data['booking_time'], config('app.timezone'));
+                $endDateTime = $startDateTime->addHours(floatVal($data['duration_hours']));
 
-                    $booking =  new Booking([
-                        'room_id' => $data['room_id'],
-                        'user_id' => Auth::id(),
-                        'start_time' => $startDateTime,
-                        'end_time' => $endDateTime,
-                        'notes' => $data['notes'] ?? null,
-                    ]);
+                $booking =  new Booking([
+                    'room_id' => $data['room_id'],
+                    'user_id' => Auth::id(),
+                    'start_time' => $startDateTime,
+                    'end_time' => $endDateTime,
+                    'notes' => $data['notes'] ?? null,
+                ]);
 
-                    $room->validateBooking($booking);
+                $room->validateBooking($booking);
 
-                    $booking->save();
+                $booking->save();
 
-                    Notification::make()
-                        ->title($booking->room->name . ' booked for ' . $booking->start_time->format('Y-m-d g:i a'))
-                        ->success()
-                        ->send();
+                Notification::make()
+                    ->title($booking->room->name . ' booked for ' . $booking->start_time->format('Y-m-d g:i a'))
+                    ->success()
+                    ->send();
                 // } catch (\Exception $e) {
                 //     Notification::make()
                 //         ->title('Room not available')

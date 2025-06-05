@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Livewire\Mechanisms\HandleComponents\Synthesizers\Synth;
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Filament\Models\Contracts\FilamentUser;
 use Illuminate\Database\Eloquent\Factories\HasFactory;

@@ -38,7 +38,6 @@ class SelectRoom {
                                 {$room->capacity}
                             </span>
                         </div>
-                        " . ($room->description ? "<div class='text-xs text-gray-400 mt-1 truncate max-w-md'>{$room->description}</div>" : "") . "
                     </div>
                 ");
                 

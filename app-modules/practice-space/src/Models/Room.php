@@ -26,6 +26,7 @@ class Room extends Model
         "photos",
         "specifications",
         "booking_policy",
+        "google_calendar_id",
     ];
 
     protected $casts = [

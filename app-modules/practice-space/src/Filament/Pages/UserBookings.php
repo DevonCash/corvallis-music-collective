@@ -35,7 +35,8 @@ class UserBookings extends Page implements HasTable
     public function table(Table $table): Table
     {
         return $table
-            ->poll()
+            ->poll('3s')
+            ->deferLoading()
             ->query(
                 Booking::query()
                     ->where('user_id', Auth::id())
@@ -60,6 +61,7 @@ class UserBookings extends Page implements HasTable
                 Tables\Columns\TextColumn::make('total_price')
                     ->label('Price')
                     ->money('USD')
+                    ->getStateUsing(fn (Booking $record): float => $record->room->hourly_rate * $record->duration)
                     ->sortable(),
                 Tables\Columns\TextColumn::make('state')
                     ->label('Status')
@@ -69,7 +71,16 @@ class UserBookings extends Page implements HasTable
             ])
             ->defaultSort('start_time')
             ->actions(
-                [...TransitionTableActions::make(BookingState::class)]
+                array_map(function ($action) {
+                    if ($action->getName() === 'transition_to_cancelled') {
+                        return $action->requiresConfirmation()
+                            ->modalHeading('Cancel Booking')
+                            ->modalDescription('Are you sure you want to cancel this booking? This action cannot be undone.')
+                            ->modalSubmitActionLabel('Yes, cancel booking')
+                            ->modalCancelActionLabel('No, keep booking');
+                    }
+                    return $action;
+                }, TransitionTableActions::make(BookingState::class))
             )
             ->bulkActions([])
             ->emptyStateHeading('No bookings yet')

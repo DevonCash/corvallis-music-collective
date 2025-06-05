@@ -95,21 +95,27 @@ class BookingResource extends Resource
                             ->label('Check-out Time')
                             ->after('check_in_time'),
                     ]),
-                Forms\Components\Section::make('Payment')
-                    ->schema([
-                        Forms\Components\TextInput::make('total_price')
-                            ->numeric()
-                            ->prefix('$')
-                            ->label('Total Price'),
-                        Forms\Components\Select::make('payment_status')
-                            ->options([
-                                'pending' => 'Pending',
-                                'paid' => 'Paid',
-                                'refunded' => 'Refunded',
-                                'failed' => 'Failed',
-                            ])
-                            ->default('pending'),
-                    ]),
+                ...(
+                    app(\CorvMC\PracticeSpace\BookingSettings::class)->enable_payments
+                        ? [
+                            Forms\Components\Section::make('Payment')
+                                ->schema([
+                                    Forms\Components\TextInput::make('total_price')
+                                        ->numeric()
+                                        ->prefix('$')
+                                        ->label('Total Price'),
+                                    Forms\Components\Select::make('payment_status')
+                                        ->options([
+                                            'pending' => 'Pending',
+                                            'paid' => 'Paid',
+                                            'refunded' => 'Refunded',
+                                            'failed' => 'Failed',
+                                        ])
+                                        ->default('pending'),
+                                ]),
+                        ]
+                        : []
+                ),
             ]);
     }
 
@@ -136,6 +142,7 @@ class BookingResource extends Resource
                 StateColumn::make('state'),
                 TextColumn::make('total_price')
                     ->money('USD')
+                    ->getStateUsing(fn (Booking $record): float => $record->room->hourly_rate * $record->duration)
                     ->sortable(),
                 TextColumn::make('payment_status')
                     ->badge()

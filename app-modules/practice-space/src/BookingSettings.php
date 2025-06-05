@@ -11,4 +11,6 @@ class BookingSettings extends Settings
     {
         return 'booking';
     }
+
+    public bool $enable_payments = true;
 } 

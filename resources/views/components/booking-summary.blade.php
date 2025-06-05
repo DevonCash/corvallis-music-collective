@@ -51,13 +51,15 @@
                 </div>
             </div>
 
-            @if($booking->getAmountOwed() > 0)
-                <div class="flex flex-col items-end">
-                    <div class="text-sm text-gray-400">Payment Required</div>
-                    <div class="text-xl font-semibold text-red-600">${{ number_format($booking->getAmountOwed(), 2) }}</div>
-                </div>
-            @else
-                <div class="text-sm text-green-600 font-medium">Fully Paid</div>
+            @if(app(\CorvMC\PracticeSpace\BookingSettings::class)->enable_payments)
+                @if($booking->getAmountOwed() > 0)
+                    <div class="flex flex-col items-end">
+                        <div class="text-sm text-gray-400">Payment Required</div>
+                        <div class="text-xl font-semibold text-red-600">${{ number_format($booking->getAmountOwed(), 2) }}</div>
+                    </div>
+                @else
+                    <div class="text-sm text-green-600 font-medium">Fully Paid</div>
+                @endif
             @endif
         </div>
     </div>
