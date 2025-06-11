@@ -23,16 +23,26 @@ class ConfirmedState extends BookingState
     public static string $icon = 'heroicon-o-check-circle';
     public static string $color = 'success';
 
-    public function canTransitionTo(string $state): bool
+    public static function getAllowedTransitions(Model $model): array
     {
         /** @var \App\Models\User $user */
         $user = Auth::user();
-        $startTime = $this->model->start_time;
-        return match ($state) {
-            CheckedInState::class   => $user->isAdmin() && $startTime->subMinutes(15)->isPast(),
-            NoShowState::class      => $user->isAdmin() && $startTime->addMinutes(15)->isPast(),
-            CancelledState::class   => $startTime->isFuture(),
-            default => false,
-        };
+        $startTime = $model->start_time;
+        
+        $transitions = [];
+        
+        if ($user->isAdmin() && $startTime->subMinutes(15)->isPast()) {
+            $transitions[] = CheckedInState::class;
+        }
+        
+        if ($user->isAdmin() && $startTime->addMinutes(15)->isPast()) {
+            $transitions[] = NoShowState::class;
+        }
+        
+        if ($startTime->isFuture()) {
+            $transitions[] = CancelledState::class;
+        }
+        
+        return $transitions;
     }
 }

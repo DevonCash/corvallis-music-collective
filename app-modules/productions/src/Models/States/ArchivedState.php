@@ -34,7 +34,7 @@ class ArchivedState extends ProductionState
         ];
     }
 
-    public function canTransitionTo(string $state): bool
+    public static function canTransitionTo(Model $model, string $state): bool
     {
         return in_array($state, static::$allowedTransitions);
     }

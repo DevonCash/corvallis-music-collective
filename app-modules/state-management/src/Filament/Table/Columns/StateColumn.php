@@ -11,8 +11,8 @@ class StateColumn
   public static function make(string $stateColumn = 'state'): TextColumn
   {
     return TextColumn::make($stateColumn)
-      ->formatStateUsing(fn (AbstractState $state): string => $state->getLabel())
+      ->formatStateUsing(fn ($state): string => $state::getLabel())
       ->badge()
-      ->color(fn (AbstractState $state): string => $state->getColor());
+      ->color(fn ($state): string => $state::getColor());
   }
 }

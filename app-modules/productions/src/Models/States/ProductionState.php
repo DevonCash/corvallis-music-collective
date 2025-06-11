@@ -49,6 +49,11 @@ abstract class ProductionState extends AbstractState
         return static::$verb ?? static::getLabel();
     }
 
+    public static function canTransitionTo(Model $model, string $state): bool
+    {
+        return in_array($state, static::$allowedTransitions ?? []);
+    }
+
     public static function onTransitionTo(Model $model, array $data = []): void 
     {
         activity('production_state_transition')

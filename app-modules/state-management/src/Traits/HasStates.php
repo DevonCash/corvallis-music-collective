@@ -2,10 +2,9 @@
 
 namespace CorvMC\StateManagement\Traits;
 
-use CorvMC\StateManagement\Contracts\StateInterface;
-use CorvMC\StateManagement\Models\StateHistory;
-use Filament\Tables\Actions\ActionGroup;
-use Illuminate\Database\Eloquent\Relations\MorphMany;
+use Illuminate\Database\Eloquent\Model;
+use CorvMC\StateManagement\Casts\State;
+use CorvMC\StateManagement\AbstractState;
 
 trait HasStates
 {
@@ -14,118 +13,68 @@ trait HasStates
      */
     public function getStateColumn(): string
     {
-        return 'state_type';
-    }
-
-    /**
-     * Boot the trait.
-     */
-    public static function bootHasStates()
-    {
-        static::creating(function ($model) {
-            $stateColumn = $model->getStateColumn();
-            if (!isset($model->{$stateColumn})) {
-                // Set default state if not already set
-                $states = static::getStates();
-                $defaultState = array_key_first($states);
-                $model->{$stateColumn} = $defaultState;
-            }
-        });
-
-        static::created(function ($model) {
-            // Record initial state
-            $stateColumn = $model->getStateColumn();
-            $stateClass = static::getStates()[$model->{$stateColumn}];
-            $state = new $stateClass($model);
-
-            // Create initial state history entry
-            $model->stateHistory()->create([
-                'from_state' => null,
-                'to_state' => $model->{$stateColumn},
-                'reason' => 'Initial state',
-            ]);
-        });
+        return 'status';
     }
 
     /**
      * Get the current state instance.
      */
-    public function getStateAttribute(): StateInterface
+    public function getStateAttribute(): AbstractState
     {
-        $stateColumn = $this->getStateColumn();
-        $stateClass = static::getStates()[$this->{$stateColumn}] ?? array_values(static::getStates())[0];
-        return new $stateClass($this);
+        $stateClass = $this->getAttribute($this->getStateColumn());
+        return new $stateClass();
     }
 
     /**
-     * Get all registered states.
-     *
-     * @return array<string, class-string<StateInterface>>
+     * Set the state.
      */
-    public static function getStates(): array
+    public function setStateAttribute(AbstractState|string $value): void
     {
-        if (!property_exists(static::class, 'states')) {
-            throw new \RuntimeException(
-                sprintf('The %s class must define a $states property.', static::class)
-            );
+        if ($value instanceof AbstractState) {
+            $value = get_class($value);
         }
-
-        return static::$states;
+        $this->setAttribute($this->getStateColumn(), $value);
     }
 
     /**
      * Get all possible transitions from the current state.
-     *
-     * @return array<string, string>
+     * @return array<string>
      */
     public function getPossibleTransitions(): array
     {
-        $stateColumn = $this->getStateColumn();
-        $stateClass = static::getStates()[$this->{$stateColumn}];
-        return $stateClass::getAllowedTransitions();
+        $currentState = $this->getStateAttribute();
+        return $currentState::getAllowedTransitions($this);
+    }
+
+    /**
+     * Check if the model can transition to the given state.
+     */
+    public function canTransitionTo(AbstractState|string $state): bool
+    {
+        $currentState = $this->getStateAttribute();
+        if ($state instanceof AbstractState) {
+            $state = get_class($state);
+        }
+        return $currentState::canTransitionTo($this, $state);
     }
 
     /**
      * Transition to a new state.
      */
-    public function transitionTo(string $state, array $data = []): self
+    public function transitionTo(AbstractState|string $state, array $data = []): Model
     {
-        if (!array_key_exists($state, static::getStates())) {
-            throw new \InvalidArgumentException(
-                sprintf('Invalid state "%s". Available states: %s', $state, implode(', ', array_keys(static::getStates())))
-            );
+        $currentState = $this->getStateAttribute();
+        if ($state instanceof AbstractState) {
+            $state = get_class($state);
         }
-
-        if (!$this->state->canTransitionTo($state)) {
-            $stateColumn = $this->getStateColumn();
-            throw new \InvalidArgumentException(
-                sprintf('Cannot transition from "%s" to "%s"', $this->{$stateColumn}, $state)
-            );
-        }
-
-        $stateClass = static::getStates()[$state];
-        $stateInstance = new $stateClass($this);
-        $stateInstance->enter($this, $data);
-
-        return $this;
+        return $currentState::transitionTo($this, $state, $data);
     }
 
     /**
-     * Get all state transition actions for Filament.
+     * Get the state class for this model.
      */
-    public function getStateTransitionActions(): ActionGroup
+    protected function getStateClass(): string
     {
-        $actions = [];
-        $stateColumn = $this->getStateColumn();
-
-        foreach ($this->getPossibleTransitions() as $state => $label) {
-            $stateClass = static::getStates()[$state];
-            $actions[] = $stateClass::getTableAction($this->{$stateColumn});
-        }
-
-        return ActionGroup::make($actions)
-            ->label('Change Status')
-            ->icon('heroicon-o-arrow-path')
-            ->button();
+        return $this->stateClass ?? AbstractState::class;
     }
 }

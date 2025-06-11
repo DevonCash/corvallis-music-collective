@@ -11,7 +11,6 @@ use Illuminate\Database\Eloquent\Builder;
 use Filament\Tables\Concerns\InteractsWithTable;
 use Filament\Tables\Contracts\HasTable;
 use CorvMC\PracticeSpace\Models\States\BookingState;
-use CorvMC\StateManagement\Filament\Actions\TransitionTableActions;
 use CorvMC\PracticeSpace\Models\States\BookingState\{ConfirmedState, ScheduledState, CheckedInState};
 
 class UserBookings extends Page implements HasTable
@@ -35,41 +34,40 @@ class UserBookings extends Page implements HasTable
     public function table(Table $table): Table
     {
         return $table
-            ->poll('3s')
-            ->deferLoading()
             ->query(
                 Booking::query()
                     ->where('user_id', Auth::id())
                     ->where('start_time', '>=', now())
-                    ->whereIn('state', [ConfirmedState::$name, ScheduledState::$name, CheckedInState::$name])
-                    ->orderBy('start_time', 'asc')
+                    ->orderBy('start_time')
             )
             ->columns([
                 Tables\Columns\TextColumn::make('room.name')
                     ->label('Room')
+                    ->searchable()
                     ->sortable(),
                 Tables\Columns\TextColumn::make('start_time')
                     ->label('Date')
-                    ->date()
-                    ->description(fn (Booking $record) => $record->start_time->diffForHumans(now(), true))
+                    ->dateTime('M j, Y')
                     ->sortable(),
-                Tables\Columns\TextColumn::make('time')
-                    ->label('Reservation Time')
-                    ->getStateUsing(fn (Booking $record) => $record->start_time->format('g:i a') . ' - ' . $record->end_time->format('g:i a'))
-                    ->description(fn (Booking $record) => $record->start_time->diffForHumans($record->end_time, true))
+                Tables\Columns\TextColumn::make('start_time')
+                    ->label('Time')
+                    ->dateTime('g:i A')
                     ->sortable(),
-                Tables\Columns\TextColumn::make('total_price')
-                    ->label('Price')
+                Tables\Columns\TextColumn::make('duration')
+                    ->label('Duration')
+                    ->formatStateUsing(fn ($record) => $record->start_time->diffForHumans($record->end_time, ['parts' => 2]))
+                    ->sortable(),
+                Tables\Columns\TextColumn::make('total_cost')
+                    ->label('Cost')
                     ->money('USD')
-                    ->getStateUsing(fn (Booking $record): float => $record->room->hourly_rate * $record->duration)
                     ->sortable(),
                 Tables\Columns\TextColumn::make('state')
                     ->label('Status')
                     ->badge()
-                    ->getStateUsing(fn (Booking $record) => $record->state->getLabel())
-                    ->color(fn (Booking $record) => $record->state->getColor()),
+                    ->color(fn ($state) => $state::getColor())
+                    ->formatStateUsing(fn ($state) => $state::getLabel())
+                    ->sortable(),
             ])
-            ->defaultSort('start_time')
             ->actions(
                 array_map(function ($action) {
                     if ($action->getName() === 'transition_to_cancelled') {
@@ -80,7 +78,7 @@ class UserBookings extends Page implements HasTable
                             ->modalCancelActionLabel('No, keep booking');
                     }
                     return $action;
-                }, TransitionTableActions::make(BookingState::class))
+                }, BookingState::makeTransitionActions())
             )
             ->bulkActions([])
             ->emptyStateHeading('No bookings yet')

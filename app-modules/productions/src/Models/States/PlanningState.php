@@ -45,7 +45,7 @@ class PlanningState extends ProductionState
         ];
     }
 
-    public function canTransitionTo(string $state): bool
+    public static function canTransitionTo(Model $model, string $state): bool
     {
         if (!in_array($state, static::$allowedTransitions)) {
             return false;
@@ -53,7 +53,7 @@ class PlanningState extends ProductionState
 
         // If transitioning to published, validate required fields
         if ($state === 'published') {
-            $errors = $this->getPublishingValidationErrors();
+            $errors = static::getPublishingValidationErrors($model);
             if (!empty($errors)) {
                 throw new \Exception('Cannot publish production: ' . implode(', ', $errors));
             }
@@ -63,29 +63,28 @@ class PlanningState extends ProductionState
         return true;
     }
 
-    protected function validateForPublishing(): bool
+    protected static function validateForPublishing(Model $model): bool
     {
-        return empty($this->getPublishingValidationErrors());
+        return empty(static::getPublishingValidationErrors($model));
     }
 
-    protected function getPublishingValidationErrors(): array
+    protected static function getPublishingValidationErrors(Model $model): array
     {
-        $production = $this->model;
         $errors = [];
 
-        if (empty($production->title)) {
+        if (empty($model->title)) {
             $errors[] = 'Title is required';
         }
 
-        if (empty($production->venue_id)) {
+        if (empty($model->venue_id)) {
             $errors[] = 'Venue is required';
         }
 
-        if (empty($production->start_date)) {
+        if (empty($model->start_date)) {
             $errors[] = 'Start Time is required';
         }
 
-        if (empty($production->poster)) {
+        if (empty($model->poster)) {
             $errors[] = 'Poster is required';
         }
 

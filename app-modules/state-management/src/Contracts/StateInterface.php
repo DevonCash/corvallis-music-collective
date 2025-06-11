@@ -16,42 +16,63 @@ interface StateInterface
     public static function getName(): string;
 
     /**
-     *  Get the verb for the state.
-     */
-    public static function getVerb(): string;
-
-    /**
-     * Get the display name of the state.
+     * Get the label of the state.
      */
     public static function getLabel(): string;
 
     /**
-     * Get the color for Filament UI.
-     */
-    public static function getColor(): string;
-
-    /**
-     * Get the icon for Filament UI.
+     * Get the icon of the state.
      */
     public static function getIcon(): string;
 
     /**
-     * Check if this state can transition to another state.
+     * Get the color of the state.
      */
-    public function canTransitionTo(string $stateClass): bool;
+    public static function getColor(): string;
 
     /**
-     * Transition a model from this state to another state.
-     *
-     * @param string $stateClass The class name of the target state
-     * @param array $data Additional data for the transition
+     * Get the verb of the state.
      */
-    public function transitionTo(string $stateClass, array $data = []): Model;
+    public static function getVerb(): string;
+
+    /**
+     * Get the allowed transitions from this state.
+     * @return array<string>
+     */
+    public static function getAllowedTransitions(Model $model): array;
 
     /**
      * Get the form schema for transitioning to this state.
-     *
-     * @return array<\Filament\Forms\Components\Component>
      */
     public static function getForm(): array;
+
+    /**
+     * Process the form data before transitioning to this state.
+     */
+    public static function processTransitionForm(array $data): array;
+
+    /**
+     * Create a Filament Action for transitioning to this state.
+     */
+    public static function makeAction(): Action;
+
+    /**
+     * Create a Filament TableAction for transitioning to this state.
+     */
+    public static function makeTableAction(): TableAction;
+
+    /**
+     * Check if the state can transition to another state.
+     */
+    public static function canTransitionTo(Model $model, string $state): bool;
+
+    /**
+     * Transition to another state.
+     */
+    public static function transitionTo(Model $model, string $state, array $data = []): Model;
+
+    /**
+     * Get all available states.
+     */
+    public static function getStates(): array;
 }

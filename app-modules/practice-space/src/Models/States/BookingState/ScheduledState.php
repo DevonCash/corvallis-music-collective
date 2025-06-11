@@ -16,6 +16,7 @@ class ScheduledState extends BookingState
 {
     public static string $name = 'scheduled';
     public static string $label = 'Scheduled';
+    public static ?string $verb = 'Schedule';
     public static string $icon = 'heroicon-o-clock';
     public static string $color = 'warning';
 
@@ -32,10 +33,10 @@ class ScheduledState extends BookingState
         ];
     }
 
-    public function canTransitionTo(string $stateClass): bool
+    public static function canTransitionTo(Model $model, string $state): bool
     {
-        return match ($stateClass) {
-            ConfirmedState::class => $this->canBeConfirmed(),
+        return match ($state) {
+            ConfirmedState::class => static::canBeConfirmed($model),
             CancelledState::class => true,
             default => false,
         };
@@ -44,16 +45,16 @@ class ScheduledState extends BookingState
     /**
      * Check if the booking can be confirmed.
      */
-    public function canBeConfirmed(): bool
+    public static function canBeConfirmed(Model $model): bool
     {
-        $room = $this->model->room;
+        $room = $model->room;
         $bookingPolicy = $room->booking_policy;
 
         // Make sure the booking is in the future
-        if ($this->model->start_time->isPast()) return false;
+        if ($model->start_time->isPast()) return false;
 
         // Check if the booking window is open
-        $window = $this->model->start_time->subDays($bookingPolicy->confirmationWindowDays);
+        $window = $model->start_time->subDays($bookingPolicy->confirmationWindowDays);
         if ($window->isFuture()) return false;
 
         return true;

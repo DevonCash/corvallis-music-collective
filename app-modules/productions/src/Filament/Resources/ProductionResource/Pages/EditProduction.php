@@ -6,7 +6,6 @@ use CorvMC\Productions\Filament\Resources\ProductionResource;
 use Filament\Actions;
 use Filament\Resources\Pages\EditRecord;
 use Filament\Notifications\Notification;
-use CorvMC\StateManagement\Filament\Actions\TransitionActions;
 use CorvMC\Productions\Models\States\ProductionState;
 
 class EditProduction extends EditRecord
@@ -24,7 +23,7 @@ class EditProduction extends EditRecord
                 ->keyBindings(['mod+s'])
                 ->color('primary'),
 
-            TransitionActions::make(ProductionState::class),
+            ProductionState::makeTransitionActionGroup(),
         ];
     }
 

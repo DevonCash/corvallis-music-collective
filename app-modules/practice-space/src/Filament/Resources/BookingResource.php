@@ -19,6 +19,7 @@ use Filament\Tables\Grouping\Group;
 use CorvMC\PracticeSpace\Models\States\BookingState;
 
 use CorvMC\StateManagement\Filament\Table\Columns\StateColumn;
+use Filament\Tables\Actions\Action;
 
 class BookingResource extends Resource
 {
@@ -123,89 +124,48 @@ class BookingResource extends Resource
     {
         return $table
             ->columns([
-                TextColumn::make('id')
+                Tables\Columns\TextColumn::make('id')
+                    ->label('Booking ID')
                     ->sortable(),
-                TextColumn::make('room.name')
-                    ->sortable()
-                    ->searchable(),
-                TextColumn::make('user.name')
-                    ->sortable()
-                    ->searchable(),
-                TextColumn::make('date')
-                    ->getStateUsing(fn (Booking $record): string => $record->start_time)
-                    ->date()
+                Tables\Columns\TextColumn::make('user.name')
+                    ->label('User')
+                    ->searchable()
                     ->sortable(),
-                TextColumn::make('start_time')
-                    ->formatStateUsing(fn (Booking $record): string => $record->start_time->format('g:i a') . ' - ' . $record->end_time->format('g:i a'))
-                    ->tooltip(fn (Booking $record): string => $record->start_time->diffForHumans(now(), true))
-                    ->sortable(),
-                StateColumn::make('state'),
-                TextColumn::make('total_price')
-                    ->money('USD')
-                    ->getStateUsing(fn (Booking $record): float => $record->room->hourly_rate * $record->duration)
-                    ->sortable(),
-                TextColumn::make('payment_status')
-                    ->badge()
-                    ->color(fn (string $state): string => match ($state) {
-                        'pending' => 'warning',
-                        'paid' => 'success',
-                        'refunded' => 'info',
-                        'failed' => 'danger',
-                        default => 'gray',
-                    })
-                    ->sortable(),
-                TextColumn::make('created_at')
-                    ->dateTime()
-                    ->sortable()
-                    ->toggleable(isToggledHiddenByDefault: true),
-                TextColumn::make('updated_at')
-                    ->dateTime()
-                    ->sortable()
-                    ->toggleable(isToggledHiddenByDefault: true),
-            ])
-            ->groups([
-                Group::make('room.name')
+                Tables\Columns\TextColumn::make('room.name')
                     ->label('Room')
+                    ->searchable()
+                    ->sortable(),
+                Tables\Columns\TextColumn::make('start_time')
+                    ->label('Start Time')
+                    ->dateTime()
+                    ->sortable(),
+                Tables\Columns\TextColumn::make('end_time')
+                    ->label('End Time')
+                    ->dateTime()
+                    ->sortable(),
+                StateColumn::make('status'),
+                Tables\Columns\TextColumn::make('created_at')
+                    ->dateTime()
+                    ->sortable()
+                    ->toggleable(isToggledHiddenByDefault: true),
+                Tables\Columns\TextColumn::make('updated_at')
+                    ->dateTime()
+                    ->sortable()
+                    ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->filters([
-                Tables\Filters\SelectFilter::make('room_id')
-                    ->label('Room')
-                    ->options(Room::query()->pluck('name', 'id')),
-                Tables\Filters\SelectFilter::make('state')
-                    ->options([
-                        'in_progress' => 'In Progress',
-                        'finished' => 'Finished',
-                        ...array_map(fn (string $stateClass): string => $stateClass::getLabel(), BookingState::getStates()),
-                    ]),
-                Tables\Filters\Filter::make('start_time')
-                    ->form([
-                        Forms\Components\DatePicker::make('from_date')
-                            ->label('From'),
-                        Forms\Components\DatePicker::make('to_date')
-                            ->label('To'),
-                    ])
-                    ->query(function (Builder $query, array $data): Builder {
-                        return $query
-                            ->when(
-                                $data['from_date'],
-                                fn (Builder $query, $date): Builder => $query->whereDate('start_time', '>=', $date),
-                            )
-                            ->when(
-                                $data['to_date'],
-                                fn (Builder $query, $date): Builder => $query->whereDate('start_time', '<=', $date),
-                            );
-                    }),
+                Tables\Filters\SelectFilter::make('status')
+                    ->options(fn () => collect(BookingState::getStates())->mapWithKeys(fn ($state) => [$state::getName() => $state::getLabel()])->all()),
             ])
             ->actions([
-                Tables\Actions\ViewAction::make(),
-                Tables\Actions\EditAction::make(),
-                Tables\Actions\DeleteAction::make(),
+                ...BookingState::makeTransitionTableActions('status'),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
                     Tables\Actions\DeleteBulkAction::make(),
                 ]),
-            ]);
+            ])
+            ->recordUrl(fn (Booking $record): string => static::getUrl('view', ['record' => $record]));
     }
 
     public static function getRelations(): array

@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use CorvMC\StateManagement\Casts\State;
+use CorvMC\StateManagement\Traits\HasStates;
 use App\Models\User;
 use CorvMC\Productions\Models\States\ProductionState;
 use CorvMC\Productions\Models\States\PlanningState;
@@ -19,20 +20,11 @@ use CorvMC\Productions\Models\States\FinishedState;
 use CorvMC\Productions\Models\States\ArchivedState;
 use CorvMC\Productions\Models\States\RescheduledState;
 use CorvMC\Productions\Models\States\CancelledState;
+use Filament\Actions\Action;
 
 class Production extends Model
 {
-    use HasFactory;
-
-    protected static array $states = [
-        'planning' => PlanningState::class,
-        'published' => PublishedState::class,
-        'active' => ActiveState::class,
-        'finished' => FinishedState::class,
-        'archived' => ArchivedState::class,
-        'rescheduled' => RescheduledState::class,
-        'cancelled' => CancelledState::class,
-    ];
+    use HasFactory, HasStates;
 
     protected $fillable = [
         'title',
@@ -74,6 +66,49 @@ class Production extends Model
     public function getStateColumn(): string
     {
         return 'status';
+    }
+
+    /**
+     * Get the current state of the production.
+     */
+    public function getStateAttribute(): string
+    {
+        return $this->status;
+    }
+
+    /**
+     * Set the state of the production.
+     */
+    public function setStateAttribute(string $state): void
+    {
+        $this->status = $state;
+    }
+
+    /**
+     * Get all possible transitions from the current state.
+     */
+    public function getPossibleTransitions(): array
+    {
+        return $this->state::getAllowedTransitions();
+    }
+
+    /**
+     * Get the state transition actions for Filament.
+     */
+    public function getStateTransitionActions(): array
+    {
+        $actions = [];
+        foreach ($this->getPossibleTransitions() as $state => $label) {
+            $actions[] = Action::make("transition_to_{$state}")
+                ->label($label)
+                ->icon($this->state::getIcon())
+                ->color($this->state::getColor())
+                ->form($this->state::getForm())
+                ->action(function (array $data) use ($state) {
+                    $this->state::transitionTo($this, $state, $data);
+                });
+        }
+        return $actions;
     }
 
     public function venue(): BelongsTo

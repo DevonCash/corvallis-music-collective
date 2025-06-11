@@ -31,24 +31,25 @@ abstract class BookingState extends AbstractState
      * This is used for validation and casting.
      */
     protected static array $states = [
-        BookingState\ScheduledState::class,
-        BookingState\ConfirmedState::class,
-        BookingState\CheckedInState::class,
-        BookingState\CompletedState::class,
-        BookingState\CancelledState::class,
-        BookingState\NoShowState::class,
+        'scheduled' => BookingState\ScheduledState::class,
+        'confirmed' => BookingState\ConfirmedState::class,
+        'checked_in' => BookingState\CheckedInState::class,
+        'completed' => BookingState\CompletedState::class,
+        'cancelled' => BookingState\CancelledState::class,
+        'no_show' => BookingState\NoShowState::class,
     ];
 
-
     public static function onTransitionTo(Model $model, array $data = []): void {
+        $oldState = is_string($model->state) ? $model->state : $model->state->getName();
+        
         activity('booking_state_transition')
-        ->performedOn($model)
-        ->causedBy(Auth::user())
-        ->withProperties([
-            'old' => $model->state->getName(),
-            'new' => static::getName(),
-            'data' => $data,
-        ])
-        ->log("Transitioned booking #{$model->id} to " . static::getName());
+            ->performedOn($model)
+            ->causedBy(Auth::user())
+            ->withProperties([
+                'old' => $oldState,
+                'new' => static::getName(),
+                'data' => $data,
+            ])
+            ->log("Transitioned booking #{$model->id} to " . static::getName());
     }
 }

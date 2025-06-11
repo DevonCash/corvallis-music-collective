@@ -5,7 +5,6 @@ namespace CorvMC\PracticeSpace\Filament\Actions;
 use Carbon\CarbonInterface;
 use CorvMC\PracticeSpace\Models\Booking;
 use CorvMC\PracticeSpace\Models\States\BookingState;
-use CorvMC\StateManagement\Filament\Actions\TransitionActions;
 use Filament\Actions\Action;
 use Filament\Actions\StaticAction;
 use Filament\Forms\Components\Actions;
@@ -40,10 +39,9 @@ class ManageBookingAction
                     ->label('Total')
                     ->content(fn($record) => '$' . number_format($record->total_cost, 2)),
             ])
-            ->extraModalFooterActions(
+            ->actions(
                 array_map(fn($action) => $action->getName() === 'transition_to_cancelled' ?
-                    $action->cancelParentActions() : $action, TransitionActions::actions(BookingState::class, 'state'))
-
+                    $action->cancelParentActions() : $action, BookingState::makeTransitionActions())
             )
             ->modalCancelAction(false)
             ->modalSubmitAction(false);

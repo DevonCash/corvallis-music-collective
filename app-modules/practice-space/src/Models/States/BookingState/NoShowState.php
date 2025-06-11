@@ -17,7 +17,8 @@ class NoShowState extends BookingState
 {
     public static string $name = 'no_show';
     public static string $label = 'No Show';
-    public static string $icon = 'heroicon-o-user-minus';
+    public static ?string $verb = 'Mark as No Show';
+    public static string $icon = 'heroicon-o-x-circle';
     public static string $color = 'danger';
     public static array $allowedTransitions = [];
 
@@ -28,14 +29,9 @@ class NoShowState extends BookingState
     {
         return [
             Forms\Components\Textarea::make('no_show_notes')
-                ->label('No-Show Notes')
-                ->placeholder('Document your attempt to contact the member')
-                ->helperText('Please describe how you attempted to contact the member')
+                ->label('No Show Notes')
+                ->placeholder('Add any notes about why the member did not show up')
                 ->required(),
-                
-            Forms\Components\Toggle::make('charge_cancellation_fee')
-                ->label('Charge cancellation fee')
-                ->default(true),
         ];
     }
 } 

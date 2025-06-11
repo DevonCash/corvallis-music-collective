@@ -26,7 +26,6 @@ class CheckedInState extends BookingState
     public static function getForm(): array
     {
         return [
-
             Forms\Components\DateTimePicker::make('check_in_time')
                 ->label('Check-in Time')
                 ->default(now())
@@ -36,11 +35,10 @@ class CheckedInState extends BookingState
                 ->label('Payment Completed')
                 ->helperText('Mark if the member has paid for this booking')
                 ->default(false),
-
         ];
     }
 
-    public function canTransitionTo(string $state): bool
+    public static function canTransitionTo(Model $model, string $state): bool
     {
         return match ($state) {
             CompletedState::class => true,

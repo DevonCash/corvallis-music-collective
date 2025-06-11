@@ -175,7 +175,7 @@ class ProductionResource extends Resource
                     ->sortable(),
                 Tables\Columns\TextColumn::make('ticket_link')
                     ->label('Tickets')
-                    ->url(fn(Production $record): ?string => $record->ticket_link)
+                    ->url(fn(?Production $record): ?string => $record?->ticket_link)
                     ->openUrlInNewTab()
                     ->icon('heroicon-o-ticket')
                     ->searchable(),
@@ -207,9 +207,9 @@ class ProductionResource extends Resource
                     Tables\Actions\Action::make('transition')
                         ->label('Change Status')
                         ->icon('heroicon-o-arrow-path')
-                        ->form(fn(Production $record) => $record->state->getForm())
-                        ->action(function (Production $record, array $data): void {
-                            $record->state->transitionTo($data['state'], $data);
+                        ->form(fn(?Production $record) => $record?->state->getForm())
+                        ->action(function (?Production $record, array $data): void {
+                            $record?->state->transitionTo($data['state'], $data);
                         }),
                 ]),
             ])
@@ -247,7 +247,7 @@ class ProductionResource extends Resource
                                 ->send();
                         }
                     })
-                    ->visible(fn (Production $record): bool => $record->state->getName() === 'planning'),
+                    ->visible(fn (?Production $record): bool => $record?->state->getName() === 'planning'),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([

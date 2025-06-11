@@ -36,6 +36,16 @@ class State implements CastsAttributes
      */
     public function get($model, string $key, $value, array $attributes)
     {
+        // If the value is already a state class, return it
+        if (is_string($value) && class_exists($value) && is_subclass_of($value, $this->stateTypeClass)) {
+            return $value;
+        }
+        
+        // If the value is null or empty, use the first state as default
+        if (empty($value)) {
+            $states = $this->stateTypeClass::getStates();
+            $value = array_key_first($states);
+        }
         
         // Validate that the state exists
         $states = $this->stateTypeClass::getStates();
@@ -44,8 +54,8 @@ class State implements CastsAttributes
             $value = array_key_first($states);
         }
         
-        // Return the state name
-        return new $states[$value]($model);
+        // Return the state class
+        return $states[$value];
     }
     
     /**
@@ -55,17 +65,18 @@ class State implements CastsAttributes
      */
     public function set($model, string $key, $value, array $attributes): array
     {
-        // If the value is an instance of AbstractState, get its name
-        if ($value instanceof $this->stateTypeClass) {
-            return [$key => $value::getName()];
-        }
-        
-        // If the value is a class name that extends AbstractState, get its name
+        // If the value is a state class, use it directly
         if (is_string($value) && class_exists($value) && is_subclass_of($value, $this->stateTypeClass)) {
-            return [$key => $value::getName()];
+            return [$key => $value];
         }
         
-        // Otherwise, just use the value as is (assuming it's a valid state name)
-        return [$key => $value];
+        // If the value is a string that matches a state name, get its class
+        if (is_string($value) && isset($this->stateTypeClass::getStates()[$value])) {
+            return [$key => $this->stateTypeClass::getStates()[$value]];
+        }
+        
+        // Otherwise, use the first state as default
+        $states = $this->stateTypeClass::getStates();
+        return [$key => reset($states)];
     }
 }

@@ -16,8 +16,10 @@ class CompletedState extends BookingState
 {
     public static string $name = 'completed';
     public static string $label = 'Completed';
+    public static ?string $verb = 'Complete';
     public static string $icon = 'heroicon-o-check-badge';
     public static string $color = 'success';
+
     /**
      * Get the form schema for transitioning to this state.
      */

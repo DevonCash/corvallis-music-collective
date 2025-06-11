@@ -13,6 +13,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 use CorvMC\PracticeSpace\Database\Factories\BookingFactory;
 use CorvMC\PracticeSpace\Models\States\BookingState;
 use CorvMC\StateManagement\Casts\State;
+use CorvMC\StateManagement\Traits\HasStates;
 use Spatie\Activitylog\LogOptions;
 use Spatie\Activitylog\Traits\LogsActivity;
 use CorvMC\Finance\Concerns\HasPayments;
@@ -21,17 +22,41 @@ use CorvMC\PracticeSpace\Traits\HasRecurringBookings;
 use CorvMC\PracticeSpace\Contracts\CalendarEvent;
 use DateTimeImmutable;
 use Illuminate\Support\Facades\Auth;
+use CorvMC\PracticeSpace\Models\States\ScheduledState;
+use CorvMC\PracticeSpace\Models\States\ConfirmedState;
+use CorvMC\PracticeSpace\Models\States\CheckedInState;
+use CorvMC\PracticeSpace\Models\States\CompletedState;
+use CorvMC\PracticeSpace\Models\States\CancelledState;
+use CorvMC\PracticeSpace\Models\States\NoShowState;
+use Filament\Actions\Action;
+use CorvMC\PracticeSpace\Models\PracticeSpace;
 
 class Booking extends Model implements CalendarEvent
 {
-    // Temporarily commented out HasPayments for testing
     use LogsActivity,
         HasFactory,
         SoftDeletes,
         HasPayments,
-        HasRecurringBookings;
+        HasRecurringBookings,
+        HasStates;
 
     protected $table = "practice_space_bookings";
+
+    protected $fillable = [
+        'user_id',
+        'practice_space_id',
+        'start_time',
+        'end_time',
+        'status',
+        'notes',
+        'cancellation_reason',
+        'no_show_reason',
+        'check_in_time',
+        'check_out_time',
+        'completed_at',
+        'cancelled_at',
+        'no_show_at',
+    ];
 
     /**
      * The attributes that should be cast.
@@ -46,12 +71,10 @@ class Booking extends Model implements CalendarEvent
         "check_in_time" => "datetime",
         "check_out_time" => "datetime",
         "total_price" => "decimal:2",
-        "state" => State::class . ":" . BookingState::class,
-        "confirmation_requested_at" => "datetime",
-        "confirmation_deadline" => "datetime",
-        "confirmed_at" => "datetime",
+        "status" => State::class . ":" . BookingState::class,
+        "completed_at" => "datetime",
         "cancelled_at" => "datetime",
-        "payment_completed" => "boolean",
+        "no_show_at" => "datetime",
         "recurrence_end_date" => "datetime",
     ];
 
@@ -65,47 +88,28 @@ class Booking extends Model implements CalendarEvent
         "end_time",
         "check_in_time",
         "check_out_time",
-        "confirmation_requested_at",
-        "confirmation_deadline",
-        "confirmed_at",
+        "completed_at",
         "cancelled_at",
+        "no_show_at",
         "recurrence_end_date",
         "created_at",
         "updated_at",
         "deleted_at",
     ];
 
-    protected $fillable = [
-        "room_id",
-        "user_id",
-        "start_time",
-        "end_time",
-        "status",
-        "notes",
-        "is_recurring",
-        "is_recurring_parent",
-        "recurring_pattern",
-        "rrule_string",
-        "recurrence_end_date",
-        "recurring_booking_id",
-        "check_in_time",
-        "check_out_time",
-        "payment_status",
-        "state",
-        "confirmation_requested_at",
-        "confirmation_deadline",
-        "confirmed_at",
-        "cancelled_at",
-        "cancellation_reason",
-        "no_show_notes",
-        "payment_completed",
-    ];
-
     protected static function booted(): void
     {
         static::addGlobalScope('uncancelled', function ($builder) {
-            $builder->whereNot('state', 'cancelled');
+            $builder->whereNot('status', 'cancelled');
         });
+    }
+
+    /**
+     * Get the state column name.
+     */
+    public function getStateColumn(): string
+    {
+        return 'status';
     }
 
     /**
@@ -132,14 +136,13 @@ class Booking extends Model implements CalendarEvent
         return $this->hasMany(EquipmentRequest::class);
     }
 
-
     /**
      * Get the activity log options for the model.
      */
     public function getActivitylogOptions(): LogOptions
     {
         return LogOptions::defaults()
-            ->logOnly(["status", "start_time", "end_time", "notes", "state"])
+            ->logOnly(["status", "start_time", "end_time", "notes", "status"])
             ->logOnlyDirty()
             ->dontSubmitEmptyLogs()
             ->useLogName("booking")
@@ -161,7 +164,7 @@ class Booking extends Model implements CalendarEvent
                         $q2->whereJsonContains("properties->attributes", [
                             "status",
                         ])->orWhereJsonContains("properties->attributes", [
-                            "state",
+                            "status",
                         ]);
                     });
                 });
@@ -188,7 +191,6 @@ class Booking extends Model implements CalendarEvent
     {
         return $this->final_price * $this->duration;
     }
-
 
     /**
      * Check if the booking can be cancelled with a refund.
@@ -251,14 +253,14 @@ class Booking extends Model implements CalendarEvent
 
         // Only set if it's in the future
         if ($confirmationWindowStart->isFuture()) {
-            $this->confirmation_requested_at = $confirmationWindowStart;
+            $this->no_show_at = $confirmationWindowStart;
         } else {
             // If the window has already started, set it to now
-            $this->confirmation_requested_at = now()->setTimezone("UTC");
+            $this->no_show_at = now()->setTimezone("UTC");
         }
 
         // Calculate the confirmation deadline
-        $this->confirmation_deadline = $this->start_time
+        $this->recurrence_end_date = $this->start_time
             ->subDays($policy->autoConfirmationDeadlineDays);
 
         return $this;
@@ -270,8 +272,8 @@ class Booking extends Model implements CalendarEvent
     public function isInConfirmationWindow(): bool
     {
         if (
-            !$this->confirmation_requested_at ||
-            !$this->confirmation_deadline
+            !$this->no_show_at ||
+            !$this->recurrence_end_date
         ) {
             return false;
         }
@@ -279,8 +281,8 @@ class Booking extends Model implements CalendarEvent
         // Use UTC for consistent datetime comparisons
         $now = now()->setTimezone("UTC");
 
-        return $now->gte($this->confirmation_requested_at) &&
-            $now->lte($this->confirmation_deadline);
+        return $now->gte($this->no_show_at) &&
+            $now->lte($this->recurrence_end_date);
     }
 
     /**
@@ -288,13 +290,13 @@ class Booking extends Model implements CalendarEvent
      */
     public function isConfirmationDeadlinePassed(): bool
     {
-        if (!$this->confirmation_deadline) {
+        if (!$this->recurrence_end_date) {
             return false;
         }
 
         // Use UTC for consistent datetime comparisons
         $now = now()->setTimezone("UTC");
-        return $now->gt($this->confirmation_deadline);
+        return $now->gt($this->recurrence_end_date);
     }
 
     /**
@@ -312,7 +314,7 @@ class Booking extends Model implements CalendarEvent
         $now = now()->setTimezone("UTC");
 
         return $now->gt($noShowTime) &&
-            $this->state instanceof BookingState\ConfirmedState;
+            $this->status instanceof BookingState\ConfirmedState;
     }
 
     /**
@@ -320,21 +322,21 @@ class Booking extends Model implements CalendarEvent
      */
     public function confirm(?string $notes = null): self
     {
-        if (!$this->state instanceof BookingState\ScheduledState) {
+        if (!$this->status instanceof BookingState\ScheduledState) {
             throw new \InvalidArgumentException(
                 "Only scheduled bookings can be confirmed."
             );
         }
 
         // Check if the booking can be confirmed
-        $this->state->canBeConfirmed();
+        BookingState\ScheduledState::canBeConfirmed($this);
 
-        $this->confirmed_at = now();
+        $this->completed_at = now();
         if ($notes) {
             $this->notes = $notes;
         }
 
-        $this->state = new BookingState\ConfirmedState($this);
+        $this->status = BookingState\ConfirmedState::class;
         $this->save();
 
         return $this;
@@ -347,7 +349,7 @@ class Booking extends Model implements CalendarEvent
         ?string $notes = null,
         bool $paymentCompleted = false
     ): self {
-        if (!$this->state instanceof BookingState\ConfirmedState) {
+        if (!$this->status instanceof BookingState\ConfirmedState) {
             throw new \InvalidArgumentException(
                 "Only confirmed bookings can be checked in."
             );
@@ -359,7 +361,7 @@ class Booking extends Model implements CalendarEvent
         }
         $this->payment_completed = $paymentCompleted;
 
-        $this->state = new BookingState\CheckedInState($this);
+        $this->status = BookingState\CheckedInState::class;
         $this->save();
 
         return $this;
@@ -370,7 +372,7 @@ class Booking extends Model implements CalendarEvent
      */
     public function complete(?string $notes = null): self
     {
-        if (!$this->state instanceof BookingState\CheckedInState) {
+        if (!$this->status instanceof BookingState\CheckedInState) {
             throw new \InvalidArgumentException(
                 "Only checked-in bookings can be completed."
             );
@@ -381,7 +383,7 @@ class Booking extends Model implements CalendarEvent
             $this->notes = $notes;
         }
 
-        $this->state = new BookingState\CompletedState($this);
+        $this->status = BookingState\CompletedState::class;
         $this->save();
 
         return $this;
@@ -392,7 +394,7 @@ class Booking extends Model implements CalendarEvent
      */
     public function markAsNoShow(string $notes): self
     {
-        if (!$this->state instanceof BookingState\ConfirmedState) {
+        if (!$this->status instanceof BookingState\ConfirmedState) {
             throw new \InvalidArgumentException(
                 "Only confirmed bookings can be marked as no-show."
             );
@@ -404,9 +406,9 @@ class Booking extends Model implements CalendarEvent
             );
         }
 
-        $this->no_show_notes = $notes;
+        $this->no_show_reason = $notes;
 
-        $this->state = new BookingState\NoShowState($this);
+        $this->status = BookingState\NoShowState::class;
         $this->save();
 
         return $this;
@@ -419,8 +421,8 @@ class Booking extends Model implements CalendarEvent
     {
         if (
             !(
-                $this->state instanceof BookingState\ScheduledState ||
-                $this->state instanceof BookingState\ConfirmedState
+                $this->status instanceof BookingState\ScheduledState ||
+                $this->status instanceof BookingState\ConfirmedState
             )
         ) {
             throw new \InvalidArgumentException(
@@ -431,7 +433,7 @@ class Booking extends Model implements CalendarEvent
         $this->cancelled_at = now();
         $this->cancellation_reason = $reason ?? 'No reason provided';
 
-        $this->state = new BookingState\CancelledState($this);
+        $this->status = BookingState\CancelledState::class;
         $this->save();
 
         return $this;
@@ -465,5 +467,10 @@ class Booking extends Model implements CalendarEvent
     public function getEventMetadata(): array
     {
         return [];
+    }
+
+    public function practiceSpace(): BelongsTo
+    {
+        return $this->belongsTo(PracticeSpace::class);
     }
 }
