@@ -19,30 +19,86 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        // Call module seeders first to set up required data
+        // Always create essential roles and permissions
         $this->call([
-            \CorvMC\PracticeSpace\Database\Seeders\DatabaseSeeder::class,
-            \CorvMC\Sponsorship\Database\Seeders\DatabaseSeeder::class,
+            RoleSeeder::class,
+        ]);
+
+        // Call module seeders for essential data structure
+        $this->call([
+            \CorvMC\Sponsorship\Database\Seeders\DatabaseSeeder::class, // Creates sponsor tiers
+            \CorvMC\PracticeSpace\Database\Seeders\DatabaseSeeder::class, // Creates essential practice space data
+        ]);
+
+        // Create essential admin user if environment allows
+        $this->createEssentialAdminUser();
+
+        // Only create sample data in local/development environment
+        if (app()->environment(['local', 'development'])) {
+            $this->createSampleData();
+        }
+    }
+
+    /**
+     * Create essential admin user for the application.
+     */
+    private function createEssentialAdminUser(): void
+    {
+        // Create primary admin user using environment variables
+        $adminEmail = env('ADMIN_EMAIL', 'admin@corvmc.org');
+        $adminPassword = env('ADMIN_PASSWORD', 'password');
+        $adminName = env('ADMIN_NAME', 'System Administrator');
+
+        // Only create if user doesn't exist
+        if (!User::where('email', $adminEmail)->exists()) {
+            $admin = User::create([
+                'name' => $adminName,
+                'email' => $adminEmail,
+                'password' => Hash::make($adminPassword),
+                'email_verified_at' => now(),
+            ]);
+            
+            $admin->assignRole('admin');
+            
+            $this->command->info("Created admin user: {$adminEmail}");
+        }
+    }
+
+    /**
+     * Create sample data for development/testing environments.
+     */
+    private function createSampleData(): void
+    {
+        $this->command->info('Creating sample data for development environment...');
+
+        // Call remaining module seeders that create sample data
+        $this->call([
             \CorvMC\Productions\Database\Seeders\ProductionSeeder::class,
         ]);
 
-        // Create roles
-        $adminRole = Role::create(['name' => 'admin']);
-
-        // Create admin users
-        $superAdmin = User::factory()->create([
-            'name' => 'Super Admin',
-            'email' => 'admin@corvmc.org',
-            'password' => Hash::make('password'),
-        ]);
-        $superAdmin->assignRole('admin');
-
+        // Create sample staff user
         $staffAdmin = User::factory()->create([
             'name' => 'Staff Admin',
             'email' => 'staff@corvmc.org',
             'password' => Hash::make('password'),
         ]);
-        $staffAdmin->assignRole('admin');
+        $staffAdmin->assignRole('staff');
+
+        // Create sample production manager
+        $productionManager = User::factory()->create([
+            'name' => 'Production Manager',
+            'email' => 'productions@corvmc.org',
+            'password' => Hash::make('password'),
+        ]);
+        $productionManager->assignRole('production-manager');
+
+        // Create sample event coordinator
+        $eventCoordinator = User::factory()->create([
+            'name' => 'Event Coordinator',
+            'email' => 'events@corvmc.org',
+            'password' => Hash::make('password'),
+        ]);
+        $eventCoordinator->assignRole('event-coordinator');
 
         // Create band managers and their bands
         $bandManager1 = User::factory()->create([
@@ -128,5 +184,13 @@ class DatabaseSeeder extends Seeder
             'email' => 'new@example.com',
             'password' => Hash::make('password'),
         ]);
+
+        // Create sample volunteer
+        $volunteer = User::factory()->create([
+            'name' => 'Volunteer Helper',
+            'email' => 'volunteer@example.com',
+            'password' => Hash::make('password'),
+        ]);
+        $volunteer->assignRole('volunteer');
     }
 }

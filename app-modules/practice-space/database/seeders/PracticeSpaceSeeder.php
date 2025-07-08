@@ -23,17 +23,26 @@ class PracticeSpaceSeeder extends Seeder
     {
         $this->command->info('Seeding Practice Space module...');
 
-        // Create users if none exist
-        if (User::count() === 0) {
-            $this->command->info('Creating users...');
-            User::factory()->count(10)->create();
-        }
+        // Always create essential practice space data
+        $this->createEssentialData();
 
-        // Create room categories with default booking policies
-        $this->command->info('Creating room categories with booking policies...');
-        $categories = [
+        // Only create full sample data in development
+        if (app()->environment(['local', 'development'])) {
+            $this->createSampleData();
+        }
+    }
+
+    /**
+     * Create essential practice space data needed for the app to function.
+     */
+    private function createEssentialData(): void
+    {
+        $this->command->info('Creating essential practice space data...');
+
+        // Create one essential room category
+        $standardCategory = RoomCategory::firstOrCreate(
+            ['name' => 'Standard Practice Room'],
             [
-                'name' => 'Standard Practice Room',
                 'description' => 'Basic practice rooms suitable for individual practice or small ensembles.',
                 'is_active' => true,
                 'default_booking_policy' => [
@@ -46,7 +55,61 @@ class PracticeSpaceSeeder extends Seeder
                     'cancellation_hours' => 24,
                     'max_bookings_per_week' => 5
                 ]
+            ]
+        );
+
+        // Create one essential practice room
+        $essentialRoom = Room::firstOrCreate(
+            ['name' => 'Practice Room 1'],
+            [
+                'room_category_id' => $standardCategory->id,
+                'description' => 'A basic practice room with piano and essential equipment.',
+                'capacity' => 4,
+                'hourly_rate' => 15.00,
+                'is_active' => true,
+                'size_sqft' => 120,
+                'amenities' => ['Piano', 'Music Stand', 'Chair'],
+                'specifications' => ['Sound Isolation Rating: Medium'],
+                'photos' => [],
+            ]
+        );
+
+        // Create essential equipment for the room
+        RoomEquipment::firstOrCreate(
+            [
+                'room_id' => $essentialRoom->id,
+                'name' => 'Piano'
             ],
+            [
+                'description' => 'Upright piano for practice',
+                'status' => 'available',
+                'quantity' => 1,
+            ]
+        );
+
+        $this->command->info('Essential practice space data created successfully!');
+    }
+
+    /**
+     * Create comprehensive sample data for development environments.
+     */
+    private function createSampleData(): void
+    {
+        $this->command->info('Creating comprehensive sample data for development...');
+
+        // Create users if none exist
+        if (User::count() === 0) {
+            $this->command->info('Creating users...');
+            User::factory()->count(10)->create();
+        }
+
+        // Create additional room categories (Standard Practice Room already created in essential data)
+        $this->command->info('Creating additional room categories with booking policies...');
+        
+        // Get the existing standard category
+        $standardCategory = RoomCategory::where('name', 'Standard Practice Room')->first();
+        
+        $categories = [
             [
                 'name' => 'Recording Studio',
                 'description' => 'Professional recording studios with sound isolation and equipment.',
@@ -110,6 +173,9 @@ class PracticeSpaceSeeder extends Seeder
         ];
 
         $categoryModels = [];
+        // Include the existing standard category
+        $categoryModels[] = $standardCategory;
+        // Create additional categories
         foreach ($categories as $category) {
             $categoryModels[] = RoomCategory::create($category);
         }
@@ -369,6 +435,6 @@ class PracticeSpaceSeeder extends Seeder
             ]);
         }
 
-        $this->command->info('Practice Space module seeded successfully!');
+        $this->command->info('Sample practice space data created successfully!');
     }
 } 
