@@ -40,12 +40,6 @@ class AppServiceProvider extends ServiceProvider
     {
 
         // Test basic connection
-        // dd([
-        //     'current_schema' => DB::select('SELECT current_schema()'),
-        //     'search_path' => DB::select('SHOW search_path'),
-        //     'sessions_in_public' => DB::select("SELECT schemaname FROM pg_tables WHERE tablename = 'sessions'"),
-        //     'all_schemas' => DB::select('SELECT schema_name FROM information_schema.schemata')
-        // ]);
         Cashier::useCustomerModel(User::class);
 
         Folio::path(resource_path('views/pages'))->middleware([

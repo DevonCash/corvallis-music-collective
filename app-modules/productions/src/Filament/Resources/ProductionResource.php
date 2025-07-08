@@ -94,9 +94,6 @@ class ProductionResource extends Resource
                                             ->imageResizeTargetHeight('1100')
                                             ->imagePreviewHeight('250')
                                             ->panelLayout('integrated')
-                                            ->deleteUploadedFileUsing(function ($file) {
-                                                Storage::disk('public')->delete($file);
-                                            })
                                             ->label('Event Poster')
                                             ->helperText('Letter size: 8.5" x 11"')
                                             ->extraFieldWrapperAttributes(['class' => 'public poster-field'])
