@@ -14,6 +14,7 @@ use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
+use Filament\Tables\Actions\CreateAction;
 use CorvMC\Productions\Filament\Resources\VenueRelationManager;
 use Illuminate\Support\Facades\Storage;
 use CorvMC\Productions\Filament\Resources\ProductionResource\RelationManagers\ActsRelationManager;
@@ -226,17 +227,9 @@ class ProductionResource extends Resource
                 ]),
             ])
             ->headerActions([
-                Tables\Actions\Action::make('create')
+                CreateAction::make()
                     ->label('New Production')
-                    ->icon('heroicon-o-plus')
-                    ->action(function () {
-                        $production = Production::create([
-                            'title' => 'New Production',
-                            'state' => 'planning',
-                        ]);
-
-                        return redirect()->route('filament.admin.resources.productions.edit', ['record' => $production]);
-                    }),
+                    ->icon('heroicon-o-plus'),
                 Tables\Actions\Action::make('publish')
                     ->label('Publish Production')
                     ->icon('heroicon-o-globe-alt')
@@ -278,6 +271,7 @@ class ProductionResource extends Resource
     {
         return [
             'index' => Pages\ListProductions::route('/'),
+            'create' => Pages\CreateProduction::route('/create'),
             'edit' => Pages\EditProduction::route('/{record}/edit'),
         ];
     }
