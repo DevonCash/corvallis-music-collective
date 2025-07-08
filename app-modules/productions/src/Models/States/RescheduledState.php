@@ -19,7 +19,7 @@ class RescheduledState extends ProductionState
     protected static string $color = 'warning';
     protected static array $allowedTransitions = [
         'planning',
-        'pre_production',
+        'published',
         'cancelled',
     ];
 

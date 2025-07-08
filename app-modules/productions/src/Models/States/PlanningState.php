@@ -2,6 +2,8 @@
 
 namespace CorvMC\Productions\Models\States;
 
+use CorvMC\StateManagement\Exceptions\StateValidationException;
+use CorvMC\StateManagement\Logging\StateLogger;
 use Filament\Forms;
 use Illuminate\Database\Eloquent\Model;
 
@@ -47,7 +49,8 @@ class PlanningState extends ProductionState
         if ($state === 'published') {
             $errors = static::getPublishingValidationErrors($model);
             if (!empty($errors)) {
-                throw new \Exception('Cannot publish production: ' . implode(', ', $errors));
+                StateLogger::logValidationError($model, $state, $errors);
+                throw new StateValidationException($state, $model, $errors);
             }
             return true;
         }

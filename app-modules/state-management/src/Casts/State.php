@@ -3,6 +3,9 @@
 namespace CorvMC\StateManagement\Casts;
 
 use CorvMC\StateManagement\AbstractState;
+use CorvMC\StateManagement\Exceptions\StateConfigurationException;
+use CorvMC\StateManagement\Exceptions\StateNotFoundException;
+use CorvMC\StateManagement\Logging\StateLogger;
 use Illuminate\Contracts\Database\Eloquent\CastsAttributes;
 
 class State implements CastsAttributes
@@ -21,11 +24,25 @@ class State implements CastsAttributes
         
         // Validate that the class extends AbstractState and has a states property
         if (!is_subclass_of($stateTypeClass, AbstractState::class)) {
-            throw new \InvalidArgumentException("Class {$stateTypeClass} must extend " . AbstractState::class);
+            StateLogger::logConfigurationError(
+                "Class {$stateTypeClass} must extend " . AbstractState::class,
+                $stateTypeClass
+            );
+            throw new StateConfigurationException(
+                "Class must extend " . AbstractState::class,
+                $stateTypeClass
+            );
         }
         
         if (!method_exists($stateTypeClass, 'getStates')) {
-            throw new \InvalidArgumentException("Class {$stateTypeClass} must have a method getStates()");
+            StateLogger::logConfigurationError(
+                "Class {$stateTypeClass} must have a method getStates()",
+                $stateTypeClass
+            );
+            throw new StateConfigurationException(
+                "Class must have a method getStates()",
+                $stateTypeClass
+            );
         }
     }
     
@@ -50,6 +67,13 @@ class State implements CastsAttributes
         // Validate that the state exists
         $states = $this->stateTypeClass::getStates();
         if (!isset($states[$value])) {
+            // Log the invalid state encountered
+            StateLogger::logInvalidState(
+                $value,
+                $model,
+                array_keys($states)
+            );
+            
             // Use the first state as default if the current value is invalid
             $value = array_key_first($states);
         }

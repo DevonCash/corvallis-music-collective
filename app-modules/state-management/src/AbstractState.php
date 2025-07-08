@@ -4,6 +4,9 @@ namespace CorvMC\StateManagement;
 
 use CorvMC\StateManagement\Casts\State;
 use CorvMC\StateManagement\Contracts\StateInterface;
+use CorvMC\StateManagement\Exceptions\InvalidStateTransitionException;
+use CorvMC\StateManagement\Exceptions\StateConfigurationException;
+use CorvMC\StateManagement\Logging\StateLogger;
 use Illuminate\Contracts\Database\Eloquent\CastsAttributes;
 use Illuminate\Database\Eloquent\Model;
 use Filament\Actions\Action;
@@ -45,7 +48,14 @@ abstract class AbstractState implements StateInterface
     public static function getName(): string
     {
         if (static::$name === '') {
-            throw new \Exception('State name is not set: ' . static::class);
+            StateLogger::logConfigurationError(
+                'State name is not set',
+                static::class
+            );
+            throw new StateConfigurationException(
+                'State name is not set',
+                static::class
+            );
         }
         return static::$name;
     }
@@ -162,10 +172,19 @@ abstract class AbstractState implements StateInterface
      */
     public static function transitionTo(Model $model, string $state, array $data = []): Model
     {
+        $fromState = static::getName();
+        $toState = class_exists($state) ? $state::getName() : $state;
+        
         if (!static::canTransitionTo($model, $state)) {
-            throw new \InvalidArgumentException(
-                sprintf('Cannot transition from "%s" to "%s"', static::getName(), $state)
+            $exception = new InvalidStateTransitionException(
+                $fromState,
+                $toState,
+                $model,
+                'This transition is not allowed'
             );
+            
+            StateLogger::logTransitionError($model, $fromState, $toState, $exception);
+            throw $exception;
         }
 
         // If the state is a class name, get its name
@@ -175,6 +194,9 @@ abstract class AbstractState implements StateInterface
 
         $model->state = $stateName;
         $model->save();
+
+        // Log successful transition
+        StateLogger::logTransition($model, $fromState, $toState, $data);
 
         return $model;
     }

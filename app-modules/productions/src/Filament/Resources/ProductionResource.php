@@ -6,6 +6,8 @@ use CorvMC\Productions\Filament\Resources\ProductionResource\Pages;
 use CorvMC\Productions\Models\Production;
 use CorvMC\Productions\Filament\Resources\VenueResource;
 use CorvMC\StateManagement\Filament\Table\Columns\StateColumn;
+use CorvMC\StateManagement\Services\StateErrorService;
+use CorvMC\StateManagement\Exceptions\StateException;
 use App\Models\User;
 use Filament\Forms;
 use Filament\Forms\Form;
@@ -209,7 +211,17 @@ class ProductionResource extends Resource
                         ->icon('heroicon-o-arrow-path')
                         ->form(fn(?Production $record) => $record?->state->getForm())
                         ->action(function (?Production $record, array $data): void {
-                            $record?->state->transitionTo($data['state'], $data);
+                            try {
+                                $fromState = $record?->state->getName();
+                                $record?->state->transitionTo($data['state'], $data);
+                                StateErrorService::displaySuccess(
+                                    $fromState, 
+                                    $data['state'], 
+                                    'production'
+                                );
+                            } catch (StateException $e) {
+                                StateErrorService::displayError($e);
+                            }
                         }),
                 ]),
             ])
@@ -232,19 +244,17 @@ class ProductionResource extends Resource
                     ->requiresConfirmation()
                     ->action(function (Production $record): void {
                         try {
+                            $fromState = $record->state->getName();
                             $record->state->transitionTo('published', [
                                 'ready_to_publish' => true,
                             ]);
-                            Notification::make()
-                                ->title('Production published successfully')
-                                ->success()
-                                ->send();
-                        } catch (\Exception $e) {
-                            Notification::make()
-                                ->title('Cannot publish production')
-                                ->body($e->getMessage())
-                                ->danger()
-                                ->send();
+                            StateErrorService::displaySuccess(
+                                $fromState, 
+                                'published', 
+                                'production'
+                            );
+                        } catch (StateException $e) {
+                            StateErrorService::displayError($e);
                         }
                     })
                     ->visible(fn(?Production $record): bool => $record?->state->getName() === 'planning'),

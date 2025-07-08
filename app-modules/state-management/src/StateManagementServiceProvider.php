@@ -11,7 +11,11 @@ class StateManagementServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        // Register module-specific services
+        // Merge configuration
+        $this->mergeConfigFrom(
+            __DIR__ . '/../config/state-management.php',
+            'state-management'
+        );
     }
 
     /**
@@ -19,6 +23,19 @@ class StateManagementServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        // No migrations needed
+        // Publish configuration file
+        $this->publishes([
+            __DIR__ . '/../config/state-management.php' => config_path('state-management.php'),
+        ], 'state-management-config');
+
+        // Load routes if they exist
+        if (file_exists(__DIR__ . '/../routes/state-management-routes.php')) {
+            $this->loadRoutesFrom(__DIR__ . '/../routes/state-management-routes.php');
+        }
+
+        // Load migrations if they exist
+        if (is_dir(__DIR__ . '/../database/migrations')) {
+            $this->loadMigrationsFrom(__DIR__ . '/../database/migrations');
+        }
     }
 } 
