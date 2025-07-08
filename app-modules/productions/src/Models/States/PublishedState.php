@@ -23,15 +23,6 @@ class PublishedState extends ProductionState
         'rescheduled',
     ];
 
-    public static function getAllowedTransitions(): array
-    {
-        return [
-            'active' => 'Start Production',
-            'cancelled' => 'Cancel Production',
-            'rescheduled' => 'Reschedule Production',
-        ];
-    }
-
     public static function getForm(): array
     {
         return [
@@ -46,7 +37,7 @@ class PublishedState extends ProductionState
         ];
     }
 
-    public function canTransitionTo(string $state): bool
+    public static function canTransitionTo(Model $model, string $state): bool
     {
         return in_array($state, static::$allowedTransitions);
     }

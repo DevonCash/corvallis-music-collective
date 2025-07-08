@@ -36,10 +36,10 @@ class ProductionResource extends Resource
                     ->contained(false)
                     ->tabs([
                         Forms\Components\Tabs\Tab::make('Details')
-                            ->columns(4)
+                            ->columns(12)
                             ->schema([
                                 Forms\Components\Grid::make(2)
-                                    ->columnSpan(3)
+                                    ->columnSpan(8)
                                     ->schema([
                                         Forms\Components\TextInput::make('title')
                                             ->required()
@@ -49,17 +49,7 @@ class ProductionResource extends Resource
                                         Forms\Components\RichEditor::make('description')
                                             ->columnSpanFull()
                                             ->extraFieldWrapperAttributes(['class' => 'public']),
-                                        Forms\Components\Select::make('tags')
-                                            ->relationship('tags', 'name')
-                                            ->multiple()
-                                            ->preload()
-                                            ->searchable()
-                                            ->extraFieldWrapperAttributes(['class' => 'public'])
-                                            ->createOptionForm([
-                                                Forms\Components\TextInput::make('name')
-                                                    ->required()
-                                                    ->maxLength(255),
-                                            ]),
+
                                         Forms\Components\TextInput::make('ticket_link')
                                             ->label('Ticket Link')
                                             ->url()
@@ -77,24 +67,8 @@ class ProductionResource extends Resource
                                     ]),
 
                                 Forms\Components\Grid::make(1)
-                                    ->columnSpan(1)
+                                    ->columnSpan(4)
                                     ->schema([
-                                        Forms\Components\FileUpload::make('poster')
-                                            ->image()
-                                            ->imageResizeMode('cover')
-                                            ->imageCropAspectRatio('1:1.294')
-                                            ->imageResizeTargetWidth('850')
-                                            ->imageResizeTargetHeight('1100')
-                                            ->imagePreviewHeight('250')
-                                            ->panelAspectRatio('1:1.294')
-                                            ->panelLayout('integrated')
-                                            ->deleteUploadedFileUsing(function ($file) {
-                                                Storage::disk('public')->delete($file);
-                                            })
-                                            ->label('Event Poster')
-                                            ->helperText('Letter size: 8.5" x 11"')
-                                            ->extraFieldWrapperAttributes(['class' => 'public poster-field'])
-                                            ->columnSpan(1),
                                         Forms\Components\Select::make('production_lead_id')
                                             ->label('Production Lead')
                                             ->relationship('productionLead', 'name')
@@ -110,6 +84,35 @@ class ProductionResource extends Resource
                                                     ->required()
                                                     ->maxLength(255),
                                             ]),
+                                        Forms\Components\FileUpload::make('poster')
+                                            ->image()
+                                            ->disk('r2')
+                                            ->directory('productions')
+                                            ->imageResizeMode('cover')
+                                            ->imageCropAspectRatio('1:1.294')
+                                            ->imageResizeTargetWidth('850')
+                                            ->imageResizeTargetHeight('1100')
+                                            ->imagePreviewHeight('250')
+                                            ->panelLayout('integrated')
+                                            ->deleteUploadedFileUsing(function ($file) {
+                                                Storage::disk('public')->delete($file);
+                                            })
+                                            ->label('Event Poster')
+                                            ->helperText('Letter size: 8.5" x 11"')
+                                            ->extraFieldWrapperAttributes(['class' => 'public poster-field'])
+                                            ->columnSpan(1),
+                                        Forms\Components\Select::make('tags')
+                                            ->relationship('tags', 'name')
+                                            ->multiple()
+                                            ->preload()
+                                            ->searchable()
+                                            ->extraFieldWrapperAttributes(['class' => 'public'])
+                                            ->createOptionForm([
+                                                Forms\Components\TextInput::make('name')
+                                                    ->required()
+                                                    ->maxLength(255),
+                                            ]),
+
                                     ]),
                             ]),
                         Forms\Components\Tabs\Tab::make('Post-Show Wrap Up')
@@ -247,7 +250,7 @@ class ProductionResource extends Resource
                                 ->send();
                         }
                     })
-                    ->visible(fn (?Production $record): bool => $record?->state->getName() === 'planning'),
+                    ->visible(fn(?Production $record): bool => $record?->state->getName() === 'planning'),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([

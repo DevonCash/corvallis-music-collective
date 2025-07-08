@@ -21,11 +21,6 @@ class CancelledState extends ProductionState
         'archived',
     ];
 
-    public static function getAllowedTransitions(): array
-    {
-        return static::$allowedTransitions;
-    }
-
     public static function getForm(): array
     {
         return [
@@ -44,7 +39,7 @@ class CancelledState extends ProductionState
         ];
     }
 
-    public function canTransitionTo(string $state): bool
+    public static function canTransitionTo(Model $model, string $state): bool
     {
         return in_array($state, static::$allowedTransitions);
     }

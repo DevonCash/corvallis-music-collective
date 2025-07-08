@@ -18,17 +18,9 @@ class ActiveState extends ProductionState
     protected static string $icon = 'heroicon-o-play';
     protected static string $color = 'success';
     protected static array $allowedTransitions = [
-        FinishedState::class,
-        CancelledState::class,
+        'finished',
+        'cancelled',
     ];
-
-    public static function getAllowedTransitions(): array
-    {
-        return [
-            FinishedState::class => 'End Production',
-            CancelledState::class => 'Cancel Production',
-        ];
-    }
 
     public static function getForm(): array
     {
@@ -44,11 +36,8 @@ class ActiveState extends ProductionState
         ];
     }
 
-    public function canTransitionTo(string|object $state): bool
+    public static function canTransitionTo(Model $model, string $state): bool
     {
-        if (is_object($state)) {
-            $state = get_class($state);
-        }
         return in_array($state, static::$allowedTransitions);
     }
 } 

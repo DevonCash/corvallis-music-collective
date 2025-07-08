@@ -27,8 +27,6 @@ class ProductionsServiceProvider extends ServiceProvider
         $this->loadTranslationsFrom(__DIR__.'/../resources/lang', 'productions');
 
         // Register seeders
-        $this->app->make('db')->connection()->getSchemaBuilder()->getConnection()->statement('CREATE SCHEMA IF NOT EXISTS productions');
-        $this->app->make('db')->connection()->getSchemaBuilder()->getConnection()->statement('SET search_path TO productions');
         // $this->loadSeedersFrom(__DIR__.'/../database/seeders');
 
         // Register Filament resources

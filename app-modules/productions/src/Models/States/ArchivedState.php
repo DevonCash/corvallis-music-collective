@@ -19,11 +19,6 @@ class ArchivedState extends ProductionState
     protected static string $color = 'gray';
     protected static array $allowedTransitions = [];
 
-    public static function getAllowedTransitions(): array
-    {
-        return static::$allowedTransitions;
-    }
-
     public static function getForm(): array
     {
         return [

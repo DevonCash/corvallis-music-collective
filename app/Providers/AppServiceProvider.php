@@ -9,6 +9,8 @@ use Snelling\FolioMarkdown\Facades\FolioMarkdown;
 use Stripe\StripeClient;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Date;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 
 use App\Models\User;
 
@@ -16,7 +18,7 @@ use App\Models\User;
 class AppServiceProvider extends ServiceProvider
 {
 
-  
+
 
     /**
      * Register any application services.
@@ -36,10 +38,18 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+
+        // Test basic connection
+        // dd([
+        //     'current_schema' => DB::select('SELECT current_schema()'),
+        //     'search_path' => DB::select('SHOW search_path'),
+        //     'sessions_in_public' => DB::select("SELECT schemaname FROM pg_tables WHERE tablename = 'sessions'"),
+        //     'all_schemas' => DB::select('SELECT schema_name FROM information_schema.schemata')
+        // ]);
         Cashier::useCustomerModel(User::class);
 
         Folio::path(resource_path('views/pages'))->middleware([
-            '*'=>['web']
+            '*' => ['web']
         ]);
 
         FolioMarkdown::register();

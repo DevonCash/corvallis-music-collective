@@ -23,14 +23,6 @@ class PlanningState extends ProductionState
         'cancelled',
     ];
 
-    public static function getAllowedTransitions(): array
-    {
-        return [
-            'published' => 'Publish to Schedule',
-            'cancelled' => 'Cancel Production',
-        ];
-    }
-
     public static function getForm(): array
     {
         return [
