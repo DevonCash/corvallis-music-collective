@@ -41,6 +41,7 @@ class ProductionsServiceProvider extends ServiceProvider
 				->resources([
 					\CorvMC\Productions\Filament\Resources\ProductionResource::class,
 					\CorvMC\Productions\Filament\Resources\VenueResource::class,
+					\CorvMC\Productions\Filament\Resources\ActResource::class,
 				]);
 		});
 	}

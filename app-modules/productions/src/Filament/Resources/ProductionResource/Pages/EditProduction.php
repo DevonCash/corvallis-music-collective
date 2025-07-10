@@ -12,23 +12,16 @@ class EditProduction extends EditRecord
 {
     protected static string $resource = ProductionResource::class;
 
+    public function hasCombinedRelationManagerTabsWithContent(): bool
+    {
+        return false;
+    }
+
     protected function getHeaderActions(): array
     {
         return [
             Actions\DeleteAction::make(),
-            
-            Actions\Action::make('save')
-                ->label('Save')
-                ->submit('save')
-                ->keyBindings(['mod+s'])
-                ->color('primary'),
-
             ProductionState::makeTransitionActionGroup(),
         ];
-    }
-
-    protected function getFormActions(): array
-    {
-        return [];
     }
 } 

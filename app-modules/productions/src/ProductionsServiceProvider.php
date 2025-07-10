@@ -4,6 +4,8 @@ namespace CorvMC\Productions;
 
 use CorvMC\Productions\Filament\Resources\ProductionResource;
 use CorvMC\Productions\Filament\Resources\VenueResource;
+use CorvMC\Productions\Filament\Resources\ActResource;
+use CorvMC\Productions\Filament\Clusters\ProductionsCluster;
 use CorvMC\Productions\Console\Commands\FinishActiveProductions;
 use Filament\Panel;
 use Illuminate\Support\ServiceProvider;
@@ -47,10 +49,15 @@ class ProductionsServiceProvider extends ServiceProvider
         }
 
         Panel::configureUsing(function (Panel $panel) {
-            $panel->resources([
-                ProductionResource::class,
-                VenueResource::class,
-            ]);
+            $panel
+                ->clusters([
+                    ProductionsCluster::class,
+                ])
+                ->resources([
+                    ProductionResource::class,
+                    VenueResource::class,
+                    ActResource::class,
+                ]);
         });
     }
 } 
